@@ -1,32 +1,54 @@
 # Skill 稽核紀錄
 
-安裝到 `~/.claude/skills/`（user scope，不在 git 內）。本文件保存安裝當下的完整原文與稽核結論，
+安裝在 repo 的 `.claude/skills/`（project scope，**在 git 內**）。雲端 session 不讀 `~/.claude/skills/`，詳見 [`env-notes.md`](./env-notes.md)。本文件保存安裝當下的完整原文與稽核結論，
 之後 skill 上游更新時可以拿來比對。
 
 ## 清單
 
-| skill | 來源 | 行數 | script | 用途 |
-|---|---|---:|:---:|---|
-| `frontend-design` | anthropics/skills | 56 | — | 視覺設計方向：排版、配色、避免看起來像模板。 |
-| `ui-ux-pro-max` | nextlevelbuilder/ui-ux-pro-max-skill | 197 | 有 | 可搜尋的 UI/UX 規則庫，84 styles / 192 palettes / 98 UX 準則。 |
-| `grill-with-docs` | mattpocock/skills | 8 | — | 拷問式訪談釐清設計，過程中同時產出 ADR 與詞彙表。 |
-| `to-spec` | mattpocock/skills | 76 | — | 把對話內容整理成 spec，發佈到 issue tracker。 |
-| `to-tickets` | mattpocock/skills | 106 | — | 把 spec 拆成帶相依關係的 tracer-bullet tickets。 |
-| `matt-code-review` | mattpocock/skills | 88 | — | 依 Standards + Spec 兩軸平行審查某個基準點之後的變更。 |
-| `improve-codebase-architecture` | mattpocock/skills | 72 | — | 掃描 codebase 找可深化的模組，出 HTML 報告後逐項拷問。 |
-| `writing-for-agents` | mattpocock/skills | 82 | — | 撰寫給 agent 讀的文件：skill、AGENTS.md、CLAUDE.md。 |
-| `grilling` | mattpocock/skills | 23 | — | 針對計畫或決策做高強度質疑，壓力測試思路。 |
-| `domain-modeling` | mattpocock/skills | 75 | — | 建立並維護專案領域模型、統一語彙、ADR。 |
-| `codebase-design` | mattpocock/skills | 115 | — | deep module 的共用語彙：介面設計、接縫位置、可測試性。 |
-| `setup-matt-pocock-skills` | mattpocock/skills | 117 | — | 一次性設定：issue tracker、triage 標籤、domain 文件配置。 |
-| `claude-md` | 自行撰寫 | 69 | — | CLAUDE.md／AGENTS.md 的健檢與撰寫，預設立場是刪除。 |
+| skill | 來源 | 上游 SHA | 行數 | script | 用途 |
+|---|---|---|---:|:---:|---|
+| `frontend-design` | anthropics/skills | `f17010c9bb` | 56 | — | 視覺設計方向：排版、配色、避免看起來像模板。 |
+| `ui-ux-pro-max` | nextlevelbuilder/ui-ux-pro-max-skill | `97eb2a2003` | 197 | 有 | 可搜尋的 UI/UX 規則庫，84 styles / 192 palettes / 98 UX 準則。 |
+| `grill-with-docs` | mattpocock/skills | `84fdeffd12` | 8 | — | 拷問式訪談釐清設計，過程中同時產出 ADR 與詞彙表。 |
+| `to-spec` | mattpocock/skills | `84fdeffd12` | 76 | — | 把對話內容整理成 spec，發佈到 issue tracker。 |
+| `to-tickets` | mattpocock/skills | `84fdeffd12` | 106 | — | 把 spec 拆成帶相依關係的 tracer-bullet tickets。 |
+| `matt-code-review` | mattpocock/skills | `84fdeffd12` | 88 | — | 依 Standards + Spec 兩軸平行審查某個基準點之後的變更。 |
+| `improve-codebase-architecture` | mattpocock/skills | `84fdeffd12` | 72 | — | 掃描 codebase 找可深化的模組，出 HTML 報告後逐項拷問。 |
+| `writing-for-agents` | mattpocock/skills | `84fdeffd12` | 82 | — | 撰寫給 agent 讀的文件：skill、AGENTS.md、CLAUDE.md。 |
+| `grilling` | mattpocock/skills | `84fdeffd12` | 23 | — | 針對計畫或決策做高強度質疑，壓力測試思路。 |
+| `domain-modeling` | mattpocock/skills | `84fdeffd12` | 75 | — | 建立並維護專案領域模型、統一語彙、ADR。 |
+| `codebase-design` | mattpocock/skills | `84fdeffd12` | 115 | — | deep module 的共用語彙：介面設計、接縫位置、可測試性。 |
+| `setup-matt-pocock-skills` | mattpocock/skills | `84fdeffd12` | 117 | — | 一次性設定：issue tracker、triage 標籤、domain 文件配置。 |
+| `claude-md` | 自行撰寫 | — | 69 | — | CLAUDE.md／AGENTS.md 的健檢與撰寫，預設立場是刪除。 |
+
+## 上游版本
+
+本目錄的內容是從以下 commit 複製的快照。要同步上游時：
+
+```bash
+git clone <repo> /tmp/upstream && cd /tmp/upstream
+git log --oneline <SHA>..HEAD -- <上游路徑>     # 這段期間改了什麼
+git diff <SHA> HEAD -- <上游路徑>               # 逐行差異
+```
+
+只需審查 diff，不必重新走一次完整稽核。同步後回來更新這裡的 SHA。
+
+| 來源 repo | SHA | 日期 | 上游路徑 |
+|---|---|---|---|
+| `anthropics/skills` | `f17010c9bb483898c1d9c9f42dde2b3a98889434` | 2026-08-07 | `skills/frontend-design` |
+| `nextlevelbuilder/ui-ux-pro-max-skill` | `97eb2a20032f0833e3d317162208a60385b0f96e` | 2026-08-12 | `.claude/skills/ui-ux-pro-max` |
+| `mattpocock/skills` | `84fdeffd12f2ee307994d1eb6feb48173b6e0502` | 2026-08-06 | `skills/{engineering,productivity}/<name>` |
+
+`claude-md` 為自行撰寫，無上游。
+
+同步時記得重做「安裝時做的修改」那一節列出的兩處改寫 —— 上游不會有那些修改。
 
 ## 安裝時做的修改
 
 | skill | 修改 | 原因 |
 |---|---|---|
 | `matt-code-review` | 目錄名與 frontmatter `name:` 由 `code-review` 改名 | 與內建的 `/code-review` 撞名，兩者並存以便比較 |
-| `ui-ux-pro-max` | 11 處 `${CLAUDE_PLUGIN_ROOT}/.claude/skills/ui-ux-pro-max/` → `$HOME/.claude/skills/ui-ux-pro-max/` | 原始碼以 plugin 形式撰寫；以一般 skill 安裝時該變數為空。用 `$HOME` 而非 `~`，因為路徑在雙引號內 `~` 不展開 |
+| `ui-ux-pro-max` | 11 處 `${CLAUDE_PLUGIN_ROOT}/...` → `$(git rev-parse --show-toplevel)/.claude/skills/ui-ux-pro-max/` | 原始碼以 plugin 形式撰寫；以一般 skill 安裝時該變數為空。改用 `git rev-parse` 而非相對路徑，因為 agent 工作目錄不固定；不用 `~`，因為路徑在雙引號內 `~` 不展開 |
 
 ## 相依關係
 
