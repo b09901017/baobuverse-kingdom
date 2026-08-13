@@ -19,6 +19,7 @@
 | `domain-modeling` | mattpocock/skills | 75 | — | 建立並維護專案領域模型、統一語彙、ADR。 |
 | `codebase-design` | mattpocock/skills | 115 | — | deep module 的共用語彙：介面設計、接縫位置、可測試性。 |
 | `setup-matt-pocock-skills` | mattpocock/skills | 117 | — | 一次性設定：issue tracker、triage 標籤、domain 文件配置。 |
+| `claude-md` | 自行撰寫 | 69 | — | CLAUDE.md／AGENTS.md 的健檢與撰寫，預設立場是刪除。 |
 
 ## 安裝時做的修改
 
@@ -45,7 +46,7 @@
 
 ## Script 稽核
 
-12 個 skill 中只有 `ui-ux-pro-max` 帶可執行 script：4 個 Python 檔，共 2219 行
+13 個 skill 中只有 `ui-ux-pro-max` 帶可執行 script：4 個 Python 檔，共 2219 行
 （`core.py` 464、`design_system.py` 1479、`search.py` 162、`validate_data.py` 114）。
 
 以下模式全部 grep 過，**均無命中**：
@@ -72,6 +73,102 @@ urllib  requests  socket  subprocess  os.system  popen  eval(  exec(
 ---
 
 ## 各 skill 完整原文
+
+### `claude-md`
+
+| | |
+|---|---|
+| 來源 | 自行撰寫（非第三方，無上游可比對） |
+| 行數 | 69 |
+| 模型可自動觸發 | 是 |
+| 隨附檔案 | `SKILL.md` |
+
+**description 全文**
+
+> 建立、健檢、精簡 CLAUDE.md 或 AGENTS.md。當使用者提到 CLAUDE.md、AGENTS.md、專案規則檔、instruction file，或說「幫我整理／檢查／瘦身／重寫規則檔」「Claude 一直忘記專案規則」「Claude 一直重複犯同樣的錯」「規則檔越來越肥」時，一定要使用這個 skill。剛跑完 /init 之後也要用這個 skill 做過濾。
+
+這條 description 是本清單裡觸發條件寫得最具體的一條 —— 它直接列出使用者實際會講的字串
+（「Claude 一直忘記專案規則」「規則檔越來越肥」），而非用抽象描述讓模型自行推斷。
+對照 `grilling` 的「uses any 'grill' trigger phrases」，後者把觸發條件外包給一個模糊的詞。
+
+註：description 為中文。估算 token 時不能用英文的「字元數 ÷ 4」——
+CJK 大約 1 字元 ≈ 1 token，此條 189 字元（含 78 漢字）實際約 130 tok，而非 47。
+
+<details>
+<summary>完整 SKILL.md</summary>
+
+````markdown
+---
+name: claude-md
+description: 建立、健檢、精簡 CLAUDE.md 或 AGENTS.md。當使用者提到 CLAUDE.md、AGENTS.md、專案規則檔、instruction file，或說「幫我整理／檢查／瘦身／重寫規則檔」「Claude 一直忘記專案規則」「Claude 一直重複犯同樣的錯」「規則檔越來越肥」時，一定要使用這個 skill。剛跑完 /init 之後也要用這個 skill 做過濾。
+---
+
+# CLAUDE.md 健檢與撰寫
+
+CLAUDE.md 的每一行，在每次新對話都會被強制注入 context，並佔用 instruction budget——模型能同時顧好的指令數量有上限。多寫一條無用規則，就是稀釋掉真正重要的那幾條。
+
+**預設立場是刪除。** 一條規則要留下來，必須自己舉證。
+
+## 開始前：確認模型世代
+
+先確認目前使用的模型，並查閱該模型的官方 prompting guide。舊模型需要的防呆規則，在新模型上會變成綁手綁腳的限制。Anthropic 為新一代模型優化 Claude Code 系統提示詞時，刪掉了超過 80% 的規則，能力完全沒有退步。沒做這一步就不要開始審查。
+
+## 刪除測試
+
+對現有的每一條規則，依序問：
+
+1. **Explore subagent 掃一遍 codebase 能不能自己發現？** 專案用什麼框架、資料夾怎麼排、build 指令是什麼——能自己找到的，刪。
+2. **大部分任務都會用到嗎？** 否 → 移到相關資料夾的 nested CLAUDE.md。
+3. **三個月後還會成立嗎？** 會過期的，刪。
+4. **和 codebase 現狀或其他文件牴觸嗎？** 是 → 刪掉整段，改為一行 reference 指向 single source of truth。
+
+任何一題答錯就處理掉，不要因為「當初是踩過坑才寫的」而捨不得。
+
+## 刪掉的內容要路由到正確位置
+
+| 內容性質 | 去處 |
+|---|---|
+| 客觀現狀、架構、指令 | 不寫，交給 Explore 自己找 |
+| 只跟單一資料夾有關 | 該資料夾的 nested CLAUDE.md |
+| 很長、偶爾才用的 SOP | 獨立成 Skill |
+| 絕對不能違反的死線 | Hook 用程式攔截，文字提醒擋不住 |
+| 個人偏好，不想進 git | ~/.claude/CLAUDE.md 或 CLAUDE.local.md |
+
+層級由上而下疊加：user → project → nested。規則放得離實際工作的檔案越近，適用範圍越精準。
+
+## 該留下來的：codebase 翻不到的隱性知識
+
+1. **不能搞錯的規定** — 對客顯示的價格一律含稅
+2. **固定的處理方式** — 改價格要從試算表開始，直接改網頁會被蓋掉
+3. **容易漏掉的連動** — 改會員價要同步首頁、結帳頁、FAQ、通知信
+4. **完成的定義** — 改完 UI 要同時檢查桌機與手機版
+5. **其他文件的位置** — 需要時再讀
+
+## 撰寫規範
+
+- 一條規則一行，陳述句，祈使語氣
+- 不解釋原因，除非原因會改變行為
+- 用領域專有名詞取代冗長描述——術語是被壓縮過的高含金量指令
+- 不寫模型本來就會做的事
+- CLAUDE.md 與 AGENTS.md 並存時，在其中一份第一行 reference 另一份，只維護一份
+
+## 兩種進入模式
+
+**新建**：先跑 /init 產生初版，然後立刻對每一行套用刪除測試。/init 的產出是起點不是成品，它整理得太完整，而那些完整正是 Explore 本來就找得到的東西。
+
+**維護**：跑 /insights 分析歷史 session，找出反覆發生的問題。只補真正重複出現的規則；同時執行一次刪除測試做修剪。新增與修剪必須成對進行，否則檔案只會單向變胖。
+
+## 完成標準
+
+- [ ] 已確認模型世代並對照過官方 prompting guide
+- [ ] 每一條保留的規則都通過刪除測試
+- [ ] 刪掉的內容都已路由到 Explore / nested / Skill / Hook / local
+- [ ] 沒有任何一條與 codebase 現狀或其他文件牴觸
+- [ ] 向使用者回報：刪除 N 條、搬移 N 條、保留 N 條，逐條附上理由
+- [ ] 不要靜默改寫檔案，改動前先讓使用者看過 diff
+````
+
+</details>
 
 ### `frontend-design`
 
