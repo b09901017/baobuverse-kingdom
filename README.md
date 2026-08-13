@@ -43,4 +43,5 @@
 - [`CONTEXT.md`](./CONTEXT.md) — 詞彙表。分錄、洗錢、對帳這些詞的精確定義。
 - [`docs/spec.md`](./docs/spec.md) — 完整規格。資料模型、金流規則、所有模組。
 - [`docs/adr/`](./docs/adr/) — 為什麼這樣決定。**包含刻意不做的事。**
+- [`docs/scope.md`](./docs/scope.md) — 工作量評估與 MVP 切法。
 - [`docs/env-notes.md`](./docs/env-notes.md) — 環境的隱性知識。
