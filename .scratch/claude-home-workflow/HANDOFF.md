@@ -11,7 +11,7 @@
 |---|---|---|---|
 | 1 盤點與檢查基準 | 01、02 | high | ✅ 10/28（01：私人 repo `20f9eb9`，已推；02：`7bfd180`） |
 | 2 kickoff、CLAUDE.md、skill 重疊 | 03、04、05 | xhigh | ✅ 10/28（03：`435506f`；04：`3e141d3`；05：`c0cd4fe`） |
-| 3 客廳 repo 與 skill 正本 | 06、07 | high | ✅ 10/28（06：`63f4a65`；07：`9f1fe71`；客廳本機 3 個 commit，**GitHub repo 待使用者建、推**，見「要使用者做的」） |
+| 3 客廳 repo 與 skill 正本 | 06、07 | high | ✅ 10/28（06：`63f4a65`；07：`9f1fe71`；客廳 GitHub repo 使用者點頭後主控建好、PRIVATE、已推；共用 CLAUDE.md 加兩條 `4ad4390`） |
 | 4 交接開場分專案、專案同步、guard、桌面 app 載入 mods | 10 → 08 → 09 → 14 | high | 可以開始（開場在下面「段 4 的開場」）；08 的「推到客廳」要等使用者建好 repo |
 | 5 VM 多專案 | 12 → 13 | high | 等 4 |
 | 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | 等 5 |
@@ -115,15 +115,16 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 4 的開
 這一輪在建「客廳」：跨專案共用的工作流。分支 claude/claude-home-workflow（已經在這個 checkout 上）。
 段 1～3 做完了。段 3：客廳 repo 在本機 C:/Users/DELL/claude-home（3 個 commit：e8f9058 是未改過的 mods ＝ 審查基準；06 骨架；07 skill 正本＋tools/sync-skills.mjs），
 共用的 ~/.claude/CLAUDE.md 已生效（正本在客廳 user/CLAUDE.md），這個 repo 加了 .claude/project.json（skills）。
-GitHub 上的 b09901017/claude-home 被 auto mode 擋、沒建成，交給使用者建與推（HANDOFF「要使用者做的」）。
+GitHub 上的 b09901017/claude-home 已建好（PRIVATE，使用者點頭後主控建）並推上去；主控另外在共用 CLAUDE.md 加了兩條（客廳 4ad4390），在 .claude/settings.json 關掉 frontend-design。
 這是第 4 段：做 issue 10（交接開場分專案）→ 08（這個專案的私人資料同步）→ 09（guard 讀專案設定）→ 14（桌面 app 載入 mods），照這個順序。不做 12 以後的 issue。
 
-先讀：.scratch/claude-home-workflow/HANDOFF.md 的「每一段共同的規矩」「中途發現」「要使用者做的」「要使用者決定的」「使用者已經決定的」、
+先讀：.scratch/claude-home-workflow/HANDOFF.md 的「每一段共同的規矩」「中途發現」「使用者已經決定的」、
 spec.md「談定的策略」（特別是「上一個專案一律不能壞」的三個階段）、issues/10、08、09、14 全文、issues/06、07 底下的「做完時留下的」、
 客廳的 README.md 與 docs/project-config.md（專案設定的格式只在那裡定，08、09 照它讀，不要另發明）、CLAUDE.md、docs/agents/lessons.md。
 
 要特別注意：
-- 動工前先跑 gh repo view b09901017/claude-home --json visibility：使用者建好了就是 PRIVATE；還沒建，08 的「把 mods 複製進客廳、commit、push」只做到本機 commit，推送那一步照「失敗就跳過、寫 log」的設計驗，並記進 HANDOFF。
+- 客廳 repo 已在 GitHub（PRIVATE），動工前 git -C ~/claude-home pull --ff-only。08 的「推送失敗就跳過、寫 log」還是要用測試驗。
+- 這個 repo 的 .claude/settings.json 已經有 skillOverrides（主控加的）：08 加 hook 時合併進同一個檔，不要蓋掉。
 - 10、09 改的是 ~/.claude/mods（上一個專案每天在用）：既有測試一條都不改就要全過，新行為加新測試；改完複製一份進客廳、commit（客廳的第一個 commit e8f9058 是段 6 審查的基準）。
 - 10：順便處理段 2 中途發現的 limit-guard segmentRule()（advice.ts）—— 讓它說「下一段已經用 start_session 開了就不存開場 JSON」，從源頭解。10 做完之前不要在 ~/.claude/mods-data/handoffs/ 存開場 JSON。
 - 09：這個 repo 的 .claude/project.json 加 neverWrite（baobu-app 的 (default) database、baobu_money_track），格式照客廳 docs/project-config.md。
@@ -162,95 +163,22 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 5 的開
 
 ## 要使用者做的
 
-### 建客廳的 GitHub repo、推上去（段 3，擋住段 4 的 08 的推送那一步）
-
-Claude 自己建被 auto mode 擋下了。在終端機跑這三行（第二行要看到 `"visibility":"PRIVATE"`；第三行推之前，客廳的推送前檢查會再確認一次是私人的，不是就拒絕）：
-
-```bash
-gh repo create b09901017/claude-home --private
-```
-
-```bash
-gh repo view b09901017/claude-home --json visibility
-```
-
-```bash
-git -C ~/claude-home push -u origin main
-```
-
-推之前想先看裡面有什麼：`git -C ~/claude-home ls-files`（沒有登入備份、金鑰、`.claude.json`，段 3 逐一 grep 過）。
+（目前沒有。段 3 的「建客廳的 GitHub repo」使用者在主控 session 點頭後，主控建好、確認 PRIVATE、推上去了。）
 
 ## 要使用者決定的
 
-### skill 重疊（issue 05，段 2）：一組一題
-
-先講結論：**沒有一組是真的重複到該刪**，大多是「同一套流程裡不同的一步」。真的會互相搶的只有第 7 組（兩支設計 skill 都會自己跳出來）。
-背景：Matt 那幾支（`grill-me`、`grill-with-docs`、`implement`、`implement-spec`、`handoff`、`to-spec`、`to-tickets`、`wayfinder`、`improve-codebase-architecture`）都設成**只有你打 `/名字` 才會用**，平常不佔任何空間，留著沒有成本。
-
-1. **`grill-me`／`grilling`／`grill-with-docs`：都留，不用動？**
-   三支是同一種「一直問你問題直到想清楚」。`grilling` 是本體；`grill-with-docs` ＝ 本體＋邊談邊寫詞彙表與決定紀錄；`grill-me` ＝ 本體、什麼都不存（給沒有 repo 的時候）。
-   在這個專案裡，你要用的就是 `/grill-with-docs`（`CLAUDE.md` 已寫）。
-   建議：**都留，不用動。**
-
-2. **`implement`／`implement-spec`：都留，但一輪改動不用 `implement-spec`？**
-   `implement` 做一支 issue；`implement-spec` 一次把整份規格交給好幾個平行的 subagent 做。後者會同時開很多 subagent，違反你「最多兩個」的額度規矩。
-   kickoff 的段是一支一支做，用不到它。
-   建議：**都留；一輪改動走 kickoff，不用 `/implement-spec`。**
-
-3. **`codebase-design`／`improve-codebase-architecture`：都留？**
-   不重複：後者是「掃一遍程式碼，找值得重整的地方」，前者是重整時用的詞彙與原則，後者會叫前者。現在還沒有程式碼，兩支都還用不到。
-   建議：**都留。**
-
-4. **`handoff` 與 kickoff 的開場：段與段之間用 kickoff，`/handoff` 留給其他時候？**
-   `/handoff` 把目前的對話寫成一份交接檔（放電腦的暫存資料夾）；kickoff 的開場寫進 `HANDOFF.md`、主控自動開下一段。
-   建議：**一輪改動的段與段之間用 kickoff 的開場；`/handoff` 只在 kickoff 以外、一般對話太長要換新對話時用。**
-
-5. **`to-spec`／`to-tickets`／`wayfinder` 與 kickoff 開 issue：kickoff 照 `to-tickets` 的切法、但不逐支問你？**
-   `to-tickets` 切 issue 的方法（每支是一條從頭到尾做得完的細線、標出誰擋誰）很好，kickoff 第二段已經照它切；
-   但它最後一步是「把清單給你逐支確認」，跟你的常態（subagent 過目、不給你看）衝突，所以 kickoff 跳過那一步。
-   `to-spec` 不用（kickoff 自己寫規格，而且保留你的原話）。`wayfinder` 只在「大方向還一團霧、一個 session 談不完」時用。
-   建議：**照現在 kickoff 寫的；三支都留，你想用時自己打。**
-
-6. **`matt-code-review` 與內建的 `/code-review`：審查段只跑 `matt-code-review`？**
-   `matt-code-review` 看兩件事：有沒有照這個 repo 的規矩、有沒有照 issue 做（會開兩個 subagent）；內建的 `/code-review` 專抓程式錯誤。
-   兩個都跑會多花一倍額度。
-   建議：**審查段只跑 `matt-code-review`；你想多抓 bug 時再另外叫 `/code-review`。**
-
-7. **`impeccable` 與 `frontend-design`：把 `frontend-design` 關掉？**
-   兩支都會在「做畫面、改設計」時自己跳出來，會搶。`docs/plan.md` 已經寫 `impeccable` 取代 `frontend-design`。
-   `frontend-design` 不在 repo、也不在帳號同步的 skill 裡，看起來是桌面 app 內建的。
-   建議：**在 `.claude/settings.json` 加 `"skillOverrides": {"frontend-design": "off"}`**（官方的設定，不刪檔；如果它其實是 plugin 帶的，這個設定不吃，就改成在 claude.ai 關）。
-   ⚠️ 這是改設定，要你說好才做。
-   （段 3：主控查過桌面 app 的清單沒有它，指示不做；但段 3 的 session 清單裡看得到一支沒有前綴的 `frontend-design`，見「中途發現」。）
-
-8. **`claude-md` 與 `writing-for-agents`：都留？**
-   改 `CLAUDE.md` 時兩支都可能跳出來，但分工不同：`claude-md` 決定「一條規則留不留、搬去哪」，`writing-for-agents` 教「怎麼寫得讓 AI 照做」。改 skill 時用 `writing-for-agents` 加官方的 `skill-creator`。
-   建議：**都留。**
-
-9. **`research` 與帳號的 `deep-research`：查資料用 `research`？**
-   `research` 開一個背景 agent、把有出處的結果存成 repo 裡的一個檔；`deep-research` 會開好幾個 subagent 寫一份長報告，比較吃額度。`deep-research` 是帳號那邊來的（`anthropic-skills:deep-research`），repo 的設定關不到它。
-   建議：**查資料預設用 `research`；你明說要「深入研究、寫報告」才用 `deep-research`。**
-
-**不用決定，只是記下來**：上游的 `graphify`（793 行）、`firestore-rules-creation`（600 行）超過官方建議的 500 行。改了每次同步上游都要重做，**不改**。
-
-### 共用的 `~/.claude/CLAUDE.md`（issue 06，段 3）
-
-已經生效，5 條：危險動作先問、被擋就停、說明能畫就畫＋交付前自己看過、太大就拆先說、不要讓電腦長時間滿載。正本與每條的出處在客廳的 `user/`。
-
-10. **「subagent 同時最多兩個」「一次一題」也放進共用的那份？**
-    現在只寫在 kickoff。kickoff 以外的本機 session（例如直接叫 Claude 修一個 bug）不會讀到，可能又一次開很多 subagent。
-    放進去的代價是兩個地方各寫一次（雲端 session 不讀 `~/.claude/`，kickoff 那份不能拿掉）。
-    建議：**放進去**，兩處寫成同一句；改的時候兩處一起改。
-
-11. **「公開 repo 不寫『私人資料夾藏了什麼』的說明」要不要放進共用的那份？**
-    上一個專案你說過不要寫（此地無銀）；但這個專案的 `CLAUDE.md` 有一行「這個專案的私人資料（記憶、交接開場）在 `.local/`」，放進去兩邊會打架。
-    建議：**不放**，這個專案照現在的寫法；你覺得那一行也該拿掉再說。
+（目前沒有）
 
 ## 使用者已經決定的（2026-10-28）
 
 - **Playwright MCP 選 B**：只給雲端用，本機關掉。主控已做：`.claude/settings.local.json`（不進 git）＋ `docs/env-notes.md` 補一節。
 - **桌面 app 也要載入 mods**：加成 issue 14，排在段 4 的 09、10 之後。
 - **合併：「綠了直接合」**（主控轉達，使用者在主控 session 說的）：一輪做完，CI 綠了就直接合，不用等使用者說；kickoff 寫成專案可以另訂的預設。
-  ⚠️ **kickoff 還沒改**：段 2 收到這個決定時，改 skill 的那一步被 auto mode 以「Self-Modification」擋下（由別的 session 轉達的要求去改 skill 的指示）。
-  現在 kickoff 第四段第 4 點仍寫「照專案 `CLAUDE.md`；沒寫就問一次」。要使用者在這個段 2 的 session 或主控直接說「改」，或自己改那一行。
+  kickoff 不用改：它本來就寫「合併照專案 `CLAUDE.md`」，主控把這個決定寫進這個 repo 的 `CLAUDE.md`「合併」一節（`cb6a4c8`）。
 - **共用的 `~/.claude/CLAUDE.md`：「好」**（主控轉達）：要有一份所有專案共用的，客廳 repo 是正本，只放使用者說過、跨專案都成立的。交給 06。
+- **skill 重疊九組（issue 05）與共用 CLAUDE.md 的第 10、11 題：「都照建議」**（使用者在主控 session 說的）。
+  - 1～6、8、9：都留、照建議的用法（一輪改動走 kickoff、不用 `/implement-spec`；段與段之間用 kickoff 的開場，`/handoff` 留給一般對話；審查只跑 `matt-code-review`；查資料預設 `research`）。不刪任何 skill。
+  - 7：主控在這個 repo 的 `.claude/settings.json` 加了 `"skillOverrides": {"frontend-design": "off"}`（官方格式查過：code.claude.com/docs/en/skills「Override skill visibility from settings」；plugin 帶的 skill 不吃這個）。
+  - 10：「一次一題、附建議」「subagent 同時最多兩個」加進共用 CLAUDE.md（客廳 `4ad4390`，已複製到 `~/.claude/CLAUDE.md`，現在 7 條）。
+  - 11：「公開 repo 不寫藏了什麼」不放。
+- **客廳的 GitHub repo**：使用者點頭後主控建好 `b09901017/claude-home`（PRIVATE），4 個 commit 都推上去了。
