@@ -25,6 +25,10 @@ Blocked by: 03, 04
   - `powershell/`：PowerShell profile 裡 `claude1`／`claude2` 那一段
   - `skills/`：留給 07
   - `vm/`：留給 13
+  - `user/CLAUDE.md`（名字可以調整）：**`~/.claude/CLAUDE.md` 的正本**（使用者 2026-10-28 決定要有，主控轉達）。
+    內容只取 `.local/research/old-workflow.md` 第二節標「通用」、而且有使用者原話出處的偏好，寫成歸納過的一行規則；原話不進公開 repo。
+    `~/.claude/CLAUDE.md` 會載入**所有**專案的 session，包括上一個專案：每一條先對過上一個專案的 `CLAUDE.md`，不能跟它矛盾；用 `claude-md` skill 的刪除測試過一遍。
+    已經寫在 kickoff 裡的（一次一題、subagent 上限等）擇一處放，不要兩邊都寫。
 - `tools/pre-push`：推送前確認目標是 PRIVATE，不是就拒絕（自己寫，不從上一個專案複製檔案）；裝進 `.git/hooks/`
 - `package.json`：客廳的工具自己的相依（12 的 `google-auth-library`），不借任何專案的 `node_modules`
 - **專案設定的格式在這裡定一次**（08、09、12 共用，不要各發明一份）：

@@ -96,8 +96,9 @@ research/skill-checklist.md 第一節 C6 與 H、docs/env-notes.md 的「Skills�
 - 推到私人 repo 可能被 auto mode 當成資料外流擋下：被擋就停，記進 HANDOFF，請使用者自己推，不要繞。
 - 07：同步指令用 node（Windows 與 Linux 都能跑），不用 bash；不刪專案獨有的 skill；不在上一個專案跑；不裝進 ~/.claude/skills/。
   版本表從 docs/env-notes.md 搬到客廳時，「重裝時要重做的修改」一起搬，並記 kickoff、claude-md 是自己寫的、正本在客廳。
-- HANDOFF「要使用者決定的」裡跟這段有關的：要不要有共用的 ~/.claude/CLAUDE.md（06 的 settings／README 會碰到）、skill 重疊第 7 組（skillOverrides）。
-  動到時先看 HANDOFF 有沒有記下使用者的答案；沒有就不做，留位置、記進 HANDOFF。
+- 06 也要管共用的 ~/.claude/CLAUDE.md 的正本（使用者已決定，見 HANDOFF「使用者已經決定的」與 issues/06「做法」）：
+  內容只取 .local/research/old-workflow.md 第二節標「通用」、而且有使用者原話出處的偏好；原話留在私人的地方，不進公開 repo。
+- HANDOFF「要使用者決定的」裡跟這段有關的：skill 重疊第 7 組（skillOverrides）。動到時先看 HANDOFF 有沒有記下使用者的答案；沒有就不做，留位置、記進 HANDOFF。
 - 改任何函式或文件裡的字之前，grep 找出所有用到它的地方。中途發現的事記進 HANDOFF，不岔出去修。
 - subagent 一次最多兩個。主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON（10 做完前本來就不能存）。
 - 上一個專案 C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler 只讀不改；它的 .local/references/ 不讀。公開 repo 不帶真名、帳號、email、金鑰。
@@ -123,12 +124,6 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 4 的開
   有範圍限定、不會用錯檔，但多佔 context。主控開段時沒有要讀上一個專案的話，不必加那個資料夾。
 
 ## 要使用者決定的
-
-- **（段 2 的 03 會用到）一輪做完，合併要不要等你說？** 上一個專案：合進測試環境（develop）是做完直接合（你 10/15 說的），進正式（main）要你說。這個專案目前只有 main，合進去就是正式。
-  建議：**CI 綠了先停，等你說「合」再合**，直到這個專案有測試環境為止。
-  （段 2 的 kickoff 沒有替你選：它寫「照專案 `CLAUDE.md` 的合併規定；沒寫就問一次，答案寫進 `CLAUDE.md`」。你回答之後，在這個 repo 的 `CLAUDE.md` 加一行「合併」就好。）
-- **（段 3 的 06、07 會用到）要不要有一份所有專案共用的 `~/.claude/CLAUDE.md`，由客廳管？** 現在不存在。上一個專案的通用偏好（一次一題、subagent 最多兩三個、危險動作先問、不要把電腦跑滿）目前散在它的記憶裡，每個新專案都要再說一次。
-  建議：**要**，只放你說過、跨專案都成立的那幾條，客廳 repo 是正本。
 
 ### skill 重疊（issue 05，段 2）：一組一題
 
@@ -184,3 +179,7 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 4 的開
 
 - **Playwright MCP 選 B**：只給雲端用，本機關掉。主控已做：`.claude/settings.local.json`（不進 git）＋ `docs/env-notes.md` 補一節。
 - **桌面 app 也要載入 mods**：加成 issue 14，排在段 4 的 09、10 之後。
+- **合併：「綠了直接合」**（主控轉達，使用者在主控 session 說的）：一輪做完，CI 綠了就直接合，不用等使用者說；kickoff 寫成專案可以另訂的預設。
+  ⚠️ **kickoff 還沒改**：段 2 收到這個決定時，改 skill 的那一步被 auto mode 以「Self-Modification」擋下（由別的 session 轉達的要求去改 skill 的指示）。
+  現在 kickoff 第四段第 4 點仍寫「照專案 `CLAUDE.md`；沒寫就問一次」。要使用者在這個段 2 的 session 或主控直接說「改」，或自己改那一行。
+- **共用的 `~/.claude/CLAUDE.md`：「好」**（主控轉達）：要有一份所有專案共用的，客廳 repo 是正本，只放使用者說過、跨專案都成立的。交給 06。
