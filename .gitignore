@@ -1,3 +1,9 @@
 
 # graphify 產出的圖（build artifact，不進版控）
 graphify-out/
+
+# 私人資料（clone 自 b09901017/baobuverse-kingdom-local）。這個 repo 是公開的，絕對不能進版控
+.local/
+
+# 每台電腦自己的 Claude Code 設定（例如本機關掉 Playwright MCP），不進版控
+.claude/settings.local.json

@@ -31,7 +31,9 @@ Codebase 裡翻不到的隱性知識。改動環境時請一併更新這裡。
 在本機開 Claude Code 會用本機那份而非 repo 這份。排查「改了 repo 卻沒生效」時先查這個。
 
 **Skill 有 live change detection**：改動 `.claude/skills/` 底下的檔案，當下 session 就會生效，
-不用重開。但**新建**一個原本不存在的頂層 skills 目錄時要重開。MCP server 則一律需要重啟。
+不用重開（只管 `SKILL.md` 的文字）。**新建**一個 session 開始時不存在的頂層 skills 目錄，不用重開，打 `/reload-skills`；
+之後在那個目錄裡改東西，每次都要再打一次 `/reload-skills`（官方 [Skills](https://code.claude.com/docs/en/skills)「Live change detection」，2026-10-28 查）。
+MCP server 則一律需要重啟。
 
 ---
 
@@ -102,33 +104,26 @@ const browser = await chromium.launch({
 `.claude/settings.json`，在未信任的目錄下也會被忽略。每個新的雲端 session 都要跑一次
 `claude` 並接受 workspace trust 對話框。這是刻意的安全設計，不是 bug。
 
+### 本機（Windows）關掉，只給雲端用
+
+**使用者 2026-10-28 的決定**：Playwright MCP 只給雲端 session 用。
+
+- 在 Windows 上它本來就起不來：Claude Code 照腳本第一行的 shebang 去找 `bash`，但 Git Bash 不在 Windows 的 PATH 上
+  （MCP log：「'bash' 不是內部或外部命令」）。腳本本身沒壞，用 Git Bash 直接跑是正常的。
+- 桌面 app 有內建瀏覽器可以開本機的開發伺服器、點畫面、截圖，本機用不到這個 MCP。
+- 所以本機在 `.claude/settings.local.json`（不進 git）寫 `"disabledMcpjsonServers": ["playwright"]`，
+  每次開 session 不會再跳連線失敗。換一台 Windows 電腦要再寫一次。
+- 雲端與 Linux（例如 VM）照 `.mcp.json` 啟動，不受影響。
+
+E2E 測試是另一回事：等開始寫 app 時，像上一個專案一樣裝 `@playwright/test` 跑測試，不靠 MCP。
+
 ---
 
 ## Skills
 
-安裝在 [`.claude/skills/`](../.claude/skills/)，**在 git 裡**。2026-10-28 全部重裝。
-
-| skill | 來源 | 版本 |
-|---|---|---|
-| Matt Pocock 整套（`.claude-plugin/plugin.json` 列出的 27 個） | `mattpocock/skills` | `59db609eb1e18aaf59b63284d0e52255aff0c63c`（v1.3.1） |
-| `graphify` | `Graphify-Labs/graphify`：`graphify/skill.md` 與 `graphify/skills/claude/references/` | `0a8cd4e1e342235fe53e881fb5d591bf0460071f` |
-| `firebase-basics`、`firebase-auth-basics`、`firebase-firestore`、`firestore-rules-creation`、`firebase-security-rules-auditor`、`firebase-hosting-basics` | `firebase/agent-skills` | `629709b2d1193043d5508f6f1f3aa9993021da0f` |
-| `impeccable` 與 `.claude/agents/impeccable-*.md` | `pbakaus/impeccable`，從帳號 plugin 複製 | 4.8.0 |
-| `claude-md` | 自行撰寫 | — |
-| `kickoff` | 從 `baobao-wellness-clinic-scheduler` 改寫成通用版 | — |
-
-上游授權檔放在 [`licenses/`](./licenses/)（`impeccable` 標示 Apache 2.0，plugin 沒附授權檔）。
-
-同步上游時：`git clone` 上游，對照上表的版本 `git diff`，只審查差異，然後更新上表。
-**重裝時要重做以下修改**，上游不會有：
-
-- **`matt-code-review`** 原名 `code-review`，目錄名與 frontmatter 的 `name:` 都改了，
-  避開與內建 `/code-review` 撞名（project 層的同名 skill 會**取代**內建版本）。
-  `ask-matt`、`implement`、`implement-spec`、`tdd` 裡呼叫它的地方也一併改成 `matt-code-review`。
-- **`impeccable` 的 agents** 原本用 `${CLAUDE_PLUGIN_ROOT}`，以一般 skill 安裝時該變數為空，
-  已改寫成 `$(git rev-parse --show-toplevel)/.claude/skills/impeccable`。
-  用 `git rev-parse` 而非相對路徑，因為 agent 的工作目錄不固定。plugin 版的 hooks 沒有複製。
-- **`graphify`** 第一次用時會自己安裝 Python 套件 `graphifyy`。產出的 `graphify-out/` 不進版控。
+安裝在 [`.claude/skills/`](../.claude/skills/)，**在 git 裡**，是**複本**：正本在客廳（私人 repo `claude-home` 的 `skills/`）。
+要哪幾支寫在 [`.claude/project.json`](../.claude/project.json) 的 `skills`；在這個資料夾跑 `node ~/claude-home/tools/sync-skills.mjs` 更新複本。
+**改 skill 改客廳的正本**，直接改這裡的會在下次同步被蓋掉。來源與版本表、重裝時要重做的修改都在客廳的 `skills/README.md`；上游授權檔在 [`licenses/`](./licenses/)。
 
 **帳號的 plugin 會同步進雲端 session**，repo 的 `.claude/settings.json` 關不掉它們
 （`syncClaudeAiPlugins: false` 放在 repo 檔案裡會被忽略）。要在 claude.ai 的設定裡關。
