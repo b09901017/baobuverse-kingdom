@@ -36,12 +36,10 @@
 
 共用 Firebase 專案 `baobu-app`（跟寶寶國王日記同一套帳號），
 但**開在另一個 Firestore database**，跟國王日記完全隔開——
-它已經運行很久，不能被新專案碰到。詳見 [ADR-0002](./docs/adr/0002-separate-firestore-database.md)。
+它已經運行很久，不能被新專案碰到。
 
 ## 文件
 
-- [`CONTEXT.md`](./CONTEXT.md) — 詞彙表。分錄、洗錢、對帳這些詞的精確定義。
-- [`docs/spec.md`](./docs/spec.md) — 完整規格。資料模型、金流規則、所有模組。
-- [`docs/adr/`](./docs/adr/) — 為什麼這樣決定。**包含刻意不做的事。**
-- [`docs/scope.md`](./docs/scope.md) — 工作量評估與 MVP 切法。
-- [`docs/env-notes.md`](./docs/env-notes.md) — 環境的隱性知識。
+- [`docs/plan.md`](./docs/plan.md) — 使用者確認過的決定、階段、還沒決定的事。
+- [`docs/env-notes.md`](./docs/env-notes.md) — 環境的隱性知識、skill 的來源與版本。
+- [`docs/agents/`](./docs/agents/) — 給 AI 的工作慣例：issue 放哪、踩過的坑。
