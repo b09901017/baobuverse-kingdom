@@ -1,6 +1,6 @@
 # 01 儀表板在桌面 app：帳號認錯、版面超出框
 
-Status: todo
+Status: done
 Type: task
 
 ## 使用者要的
@@ -58,3 +58,57 @@ Type: task
 - 桌面 app 的新對話：儀表板最上面是桌面 app 登入的帳號；`mods-data/limits/` 寫到對的檔。
 - 桌面 app 的儀表板「總覽」「帳號」「Context」「花費」「雲端」每一頁都沒有超出框 —— **截圖確認**（使用者的規矩：畫面類的東西交付前自己看過、截圖確認）。
 - VS Code 的畫面與帳號切換照舊（測試）。
+
+## 做完時留下的（2026-10-29）
+
+客廳 commit `b923ca8`（前面還有一個自動同步 `c856baf`，見中途發現 ①）。改的是 `mods/dash` 的 `hooks/register.tsx`、`types/index.d.ts`，加 `tests/desktop.test.tsx`。
+
+### 一、帳號（做法 1、2）
+
+| 開在哪 | 怎麼認「現在的帳號」 | 額度寫進 |
+|---|---|---|
+| 桌面 app（`CLAUDE_CODE_ENTRYPOINT=claude-desktop`） | `CLAUDE_CODE_USER_EMAIL` 對 `accounts.json` 每個資料夾登入的 email；對不到就多一列（key `email:<email>`，名字照 `names`，不能按切換） | `limits/<那個 email>.json` |
+| VS Code、終端機 | 照舊：`CLAUDE_CONFIG_DIR`（`keyForDir`），**就算環境裡也有 `CLAUDE_CODE_USER_EMAIL`** | 照舊 |
+
+- 帳號頁在桌面 app：選「**改字**」不收起來。按鈕寫「在 VS Code 用「X」開新對話」，標籤「新對話」改「VS Code 新對話」，
+  底下兩行：「桌面 app 換帳號：左下角帳號選單 → 登出 → 用另一個帳號登入（一次只能登入一個）。」與「上面的按鈕開的是 VS Code 的新對話（改 VS Code 的設定），桌面 app 的帳號不會變。」
+  按下去之後的訊息與 toast 也帶「在 VS Code」。總覽底下的「新對話會用「X」」在桌面 app 寫「VS Code 新對話會用「X」」。
+- `DashAccounts` 多一格 `isDesktop?: true`（選填，舊的值照讀）。
+
+### 二、版面（做法 3）
+
+原因比主控查到的再多一層：Box 的寬度在桌面 app 是照格數畫的（`bodyColumns` 是用等寬字換算的格數），但 **Text 是比例字**，`━ ┅ █` 比一格寬；
+`TextProps` 雖然有 `mono`，這一版的桌面 app **不收**（`Text prop "mono" is not allowed`，整個面板會被換掉）。另外網頁的 flex 不讓不換行的字縮到比字本身窄。
+
+只在 `surface === 'desktop'`（面板的 render 把 `desk` 掛在元素表上）：
+
+- 用量、5 小時預報、依模型／依專案、帳號頁的量表、Context 那一條、近 14 天：改畫一張 SVG，放在照格數算寬的 Box 裡，比例照百分比算，不看字型。預報那一截是淡色的實線（不是 ┅）。
+- E2E 那一條還是用字畫（既有測試認 `█`）：格數乘 0.6，外面包一層會切的 Box。
+- 卡片 `overflow: hidden`；會縮的格子（量表右邊的說明、模型名、路徑、時間）加 `minWidth: 0`＋`overflow: hidden`；分頁那一行可以換行。
+- 終端機、VS Code：每一頁（總覽、Context、花費、帳號、雲端）× 寬 50／66／80／120 × VS Code／終端機的環境，畫出來的樹跟改之前**逐字相同**（只差每次不同的按鈕 handle 編號；比對用的暫時測試沒進 repo）。
+
+### 三、額度預報（做法 4）：沒有混到帳號，但有兩件事
+
+- 預報的取樣在 limit-guard 自己的 `$.state`（每個對話一份，不跨對話、不跨帳號），取的是**這個對話**的額度讀數，所以兩個帳號的取樣不會混在一起。
+- 「才用幾 % 就說 01:45 用完」的原因是速度的算法：`rate = max(最近 10 分鐘, 最近 30 分鐘)`，而 10 分鐘那段**只要 3 分鐘、漲 1% 就算數**。
+  對話剛開的那幾分鐘（讀一大堆檔、開 subagent）漲得快，就被外推成「每 10 分鐘 +9.3%」。這是 limit-guard 的事，**沒修**，見中途發現 ②。
+
+### 測試
+
+- dash：既有 16 條一條沒改全過，新加 5 條（`tests/desktop.test.tsx`），共 21 pass；新的 3 條在舊程式上會失敗（確認過）。
+- `tsc` 0 錯，`claude plugin validate` 過（警告跟改之前一樣）。
+- 客廳 `mods/` 跟 `~/.claude/mods` 逐檔相同（產生的 `.claude-plugin/types/` 不進版控）。
+- **還沒有截圖**：這個對話載入的是舊版 dash，要開新的桌面 app 對話看。
+
+### 中途發現（沒修，等使用者說）
+
+① 客廳的自動同步（`tools/autosync.mjs`，家裡電腦每個 session 開始／結束都跑）在 00:23 把改到一半的 `~/.claude/mods/dash` commit 並推上去了（`c856baf`）。
+   照設計就是這樣（單向備份），但「改 mods 一個 commit」在家裡電腦上做不到。建議：改 mods 的那一段，把「一個 commit」改成「最後一個 commit 的狀態是完整的」，或 autosync 跳過正在改的 mod（例如 mods 裡有 `.wip` 檔就不備份）。
+
+② limit-guard 的速度：10 分鐘那段只要 3 分鐘的取樣就算，又跟 30 分鐘取大的，對話剛開時容易喊「快用完」。
+   建議：已用的 % 還很低（例如 < 20%）時只看 30 分鐘那段，或 10 分鐘那段至少要 6 分鐘的取樣。改了會影響上一個專案每天看到的提醒，要使用者說。
+
+③ limit-guard 的「其他帳號還有多少」（`otherAccounts`）也是用 `CLAUDE_CONFIG_DIR` 認現在的帳號：在桌面 app 會把預設資料夾的帳號當成「現在的」、把真正在用的那個列成「其他帳號」。
+   建議照 dash 這次的做法（桌面 app 用 `CLAUDE_CODE_USER_EMAIL`）。
+
+④ 舊的錯資料：修好之前，桌面 app 把帳號 A 的額度寫進了帳號 B 的 `limits/<email>.json`。那個檔要等帳號 B 的對話下一次量到額度才會蓋掉；在那之前，帳號頁與 limit-guard 看到的帳號 B 是錯的數字。不用動，等它自己蓋過去就好。
