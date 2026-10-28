@@ -1,6 +1,6 @@
 # 05 37 支 skill 的重疊與衝突（只提建議）
 
-Status: todo
+Status: done
 Type: research
 Blocked by: 02
 
@@ -23,3 +23,12 @@ repo 裡有幾組看起來做同一件事：`grill-me`／`grilling`／`grill-wit
 
 - 每一組都講得出「什麼情況用 A、什麼情況用 B」，或明說它們真的重複？
 - 建議是一題一個、使用者可以只回「照建議」？
+
+## 做完時留下的
+
+- 報告在 [`HANDOFF.md`](../HANDOFF.md)「要使用者決定的」→「skill 重疊（issue 05，段 2）：一組一題」，九組，每組一題、附建議，使用者可以只回「照建議」。
+- 結論：沒有一組該刪。Matt 那些流程型 skill 都是 `disable-model-invocation: true`（description 不進 context，零成本，skill-checklist C1），留著不花任何東西。
+- 真的會搶觸發的只有 `impeccable`／`frontend-design`（兩支模型都能叫、都管 UI 設計，B9）。建議用 `skillOverrides` 關 `frontend-design`（C6），等使用者說好。
+- 比 issue 列的多看了三組：`matt-code-review`／內建 `/code-review`、`claude-md`／`writing-for-agents`、`research`／`deep-research`。
+- 兩支超過 500 行的上游 skill（`graphify`、`firestore-rules-creation`）記成「不改」：改了每次同步上游都要重做。
+- 沒刪、沒改任何 skill。

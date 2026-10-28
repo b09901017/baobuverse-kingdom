@@ -88,6 +88,56 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 3 的開
 - **（段 3 的 06、07 會用到）要不要有一份所有專案共用的 `~/.claude/CLAUDE.md`，由客廳管？** 現在不存在。上一個專案的通用偏好（一次一題、subagent 最多兩三個、危險動作先問、不要把電腦跑滿）目前散在它的記憶裡，每個新專案都要再說一次。
   建議：**要**，只放你說過、跨專案都成立的那幾條，客廳 repo 是正本。
 
+### skill 重疊（issue 05，段 2）：一組一題
+
+先講結論：**沒有一組是真的重複到該刪**，大多是「同一套流程裡不同的一步」。真的會互相搶的只有第 7 組（兩支設計 skill 都會自己跳出來）。
+背景：Matt 那幾支（`grill-me`、`grill-with-docs`、`implement`、`implement-spec`、`handoff`、`to-spec`、`to-tickets`、`wayfinder`、`improve-codebase-architecture`）都設成**只有你打 `/名字` 才會用**，平常不佔任何空間，留著沒有成本。
+
+1. **`grill-me`／`grilling`／`grill-with-docs`：都留，不用動？**
+   三支是同一種「一直問你問題直到想清楚」。`grilling` 是本體；`grill-with-docs` ＝ 本體＋邊談邊寫詞彙表與決定紀錄；`grill-me` ＝ 本體、什麼都不存（給沒有 repo 的時候）。
+   在這個專案裡，你要用的就是 `/grill-with-docs`（`CLAUDE.md` 已寫）。
+   建議：**都留，不用動。**
+
+2. **`implement`／`implement-spec`：都留，但一輪改動不用 `implement-spec`？**
+   `implement` 做一支 issue；`implement-spec` 一次把整份規格交給好幾個平行的 subagent 做。後者會同時開很多 subagent，違反你「最多兩個」的額度規矩。
+   kickoff 的段是一支一支做，用不到它。
+   建議：**都留；一輪改動走 kickoff，不用 `/implement-spec`。**
+
+3. **`codebase-design`／`improve-codebase-architecture`：都留？**
+   不重複：後者是「掃一遍程式碼，找值得重整的地方」，前者是重整時用的詞彙與原則，後者會叫前者。現在還沒有程式碼，兩支都還用不到。
+   建議：**都留。**
+
+4. **`handoff` 與 kickoff 的開場：段與段之間用 kickoff，`/handoff` 留給其他時候？**
+   `/handoff` 把目前的對話寫成一份交接檔（放電腦的暫存資料夾）；kickoff 的開場寫進 `HANDOFF.md`、主控自動開下一段。
+   建議：**一輪改動的段與段之間用 kickoff 的開場；`/handoff` 只在 kickoff 以外、一般對話太長要換新對話時用。**
+
+5. **`to-spec`／`to-tickets`／`wayfinder` 與 kickoff 開 issue：kickoff 照 `to-tickets` 的切法、但不逐支問你？**
+   `to-tickets` 切 issue 的方法（每支是一條從頭到尾做得完的細線、標出誰擋誰）很好，kickoff 第二段已經照它切；
+   但它最後一步是「把清單給你逐支確認」，跟你的常態（subagent 過目、不給你看）衝突，所以 kickoff 跳過那一步。
+   `to-spec` 不用（kickoff 自己寫規格，而且保留你的原話）。`wayfinder` 只在「大方向還一團霧、一個 session 談不完」時用。
+   建議：**照現在 kickoff 寫的；三支都留，你想用時自己打。**
+
+6. **`matt-code-review` 與內建的 `/code-review`：審查段只跑 `matt-code-review`？**
+   `matt-code-review` 看兩件事：有沒有照這個 repo 的規矩、有沒有照 issue 做（會開兩個 subagent）；內建的 `/code-review` 專抓程式錯誤。
+   兩個都跑會多花一倍額度。
+   建議：**審查段只跑 `matt-code-review`；你想多抓 bug 時再另外叫 `/code-review`。**
+
+7. **`impeccable` 與 `frontend-design`：把 `frontend-design` 關掉？**
+   兩支都會在「做畫面、改設計」時自己跳出來，會搶。`docs/plan.md` 已經寫 `impeccable` 取代 `frontend-design`。
+   `frontend-design` 不在 repo、也不在帳號同步的 skill 裡，看起來是桌面 app 內建的。
+   建議：**在 `.claude/settings.json` 加 `"skillOverrides": {"frontend-design": "off"}`**（官方的設定，不刪檔；如果它其實是 plugin 帶的，這個設定不吃，就改成在 claude.ai 關）。
+   ⚠️ 這是改設定，要你說好才做。
+
+8. **`claude-md` 與 `writing-for-agents`：都留？**
+   改 `CLAUDE.md` 時兩支都可能跳出來，但分工不同：`claude-md` 決定「一條規則留不留、搬去哪」，`writing-for-agents` 教「怎麼寫得讓 AI 照做」。改 skill 時用 `writing-for-agents` 加官方的 `skill-creator`。
+   建議：**都留。**
+
+9. **`research` 與帳號的 `deep-research`：查資料用 `research`？**
+   `research` 開一個背景 agent、把有出處的結果存成 repo 裡的一個檔；`deep-research` 會開好幾個 subagent 寫一份長報告，比較吃額度。`deep-research` 是帳號那邊來的（`anthropic-skills:deep-research`），repo 的設定關不到它。
+   建議：**查資料預設用 `research`；你明說要「深入研究、寫報告」才用 `deep-research`。**
+
+**不用決定，只是記下來**：上游的 `graphify`（793 行）、`firestore-rules-creation`（600 行）超過官方建議的 500 行。改了每次同步上游都要重做，**不改**。
+
 ## 使用者已經決定的（2026-10-28）
 
 - **Playwright MCP 選 B**：只給雲端用，本機關掉。主控已做：`.claude/settings.local.json`（不進 git）＋ `docs/env-notes.md` 補一節。
