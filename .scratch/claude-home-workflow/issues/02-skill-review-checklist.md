@@ -1,6 +1,6 @@
 # 02 skill 與 CLAUDE.md 的檢查基準
 
-Status: todo
+Status: done
 Type: research
 Blocked by: —
 
@@ -32,3 +32,10 @@ Blocked by: —
 
 - 每一條都有可點的官方出處，或明確標「資深工程師的判斷，非官方」？
 - 03、04 的作者照這份就能逐條打勾嗎？
+
+## 做完時留下的（2026-10-28，段 1）
+
+- 產出：[`research/skill-checklist.md`](../research/skill-checklist.md)。skill 的清單分 A～H（名字、description、誰能叫、長度與漸進揭露、寫什麼、腳本、評估、分發），CLAUDE.md 的清單 M1～M18，每條標〔官方〕附連結或〔判斷〕。
+- 用 Skill 工具載入了官方 `skill-creator`；查了 Claude Code 的 Skills、Memory、Settings、Hooks、Plugins、Commands、Extend 頁，Agent Skills best practices、Prompting best practices、agentskills.io 的評估頁（查證日期 2026-10-28）。
+- 十一個衝突列在第三節，最要緊的兩個：description 要多強勢（skill-creator 說寫 pushy、Prompting 說強烈語氣會過度觸發 → 起點放軟、用觸發測試量）；`claude-md` 裡「刪掉超過 80% 規則」查不到出處 → 刪。
+- 第四節量了現在 repo 的 skill：`graphify`（793 行）、`firestore-rules-creation`（600 行）超過 500 行，都是上游的，留給 05。
