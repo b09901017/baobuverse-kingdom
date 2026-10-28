@@ -45,6 +45,7 @@ Type: task
 3. **版面**：桌面 app 上每一行都不能超出框。做法自己選（例如桌面 app 另外算寬度、留餘量、`overflow="hidden"`、用 flex 撐開長條）；
    終端機與 VS Code 的畫面一個字都不變（既有的 `pane.test.tsx` 等一條都不改要全過）。
 4. **額度預報**（三）：查清楚寫進「做完時留下的」。是 limit-guard 混到帳號的話**不修**，記成中途發現、附建議，等使用者說。
+5. **輸入框上方那一條**（使用者 10/29 追加：「我還發現為甚麼我儀表板打開了但是輸入框上面還有」）：桌面 app 右邊的儀表板開著時，輸入框上方那一條（AbovePrompt）要讓開；VS Code 與終端機照舊，加測試。
 
 ## 規矩
 
@@ -57,11 +58,12 @@ Type: task
 
 - 桌面 app 的新對話：儀表板最上面是桌面 app 登入的帳號；`mods-data/limits/` 寫到對的檔。
 - 桌面 app 的儀表板「總覽」「帳號」「Context」「花費」「雲端」每一頁都沒有超出框 —— **截圖確認**（使用者的規矩：畫面類的東西交付前自己看過、截圖確認）。
+- 桌面 app 的儀表板開著時，輸入框上方沒有那一條；關掉儀表板，那一條回來 —— 截圖確認。
 - VS Code 的畫面與帳號切換照舊（測試）。
 
 ## 做完時留下的（2026-10-29）
 
-客廳 commit `b923ca8`（前面還有一個自動同步 `c856baf`，見中途發現 ①）。改的是 `mods/dash` 的 `hooks/register.tsx`、`types/index.d.ts`，加 `tests/desktop.test.tsx`。
+客廳 commit `b923ca8`、`5dd5d8a`（輸入框上方那一條，做法 5；前面還有一個自動同步 `c856baf`，見中途發現 ①）。改的是 `mods/dash` 的 `hooks/register.tsx`、`types/index.d.ts`，加 `tests/desktop.test.tsx`。
 
 ### 一、帳號（做法 1、2）
 
@@ -93,9 +95,15 @@ Type: task
 - 「才用幾 % 就說 01:45 用完」的原因是速度的算法：`rate = max(最近 10 分鐘, 最近 30 分鐘)`，而 10 分鐘那段**只要 3 分鐘、漲 1% 就算數**。
   對話剛開的那幾分鐘（讀一大堆檔、開 subagent）漲得快，就被外推成「每 10 分鐘 +9.3%」。這是 limit-guard 的事，**沒修**，見中途發現 ②。
 
+### 四、輸入框上方那一條（做法 5）
+
+- 原因：那一條看 `shownA` 讓開，`shownA` 是 `$.ui.panes()` 裡儀表板的 `isShown`。截圖時面板開在右邊、那一條還在，表示桌面 app 上 `isShown` 沒有變 true（桌面 app 的對話沒有自己的終端機；型別說 `isShown` 是「畫面顯示的那一個」，沒有講桌面 app）。測試裡沒辦法看到真的桌面 app 回什麼，所以**不靠它**。
+- 做法：自己記「面板開著」（`paneOpen`：mod 呼叫 `$.ui.open` 打開儀表板之後記 true ——對話開始、「打開儀表板」、`/dash`；`ui.close` 記 false）。**只在桌面 app**，那一條看到開著就讓開；終端機、VS Code 照舊只看 `shownA`。
+- 注意：關掉儀表板之後那一條回來，靠的是 `ui.close`；測試工具丟不出 `ui.close`，這一點只能截圖確認。
+
 ### 測試
 
-- dash：既有 16 條一條沒改全過，新加 5 條（`tests/desktop.test.tsx`），共 21 pass；新的 3 條在舊程式上會失敗（確認過）。
+- dash：既有 16 條一條沒改全過，新加 7 條（`tests/desktop.test.tsx`），共 23 pass；新的 4 條在舊程式上會失敗（確認過）。
 - `tsc` 0 錯，`claude plugin validate` 過（警告跟改之前一樣）。
 - 客廳 `mods/` 跟 `~/.claude/mods` 逐檔相同（產生的 `.claude-plugin/types/` 不進版控）。
 - **還沒有截圖**：這個對話載入的是舊版 dash，要開新的桌面 app 對話看。
