@@ -15,8 +15,8 @@
 | 4 交接開場分專案、專案同步、guard、桌面 app 載入 mods | 10 → 08 → 09 → 14 | high | ✅ 10/28（中途額度用完，接手的 session 做完 09、14）：10 `254518e`（客廳 `2c6ec10`）、08 `ea91111`（客廳 `d0beb35`）、09 `dcd4ae9`（客廳 `0b44bbd`＋`c1cf8f8`）、14（`~/.claude/settings.json`＋客廳 `3731361`） |
 | 5 VM 多專案 | 12 → 13 | high | ✅ 10/28：12 `a4be610`（客廳 `be89500`）、13（客廳 `d060d20`、`2332772`、`8c968b1`）；VM 已關機 |
 | 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | ✅ 10/28：結果在下面「段 6 審查結果」（照規矩沒修）；測試全過 |
-| 7 收尾 | （第 5 題說修的話）修審查找到的、手動檢查清單、PR、合併、更新 `docs/env-notes.md` | medium；第 5 題要修就 **high** | 🟡 10/28：1～4 做完、推了；**PR 還沒開、還沒合併**（額度用完停下，見「段 7 狀態」） |
-| 7（續） | notify（第 2 題）、PR、合併 | high | 🟡 10/29 主控開 |
+| 7 收尾 | （第 5 題說修的話）修審查找到的、手動檢查清單、PR、合併、更新 `docs/env-notes.md` | medium；第 5 題要修就 **high** | ✅ 10/28 做 1～4；PR 與合併在 7（續）做完 |
+| 7（續） | notify（第 2 題）、PR、合併 | high | ✅ 10/29：notify 客廳 `bb6a588`（已推）；[PR #4](https://github.com/b09901017/baobuverse-kingdom/pull/4) 用 merge commit 合進 `main`（`c4df888`），見「段 7（續）狀態」 |
 
 11 不做（見 issue 裡的理由）。
 
@@ -365,17 +365,31 @@ CLAUDE.md（「合併」）、docs/agents/lessons.md、客廳 C:/Users/DELL/clau
 `claude plugin validate` guard、limit-guard 過（警告只有原本就有的「沒有 author」）；客廳 autosync 12、devbox **18** 全過；`e8f9058` 既有的測試檔一個字沒改；客廳 `mods/` 跟 `~/.claude/mods` 逐檔相同。
 分支對 `origin/main` 沒有衝突（`git merge-tree`）。
 
-**還沒做（下一個接手的照這個做）**：
-1. 開 PR（Skill 叫 `pr`，繁體中文）。PR 說明放「手動檢查清單」：下面「要使用者做的」1～4，加上在終端機跑 `/doctor prompt-audit CLAUDE.md`、`.claude/skills/kickoff`、`.claude/skills/claude-md`（段 2 中途發現）。
-2. 照 `CLAUDE.md`「合併」：沒有 CI，這一輪驗證全過、沒有衝突 → 用 merge commit 合進 `main`。
-3. 這一節的狀態改成 ✅、寫上 PR 連結。
+**當時還沒做的 1～3（開 PR、合併、寫 PR 連結）在段 7（續）做完**，見下一節。
 
 **照第 5 題做，但做法跟建議不同的一處（⑤）**：建議是「看有沒有 `.claude/project.json`」，但既有的 `handoff-dir.test.ts` 裡其他專案的假資料夾沒有 `project.json`，照那個認法有 4 條既有測試不過（既有測試一條都不能改）。
 改成看 worktree 的 `.git` 檔（`gitdir: <主資料夾>/.git/worktrees/<名字>`）：主資料夾是上一個專案就放第一層。上一個專案的行為回到這一輪之前；其他資料夾不變，所以建議裡寫的代價（沒有 `project.json` 的資料夾也放第一層）也沒有了。
 
 **還留著沒做的（這一輪不做）**：⑥ `segmentRule` 多的那段、⑦ 少了 `legacy` 就跳過、Standards 的硬違規與異味（見「段 6 審查結果」，多半第 3 階段一起整理）；第 3 階段（上一個專案改用客廳的工具）；「要使用者決定的」第 1、2 題；「要使用者做的」1～4。
 
+## 段 7（續）狀態（2026-10-29，做完）
+
+| 項 | commit | 驗證 |
+|---|---|---|
+| notify（第 2 題）：桌面 app 開的對話（`CLAUDE_CODE_ENTRYPOINT=claude-desktop`）、最前面是 `claude` 就不跳；VS Code 開的對話照舊；log 多記 `from=` | 客廳 `bb6a588`（已推；`~/.claude/mods/notify` 同一份） | 新測試 `tests/from.test.ts` 3 條先紅後綠；既有 3 條一字不改全過；`claude plugin validate` 過（警告只有原本的「沒有 author」）；真的叫 `toast.ps1`（桌面 app 在最前面）：桌面 app 的對話 `skipped`、VS Code 的對話 `shown`、`NOTIFY_ALWAYS=1` `shown` |
+| PR | [#4](https://github.com/b09901017/baobuverse-kingdom/pull/4) | 說明含手動檢查清單（下面「要使用者做的」1～7） |
+| 合併 | merge commit `c4df888` | 沒有 CI；測試一支一支跑全過：dash 16、e2e-progress 5、guard 22、limit-guard 30、notify **6**、客廳 autosync 12、devbox 18；對 `main` 沒有衝突；repo 與 commit 訊息查客廳 VM 設定的 4 個值：0 筆 |
+
+**跟開場建議不同的一處**：開場建議把「對話是哪裡開的」當成 `toast.ps1` 的第三個參數；但既有測試用「倒數第 1～3 個參數」認內文、標題、腳本，多一個參數既有測試就不過。
+改成 `$.process.run` 的 `env: { NOTIFY_FROM }` 傳（mod API 的 `ProcessRunInit.env`），測試一樣看得到，參數一個都沒多。
+
+**這一節之後的 HANDOFF 改動（就是這次更新）只在分支上**，PR 已經合了，`main` 上的 HANDOFF 停在合併那一版。
+
+**還留著沒做的（這一輪不做）**：審查 ⑥ ⑦、Standards 的硬違規與異味（見「段 6 審查結果」，多半第 3 階段一起整理）；第 3 階段（上一個專案改用客廳的工具）；「要使用者做的」1～7。
+
 ## 中途發現
+
+- **段 7（續）**：notify 的新行為只用「直接叫 `toast.ps1`」與 mod 測試驗過；**這個對話載的是舊版 notify**（mod 開對話時載入），整條路（hook → `toast.ps1`）要開新對話才會走到新版。見「要使用者做的」第 7 項。
 
 - **段 7（第 3 題，主控做的）**：上一個專案自己的 `devbox.mjs home` 會把家裡的程式碼切到 VM 上的分支。VM 從 10/21 之後沒照「出門」接手過，停在舊的 `claude/boot-card-staging-only`，
   所以家裡被從 `claude/availability-sheet-chart-no` 切過去（工作目錄乾淨、沒東西不見）；主控已切回去、跟 GitHub 一致。寫進了 `docs/agents/lessons.md` 第一條。
@@ -433,6 +447,8 @@ CLAUDE.md（「合併」）、docs/agents/lessons.md、客廳 C:/Users/DELL/clau
 4. **手機確認**：答完之後，在手機的 Claude app 找 `baobuverse-kingdom@devbox`（帳號 1、帳號 2 各一個，登哪個帳號看到哪一個），點進去試一句話。
 5. **VS Code 也載入 guard**（第 1 題，使用者 10/29 說要）：VS Code 的設定檔 `settings.json` 裡 `claudeCode.environmentVariables` 的 `CLAUDE_CODE_PLUGIN_DIRS`，
    值的最後加上 `;C:\Users\DELL\.claude\mods\guard`（前面是 dash、e2e-progress、limit-guard、notify）→ 存檔 → 開一個新的 VS Code 對話 → 照第 2 項試一次 guard。
+6. **終端機跑 `/doctor prompt-audit`**（段 2 中途發現）：`CLAUDE.md`、`.claude/skills/kickoff`、`.claude/skills/claude-md`。
+7. **notify**（段 7（續））：開一個新的桌面 app 對話，跑一輪超過 1 分鐘、桌面 app 留在最前面 → 不跳；切到別的視窗 → 會跳。`~/.claude/mods-data/notify.log` 最後幾行有 `from=claude-desktop`。
 
 ## 要使用者決定的
 
