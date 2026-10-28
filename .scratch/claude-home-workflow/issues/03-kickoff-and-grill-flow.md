@@ -1,6 +1,6 @@
 # 03 重新定位並優化 kickoff；早期討論走 grill-with-docs
 
-Status: todo
+Status: done
 Type: task
 Blocked by: 01, 02
 
@@ -38,3 +38,42 @@ Blocked by: 01, 02
 - 新 session 只拿到開場，能不能不問任何問題就接著做？
 - 02 清單每一條都打勾，或寫了為什麼不適用？
 - 通用版裡沒有 develop／staging／真名掃描這類上一個專案限定的字？
+
+## 做完時留下的
+
+`.claude/skills/kickoff/SKILL.md` 改寫（125 → 166 行，description 579 → 322 字）。舊版快照在段 2 的 scratchpad；評估在 [`research/trigger-test/results.md`](../research/trigger-test/results.md)。
+
+**兩條路**
+
+- kickoff 的 description 改成「地基打好之後的一輪改動」，拿掉「一定要」「就算只說幫我想想…也一樣」，並指路：決策還沒定 → `/grill-with-docs`。正文開頭一張「兩條路」表。
+- `grill-with-docs` 沒改：它是 Matt 的上游檔，而且 `disable-model-invocation: true` —— 模型叫不到它，它的 description 也不進 context，改了沒用。
+  改成由 kickoff 的 description 與 `CLAUDE.md`（issue 04）指路：模型自己判斷時用 Skill 叫 `grilling`＋`domain-modeling`（就是 `grill-with-docs` 的內容）。
+
+**補回盤點第四節掉的**：開場與「整輪都適用的規矩」都有「改之前 grep／graphify 找所有呼叫端與畫面上的字」「使用者說要修的中途發現，修前再 grep 牽連、照一支 issue 的規矩」「類似的問題也記」；
+另外補回：過目的 subagent 只回報、主控改；使用者說要逐支看時先給清單（理由）；使用者給過的參考也算紀錄；想清楚順手、不照字面；`git fetch` 的理由；手動清單的第二種寫壞法；審查很吃額度、大的一輪不要接在實作後面跑；開場的「先讀」具體到哪幾節、「先問的題目」「審查要特別看的」。
+
+**使用者的常態**：第一段結束不再問「issue 要不要逐支看」，第二段結束不再停；只有真的要使用者決定的才問，一次一題附建議。
+
+**主控自動開下一段**：第三段寫主控用 `mcp__ccd_session__start_session`（`user_asked`、`fresh`、開場全文、`effort`、共用 checkout）開段；段做完，主控自己看 commit 與 HANDOFF，擋住下一段的先問、不擋的留著問，再開下一段；段自己不開；開不了就貼給使用者。
+
+**跟 limit-guard 不重複**：用 `start_session` 開了的段不存 `~/.claude/mods-data/handoffs/` 的 JSON；只有「開不了、改成給使用者貼」與「額度快用完、中途收尾要接著做同一段」兩種情況照 limit-guard 存。開場模板也寫進這句，所以段的 session 不會照 limit-guard 的系統提示自己存。
+
+**Matt 的 skill**：issue 的切法指到 `to-tickets` 第 3 步（它是 `disable-model-invocation`，所以用檔案路徑指，不用 Skill 叫；C5），跳過它「給使用者逐支確認」那步；審查叫 `matt-code-review`；PR 內文用 `pr`。
+
+**合併（待使用者決定）**：skill 寫「照專案 `CLAUDE.md` 的合併規定；沒寫就 CI 綠了問一次，答案寫進專案的 `CLAUDE.md`」，沒有替使用者選。
+
+**專案限定的**：develop／staging／真名掃描都不在通用版；基底分支、驗證指令、合併規定、推之前要掃什麼、手動驗收環境寫成「看專案的 `CLAUDE.md`」。
+
+**02 清單**
+
+- A1～A6 ✓（名字 `kickoff`、frontmatter 第一行）。B1～B5、B8、B9、B11 ✓：說做什麼與何時用、使用者會講的字、322 字、沒有命令句與強調字、指路到 grill-with-docs。B6：同義觸發詞收掉（「先規劃不要動 code」「幫我想想」）。
+- **C1 刻意不設 `disable-model-invocation`**：它有副作用（開 session、commit、合併），官方建議這種流程關掉模型呼叫；但使用者的常態是用一般的話（「這一輪要加…」）叫它，判準也要它自己觸發。有副作用的那幾步各自有閘門（合併照專案規定或先問）。
+- C5 ✓。D1 ✓（166 行）。D2 ✓（只指一層：`to-tickets`、`issue-tracker.md`、`lessons.md`）。D4 ✓。D6、D7 ✓：最上面一節是整輪都要記著的常駐規矩（compaction 後只留前 5,000 token）。D8：沒有一定要硬擋的，不加 hook。D9、D10 ✓（開場與交付是編號清單）。
+- E1～E7 ✓（理由寫在會改變行為的地方；沒有日期；用詞統一成「主控」「段」）。E11 ✓。E12 ✓（MCP 工具寫全名）。E13 ✓（grep 過，沒有名字與帳號）。
+- G3 ✓、G6 △、G7 ✓：見 results.md。真的用 `claude -p` 量觸發沒跑成（CLI 登入過期），腳本留在 `research/trigger-test/run_trig.py`。G8：只測 Opus（衝突 7）。G9 沒量。**G10、G11（`/doctor prompt-audit`）沒跑**：這個 session 叫不到 CLI 的指令，記進 HANDOFF。
+
+**判準**
+
+- 「我們來討論一下記帳的資料要怎麼存」→ 新版走 `grilling`＋`domain-modeling`；舊版走 kickoff。
+- 「這一輪要加預算功能和固定支出」→ 走 kickoff；情境題裡新版不問 issue，直接開段。
+- 新 session 只拿開場能不能不問就做：開場模板有 7 項，情境題新版的開場照著寫出來。真的段 session 在段 3 會驗到（段 3 的開場就照這個模板寫）。
