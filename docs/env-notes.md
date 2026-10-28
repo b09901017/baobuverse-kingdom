@@ -31,7 +31,9 @@ Codebase 裡翻不到的隱性知識。改動環境時請一併更新這裡。
 在本機開 Claude Code 會用本機那份而非 repo 這份。排查「改了 repo 卻沒生效」時先查這個。
 
 **Skill 有 live change detection**：改動 `.claude/skills/` 底下的檔案，當下 session 就會生效，
-不用重開。但**新建**一個原本不存在的頂層 skills 目錄時要重開。MCP server 則一律需要重啟。
+不用重開（只管 `SKILL.md` 的文字）。**新建**一個 session 開始時不存在的頂層 skills 目錄，不用重開，打 `/reload-skills`；
+之後在那個目錄裡改東西，每次都要再打一次 `/reload-skills`（官方 [Skills](https://code.claude.com/docs/en/skills)「Live change detection」，2026-10-28 查）。
+MCP server 則一律需要重啟。
 
 ---
 
