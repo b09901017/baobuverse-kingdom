@@ -20,6 +20,12 @@
 - 日記不是一張表，是當天所有事件的查詢結果（README）。
 - **絕對不寫入**國王日記：`b09901017/baobu_money_track` 的資料，以及 `baobu-app` 的預設 Firestore database。
 
+## 用哪個流程
+
+- 決策還沒定、在談東西該怎麼設計 → `/grill-with-docs`（自己判斷要用時，用 Skill 叫 `grilling` 與 `domain-modeling`）。
+- 地基打好之後一輪一輪加功能、改規則 → `kickoff` skill。
+- 一個 bug、UI 微調、文案 → 直接做。
+
 ## Agent skills
 
 ### Issue tracker
@@ -36,6 +42,6 @@ Issue 以 Markdown 放在 `.scratch/<slug>/`，不用 GitHub Issues。見 `docs/
 
 ## 環境
 
-- skill 放 `.claude/skills/` 並 commit。雲端 session 不讀 `~/.claude/skills/`。來源與版本見 `docs/env-notes.md`。
+- skill 放 `.claude/skills/` 並 commit：雲端 session 不讀 `~/.claude/skills/`。skill 的來源與版本、Playwright 與 MCP 的坑見 `docs/env-notes.md`。
+- 東西分三層：所有專案共用的工具在「客廳」私人 repo；這個專案的私人資料（記憶、交接開場）在 `.local/`（gitignore，另一個私人 repo）；登入備份與金鑰不進任何 repo。
 - 之前的 session 一再犯的坑在 `docs/agents/lessons.md`，動工前掃一遍。
-- Playwright 的瀏覽器路徑有陷阱，見 `docs/env-notes.md`。
