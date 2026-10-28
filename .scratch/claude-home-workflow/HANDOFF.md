@@ -12,8 +12,8 @@
 | 1 盤點與檢查基準 | 01、02 | high | ✅ 10/28（01：私人 repo `20f9eb9`，已推；02：`7bfd180`） |
 | 2 kickoff、CLAUDE.md、skill 重疊 | 03、04、05 | xhigh | ✅ 10/28（03：`435506f`；04：`3e141d3`；05：`c0cd4fe`） |
 | 3 客廳 repo 與 skill 正本 | 06、07 | high | ✅ 10/28（06：`63f4a65`；07：`9f1fe71`；客廳 GitHub repo 使用者點頭後主控建好、PRIVATE、已推；共用 CLAUDE.md 加兩條 `4ad4390`） |
-| 4 交接開場分專案、專案同步、guard、桌面 app 載入 mods | 10 → 08 → 09 → 14 | high | ⏸ 額度用完中斷（10/28）：10 ✅（`254518e`，客廳 `2c6ec10`）、08 ✅（`ea91111`，客廳 `d0beb35`）；09 做一半、14 沒開始，見下面「段 4 停在哪」 |
-| 5 VM 多專案 | 12 → 13 | high | 等 4 |
+| 4 交接開場分專案、專案同步、guard、桌面 app 載入 mods | 10 → 08 → 09 → 14 | high | ✅ 10/28（中途額度用完，接手的 session 做完 09、14）：10 `254518e`（客廳 `2c6ec10`）、08 `ea91111`（客廳 `d0beb35`）、09 `dcd4ae9`（客廳 `0b44bbd`＋`c1cf8f8`）、14（`~/.claude/settings.json`＋客廳 `3731361`） |
+| 5 VM 多專案 | 12 → 13 | high | 可以開始（開場在下面） |
 | 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | 等 5 |
 | 7 收尾 | 手動檢查清單、PR、合併、更新 `docs/env-notes.md` | medium | 等 6 |
 
@@ -138,17 +138,48 @@ spec.md「談定的策略」（特別是「上一個專案一律不能壞」的�
 HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 5 的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪。
 ```
 
-## 段 4 停在哪（額度用完，10/28）
+## 段 5 的開場
 
-- **09 做一半**：`~/.claude/mods/guard/hooks/classify.ts`、`register.ts` 已改（**沒 commit、還沒複製進客廳**）：
-  `rulesFrom(.firebaserc, .claude/project.json)`；沒有 `project.json` 的專案（上一個專案）＝ `LEGACY`，判斷跟以前一樣；
-  有的專案：`.firebaserc` default 不是 staging 時認不出的 firebase 寫入要問、npm 名稱與「推 main＝部署」不套用、新的 `neverWrite` 風險（firebase CLI／gcloud firestore／REST／腳本／`git push`／gh 寫入，`git push origin` 會問 `git remote get-url`）。
-  **既有 10 條測試不改全過、`tsc` 0 錯**。還沒做：新測試（用上一個專案 `.firebaserc` 的複本跑舊案例走 `rulesFrom` 那條路；`firebase deploy --project baobu-app`、對 `baobu-app` `(default)` 的 REST 寫入、`git push` 到 `baobu_money_track`）、這個 repo `.claude/project.json` 加 `neverWrite`、複製進客廳＋commit＋推、issue 09 收尾。
-- **14 沒開始**（`plugin-authoring` 已讀過：桌面 app 用 `CLAUDE_CODE_PLUGIN_DIRS` 或 `--plugin-dir` 載入）。
-- 段 5 的開場還沒寫：下一段先接完段 4 的 09、14，再寫段 5 的開場。
+建議 effort：**high**（要連 VM、改 dash，判斷多；不到 xhigh）。
+
+```
+這一輪在建「客廳」：跨專案共用的工作流。分支 claude/claude-home-workflow（已經在這個 checkout 上）。
+段 1～4 做完了。段 4：10 交接開場分專案（limit-guard，客廳 2c6ec10）、08 專案私人資料同步（客廳 tools/autosync.mjs，d0beb35）、
+09 guard 讀專案設定（客廳 0b44bbd＋c1cf8f8，這個 repo 的 .claude/project.json 有 neverWrite）、14 桌面 app 載入 mods（~/.claude/settings.json 的 env.CLAUDE_CODE_PLUGIN_DIRS，客廳 3731361）。
+這是第 5 段：做 issue 12（客廳的通用 devbox.mjs、dash 的雲端分頁照專案叫）→ 13（VM 上加這個專案），照這個順序。不做段 6 以後（審查、收尾）。
+
+先讀：.scratch/claude-home-workflow/HANDOFF.md 的「每一段共同的規矩」「中途發現」「要使用者決定的」「使用者已經決定的」、
+spec.md「談定的策略」（「上一個專案一律不能壞」的三個階段、mods 跨機器的搬運照舊由上一個專案的 .local 負責）、issues/12、13 全文、
+issues/08、09、14 底下的「做完時留下的」、客廳的 README.md（「mods 怎麼載入」「自動同步」）與 docs/project-config.md（vm 的私人欄位格式只在那裡定）、
+上一個專案記憶 cloud-vm-devbox-2026-10-21.md（~/.claude/projects/ 底下上一個專案的 memory/，唯讀）、CLAUDE.md、docs/agents/lessons.md。
+
+要特別注意：
+- 08 只做了「這台 → repo」：VM 接手要的反方向（repo → VM 的 ~/.claude：這個專案的記憶與 handoffs/baobuverse-kingdom/）交給 12、13。
+  不要讓客廳寫回 ~/.claude/mods（mods 的搬運照舊是上一個專案 .local 的事）。
+- 12：上一個專案的 devbox.mjs 一個字都不改，VM 上它那一份照舊叫它；出門／回家要涵蓋 VM 上每一個專案。dash 改的是 ~/.claude/mods（上一個專案每天在用）：
+  既有測試一條都不改就要全過、新行為加新測試、tsc 0 錯、claude plugin validate 過，改完複製進客廳、commit、推。
+  dash 現在也在桌面 app 與終端機載入（14）：「在 VM 上」的判斷要改成看平台（issue 12），桌面 app 的畫面也要想到。
+- 13：開 VM 會花錢 —— 使用者的共用規矩「花錢先問」：開機前先問一題（附建議），用完一定關機。連不上（Tailscale 沒開等）就停，寫進 HANDOFF。
+  不改 VM 上現有的檔案、不改 fstab、不替使用者答 workspace trust、不放金鑰或 ADC 到 VM；關機前照 13 的做法處理 devbox-presync。
+- VM 的 host、GCP 專案、zone、路徑是私人欄位：放客廳 vm/ 或 .local/，不進公開 repo。
+- 客廳的自動同步（session 開始與結束）會把 ~/.claude/mods 正在改、還沒 commit 的檔案先備份成「自動同步」commit（段 4 的 09 就這樣被拆成兩個 commit）。知道就好；自己改完照樣明確 commit。
+- 推到私人 repo 或 gh 動作被 auto mode 擋：停，寫進 HANDOFF，請使用者做，不要繞。
+- 改任何函式或文件裡的字之前，grep 找出所有用到它的地方。中途發現的事記進 HANDOFF，不岔出去修。
+- subagent 一次最多兩個。主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON。
+- 上一個專案 C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler 的檔案只讀不改（~/.claude/mods 照 issue 改，但它的行為必須完全一樣）；它的 .local/references/ 不讀。公開 repo 不帶真名、帳號、email、金鑰。
+
+做完要交：每支一個 commit（這個 repo 的推到 origin claude/claude-home-workflow；客廳的推到它自己的 repo）、Status: done、issue 底下「做完時留下的」、
+HANDOFF 更新（狀態、中途發現、要使用者決定的、要使用者做的、VM 的 free -h）、段 6 的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪。
+```
 
 ## 中途發現
 
+- **段 4（09）**：客廳的自動同步（SessionStart／SessionEnd）把 `~/.claude/mods` 裡**還沒做完、沒 commit 的改動**也備份進客廳（09 的前半在 `0b44bbd`「自動同步」，後半在 `c1cf8f8`）。單向備份、不影響審查基準 `e8f9058`，但客廳的 commit 會有半成品。段 6 審查看整段 diff 就好。
+- **段 4（09）**：寫測試時發現的洞（已在 09 修，只對有 `project.json` 的專案）：`firebase deploy --project <不是正式站也不是 staging 的 id>` 以前一律當 staging。
+  **上一個專案照舊**（為了行為完全一樣）：在它那邊打錯專案 id 也不會問。第 3 階段（上一個專案改用客廳的工具）時可以考慮一起收緊。
+- **段 4（14）**：**VS Code 的 `CLAUDE_CODE_PLUGIN_DIRS` 本來就沒有 guard**（只有 dash、e2e-progress、limit-guard、notify）。上一個專案記憶寫「新對話要她把 guard 加進 VS Code」，看起來一直沒加，所以 guard 到現在沒在 VS Code 擋過東西。見「要使用者決定的」第 1 題。
+- **段 4（14）**：dash 帳號頁的「用 X 開新對話」改的是 VS Code 的 `CLAUDE_CONFIG_DIR`、開的是 VS Code 的新對話。在桌面 app 按它不會換桌面 app 的帳號（還會去改 VS Code 的設定）。不在這一輪；段 7 收尾時記進客廳 README 或之後再做。
+- **段 4（14）**：桌面 app 的對話不會因為改了 mod 的檔案就自動重載（要開新對話）；要自動重載，在 `~/.claude/settings.json` 的 `env` 加 `CLAUDE_CODE_PLUGIN_DIR_WATCH=1`（客廳 README 有寫）。沒加。
 - **段 4**：上一個專案的 `autosync.mjs --dry-run` 其實會把記憶與 mods 抄進它的 `.local` 工作目錄，所以 10 的判準改用它的 `sync-claude.mjs` 複本在暫存資料夾驗。
 - **段 4**：`tools/autosync.mjs` 只做「這台 → repo」；VM 接手的反方向（repo → 這台）留給 12、13。
 
@@ -175,11 +206,19 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 5 的開
 
 ## 要使用者做的
 
-（目前沒有。段 3 的「建客廳的 GitHub repo」使用者在主控 session 點頭後，主控建好、確認 PRIVATE、推上去了。）
+1. **在桌面 app 看 mods 有沒有載入**（段 4，issue 14）：在 Claude 桌面 app 的 Code 分頁，對這個專案資料夾**開一個新對話**（舊的對話不會載入）。
+   看得到儀表板（右邊的面板或輸入框上面那一條）就是成功。看不到的話，請 Claude 跑 `claude plugin list`，把結果貼給它。
+2. **在同一個新對話試 guard**：請 Claude 跑下面這一行（沒有登入，就算放行也寫不進去）：
+   `curl -X PATCH "https://firestore.googleapis.com/v1/projects/baobu-app/databases/(default)/documents/guard-test/x" -d "{}"`
+   應該跳出「Claude 要寫絕對不能寫的地方，要讓它做嗎？」的框 → 按「不要」。
 
 ## 要使用者決定的
 
-（目前沒有）
+1. **VS Code 要不要也載入 guard？**（段 4 發現：VS Code 的清單裡本來就沒有它）
+   建議：**要**。上一個專案記憶本來就寫要加；加了之後上一個專案在 VS Code 寫正式站、刪檔、留言之前會跳框問（就是做 guard 的目的）。
+   做法（使用者自己做，Claude 不改 VS Code 設定）：VS Code 設定 `claudeCode.environmentVariables` 裡 `CLAUDE_CODE_PLUGIN_DIRS` 的值最後加上 `;C:\Users\DELL\.claude\mods\guard`，開新對話生效。
+2. **notify 在桌面 app 最前面時要不要也不跳？**（現在只有 VS Code 在最前面時不跳，桌面 app 自己也有通知，可能重複）
+   建議：**要**，在 `~/.claude/mods/notify/scripts/toast.ps1` 的判斷加上桌面 app 的程式名字；VS Code 的行為不變。使用者說好再做（改的是上一個專案每天在用的 mod，照 09 的規矩加測試、複製進客廳）。
 
 ## 使用者已經決定的（2026-10-28）
 
