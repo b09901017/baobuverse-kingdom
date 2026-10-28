@@ -16,6 +16,7 @@
 | 5 VM 多專案 | 12 → 13 | high | ✅ 10/28：12 `a4be610`（客廳 `be89500`）、13（客廳 `d060d20`、`2332772`、`8c968b1`）；VM 已關機 |
 | 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | ✅ 10/28：結果在下面「段 6 審查結果」（照規矩沒修）；測試全過 |
 | 7 收尾 | （第 5 題說修的話）修審查找到的、手動檢查清單、PR、合併、更新 `docs/env-notes.md` | medium；第 5 題要修就 **high** | 🟡 10/28：1～4 做完、推了；**PR 還沒開、還沒合併**（額度用完停下，見「段 7 狀態」） |
+| 7（續） | notify（第 2 題）、PR、合併 | high | 🟡 10/29 主控開 |
 
 11 不做（見 issue 裡的理由）。
 
@@ -242,6 +243,45 @@ spec.md、CLAUDE.md（「合併」）、docs/agents/lessons.md、docs/env-notes.
 最後回覆用繁體中文簡短說做了什麼、PR 連結、還留著什麼。
 ```
 
+## 段 7（續）的開場
+
+建議 effort：**high**（要改上一個專案每天在用的 notify）。
+
+```
+這一輪在建「客廳」：跨專案共用的工作流。分支 claude/claude-home-workflow（已經在這個 checkout 上）。
+段 1～6 做完；段 7 做了 1～4（第 4 題佔位字、審查 ②～⑤ 修好、env-notes、客廳 README、lessons），額度用完停在開 PR 之前，見 HANDOFF「段 7 狀態」。
+這是段 7（續）：先做 notify（第 2 題，使用者 10/29 說「要」），再開 PR、合併、更新 HANDOFF。
+
+先讀：.scratch/claude-home-workflow/HANDOFF.md 的「每一段共同的規矩」「段 7 狀態」「要使用者做的」「使用者已經決定的」（第 1、2 題）、
+CLAUDE.md（「合併」）、docs/agents/lessons.md、客廳 C:/Users/DELL/claude-home 的 README.md。
+
+要做的，照這個順序：
+1. notify（~/.claude/mods/notify，上一個專案每天在用）：桌面 app 在最前面時，桌面 app 開的對話不跳通知。
+   - 現在：scripts/toast.ps1 只看最前面的程式是不是 `Code`（VS Code），是就不跳（NOTIFY_ALWAYS=1 例外）。
+   - 要的：多一個條件 —— 對話是桌面 app 開的（環境變數 CLAUDE_CODE_ENTRYPOINT 是 claude-desktop；VS Code 是 claude-vscode），
+     而且最前面的程式是 `claude`（桌面 app 的 claude.exe；~/.claude/mods-data/notify.log 的 front= 欄看得到這個名字）就不跳。
+   - VS Code 開的對話一個字都不變：最前面是 VS Code 照舊不跳；桌面 app 在最前面時照舊跳（桌面 app 不會替 VS Code 的對話通知）。
+     桌面 app 開的對話在 VS Code 最前面時也照舊不跳（現在就這樣，這一輪不動）。
+   - 對話是哪裡開的：建議在 register.ts 用 $.env.get 讀、當成 toast.ps1 的第三個參數傳（測試看得到參數）；log 那一行多記是哪裡開的。
+   - 規矩照 09：既有 3 條測試一字不改要全過、新行為加新測試、`claude plugin validate` 過（notify 沒有 tsconfig，tsc 不跑）。
+     toast.ps1 照它原本的註解只寫 ASCII（PowerShell 5.1 把沒有 BOM 的檔當 ANSI）。
+   - 不要只靠測試：在這個對話裡叫一次 toast.ps1（桌面 app 在最前面），notify.log 最後一行應該是 skipped；再用 NOTIFY_ALWAYS=1 或 VS Code 的參數確認照樣會跳。
+   - 改完複製進客廳 mods/notify、一個 commit、推客廳；客廳 mods/ 跟 ~/.claude/mods 逐檔相同。
+2. 開 PR（Skill 叫 pr，繁體中文）。PR 說明放「手動檢查清單」：HANDOFF「要使用者做的」1～5，加上在終端機跑 /doctor prompt-audit（CLAUDE.md、.claude/skills/kickoff、.claude/skills/claude-md）。
+   客廳是私人 repo：PR 只寫客廳的 commit 編號與一句話。
+3. 照 CLAUDE.md「合併」：沒有 CI，這一輪驗證全過、沒有衝突 → 用 merge commit 合進 main。
+4. HANDOFF：段 7、7（續）改 ✅，寫 PR 連結、notify 的客廳 commit、還留著沒做的；commit、推。
+
+要特別注意：
+- 測試一支一支跑，不要平行全開。段 7 的基準：dash 16、e2e-progress 5、guard 22、limit-guard 30、notify 3（加了會多）；客廳 autosync 12、devbox 18（寫檔名跑，不要 node --test tools/）。
+- 公開 repo（PR、commit 訊息也算）不帶真名、帳號、email、金鑰、VM host／GCP id。開 PR 前 grep 一次客廳 vm/devbox.json 裡的值（不要把值印出來）。
+- 不開 VM。改任何函式或文件裡的字之前，grep 找出所有用到它的地方。中途發現的事記進 HANDOFF，不岔出去修。
+- subagent 一次最多兩個。主控會收尾：不要自己開 session，也不要存 limit-guard 的開場 JSON。
+- 上一個專案 C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler 的檔案只讀不改（~/.claude/mods/notify 照上面改，VS Code 的行為必須完全一樣）；它的 .local/references/ 不讀。
+
+做完要交：notify 一個客廳 commit（推）、PR 合進 main、HANDOFF 更新（推）。最後回覆用繁體中文簡短說做了什麼、PR 連結、還留著什麼。
+```
+
 ## 段 6 審查結果（2026-10-28）
 
 `matt-code-review` 兩軸（Standards、Spec），兩個 repo 一起審：這個 repo `main...claude/claude-home-workflow`、客廳 `e8f9058..8c968b1`（客廳的 `skills/`、`agents/`、`licenses/` 是上游複本，只確認跟這裡一致）。
@@ -391,6 +431,8 @@ spec.md、CLAUDE.md（「合併」）、docs/agents/lessons.md、docs/env-notes.
    打 `tmux -L rc1-baobuverse-kingdom attach` → 看清楚提問 → 按 `y` → 按 `Ctrl-b` 再按 `d` 離開；再打 `tmux -L rc2-baobuverse-kingdom attach` 同樣一次。
    （提問會列出這個資料夾的 hook 與 playwright MCP。）
 4. **手機確認**：答完之後，在手機的 Claude app 找 `baobuverse-kingdom@devbox`（帳號 1、帳號 2 各一個，登哪個帳號看到哪一個），點進去試一句話。
+5. **VS Code 也載入 guard**（第 1 題，使用者 10/29 說要）：VS Code 的設定檔 `settings.json` 裡 `claudeCode.environmentVariables` 的 `CLAUDE_CODE_PLUGIN_DIRS`，
+   值的最後加上 `;C:\Users\DELL\.claude\mods\guard`（前面是 dash、e2e-progress、limit-guard、notify）→ 存檔 → 開一個新的 VS Code 對話 → 照第 2 項試一次 guard。
 
 ## 要使用者決定的
 
@@ -419,9 +461,12 @@ spec.md、CLAUDE.md（「合併」）、docs/agents/lessons.md、docs/env-notes.
    - ⑦ 少了 `legacy` 就跳過：現在的設定有這一格。
    - Standards 的硬違規與異味：多半是第 3 階段（上一個專案改用客廳的工具）時一起整理。
 
-（上面第 3～5 題已經決定、做完，見下面與「段 7 狀態」；還沒回答的是第 1、2 題。）
+（上面五題都已經決定，見下面。）
 
 ## 使用者已經決定的（2026-10-28）
+
+- **第 1 題：「要」**（2026-10-29，使用者在主控 session 說的）：VS Code 也載入 guard，使用者自己改 VS Code 設定（「要使用者做的」第 5 項）。
+- **第 2 題：「要」**（2026-10-29，同上）：notify 在桌面 app 最前面時不跳，VS Code 的行為不變。交給段 7（續）。
 
 - **第 3、4、5 題：「都照建議」／第 3 題「照建議對齊」**（使用者在主控 session 說的）。
   - 第 3 題：**主控做完**：`.local` 與 mods 先確認家裡跟 GitHub 一致 → 開 VM → VM 那份 `reset --hard origin/main`（VM 獨有的 6 個 commit 只動 `vm-state.txt`）→ 在 VM 跑上一個專案的 `sync-claude.mjs --restore` → 用上一個專案自己的 `devbox.mjs home` 關機、顯示「接好了」。兩邊都沒分岔、VM 關著、家裡 mods 是新版。副作用見「中途發現」段 7。
