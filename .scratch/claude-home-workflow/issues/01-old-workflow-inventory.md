@@ -1,6 +1,6 @@
 # 01 盤點上一個專案實際怎麼工作
 
-Status: todo
+Status: done
 Type: research
 Blocked by: —
 
@@ -41,3 +41,10 @@ kickoff、claude-md 這兩支 skill 是從上一個專案搬過來的通用版�
 - 03～05 的作者只讀這一份，就知道使用者的常態流程，不用再翻上一個專案嗎？
 - 每一條偏好都有出處，沒有「我覺得她應該想要」？
 - 產出在 `.local/`（`git -C .local status` 看得到、`git status` 看不到）？這一段 commit 進公開 repo 的檔案沒有引用記憶原文？
+
+## 做完時留下的（2026-10-28，段 1）
+
+- 產出在私人 repo：`.local/research/old-workflow.md`（`baobuverse-kingdom-local` 的 `20f9eb9`，已推）。公開 repo 沒有放任何原話。
+- 五節：一輪工作的十五個步驟（每步附出處）、通用與專案限定的偏好（原話＋日期）、上一個 CLAUDE.md 逐節分類、`kickoff`／`claude-md` 新舊版的差異、上一個專案還有而這裡沒有的零件。
+- 給 03 最重要的：改寫成通用版時**掉了**「開場提醒 grep／graphify 找所有呼叫端」「她說要修的中途發現，修前再 grep 牽連」，兩條都是使用者確認常態時明確補的。另有一題要問她：合併要不要等她說（新舊版意思不同，見盤點第四節）。
+- 給 04 最重要的：上一個 CLAUDE.md 約 165 KB，95% 是一張「容易漏掉的連動」表，是 kickoff「新的連動補進 CLAUDE.md」那一條養大的、只加不減。
