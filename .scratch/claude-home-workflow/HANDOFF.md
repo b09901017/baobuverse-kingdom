@@ -14,8 +14,8 @@
 | 3 客廳 repo 與 skill 正本 | 06、07 | high | ✅ 10/28（06：`63f4a65`；07：`9f1fe71`；客廳 GitHub repo 使用者點頭後主控建好、PRIVATE、已推；共用 CLAUDE.md 加兩條 `4ad4390`） |
 | 4 交接開場分專案、專案同步、guard、桌面 app 載入 mods | 10 → 08 → 09 → 14 | high | ✅ 10/28（中途額度用完，接手的 session 做完 09、14）：10 `254518e`（客廳 `2c6ec10`）、08 `ea91111`（客廳 `d0beb35`）、09 `dcd4ae9`（客廳 `0b44bbd`＋`c1cf8f8`）、14（`~/.claude/settings.json`＋客廳 `3731361`） |
 | 5 VM 多專案 | 12 → 13 | high | ✅ 10/28：12 `a4be610`（客廳 `be89500`）、13（客廳 `d060d20`、`2332772`、`8c968b1`）；VM 已關機 |
-| 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | 可以開始（開場在下面） |
-| 7 收尾 | 手動檢查清單、PR、合併、更新 `docs/env-notes.md` | medium | 等 6 |
+| 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | ✅ 10/28：結果在下面「段 6 審查結果」（照規矩沒修）；測試全過 |
+| 7 收尾 | （第 5 題說修的話）修審查找到的、手動檢查清單、PR、合併、更新 `docs/env-notes.md` | medium；第 5 題要修就 **high** | 先等「要使用者決定的」第 4、5 題（開場在下面） |
 
 11 不做（見 issue 裡的理由）。
 
@@ -202,6 +202,110 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的、要使用者做
 最後回覆用繁體中文簡短說審查找到什麼、要使用者決定什麼。
 ```
 
+## 段 7 的開場
+
+建議 effort：**medium**；「要使用者決定的」第 5 題使用者說要修的話 **high**（要改上一個專案每天在用的 guard、limit-guard）。
+主控開段之前先問第 4、5 題（擋住這一段），把答案寫進「使用者已經決定的」再開。
+
+```
+這一輪在建「客廳」：跨專案共用的工作流。分支 claude/claude-home-workflow（已經在這個 checkout 上）。
+段 1～6 做完了（issue 01～10、12～14；11 不做）。段 6 審查：兩個 repo 測試全過，結果在 HANDOFF「段 6 審查結果」，照規矩沒修。
+這是第 7 段：收尾。
+
+先讀：.scratch/claude-home-workflow/HANDOFF.md 的「每一段共同的規矩」「段 6 審查結果」「中途發現」「要使用者做的」「要使用者決定的」「使用者已經決定的」（第 4、5 題的答案）、
+spec.md、CLAUDE.md（「合併」）、docs/agents/lessons.md、docs/env-notes.md、客廳的 README.md。
+
+要做的，照這個順序：
+1. 第 4 題（公開 repo 的 issue 13 帶到 VM 的 host 與 GCP id）：照使用者的答案做。換成佔位字就好，不要把真的值寫進任何公開的地方（commit 訊息、PR 也不行）。
+2. 第 5 題使用者說修的，一項一個 commit：
+   - 改 ~/.claude/mods（guard、limit-guard）的照 issue 09 的規矩：既有測試一條都不改就要全過、新行為加新測試、tsc 0 錯、claude plugin validate 過，改完複製進客廳、commit、推。
+     guard 那一項的新測試要拿 e8f9058 那一版的 classify 逐條比（不是新版跟新版比）。
+   - 改客廳 tools/devbox.mjs 的加「VM 那一半失敗」「vm-state.json 比最後一次關機舊」的測試；不開 VM（測試用假的 ssh）。
+   第 5 題沒答或說不修：不修，只收尾。
+3. 更新 docs/env-notes.md：段 1 中途發現的 /reload-skills（新建頂層 skills 目錄不用重開）。客廳 README 補「dash 帳號頁的『用 X 開新對話』只管 VS Code」（段 4 中途發現）。
+   docs/plan.md 是使用者的決定，不動。
+4. 手動檢查清單：把「要使用者做的」1～4 與 `/doctor prompt-audit`（段 2 中途發現，要在終端機跑：CLAUDE.md、.claude/skills/kickoff、.claude/skills/claude-md）整理進 PR 說明。
+5. 開 PR（Skill 叫 pr 寫內文）。這個 repo 還沒有 CI：照 CLAUDE.md「合併」，這一輪的驗證全過、PR 沒有衝突就直接合進 main（這個 repo 一直用 merge commit；第 4 題選 squash 的話照它）。
+6. 更新 HANDOFF：段 7 的狀態、合併的 PR、還留著沒做的（審查記著不修的、第 3 階段要做的）。
+
+要特別注意：
+- 測試：每支 mod `claude plugin test <mod 資料夾>`（基準：dash 16、e2e-progress 5、guard 19、limit-guard 24、notify 3；修了會多）、
+  tsc（`npx -y -p typescript@5 tsc -p <mod 資料夾> --noEmit`；notify 沒有 tsconfig，不跑）、
+  客廳 `node --test tools/autosync.test.mjs`、`node --test tools/devbox.test.mjs`（12、11；**不要寫 `node --test tools/`**，Node 24 會把資料夾當成一支檔案而失敗）。一支一支跑，不要平行全開。
+- 公開 repo 不帶真名、帳號、email、金鑰、VM host／GCP id。推之前 grep 一次客廳 vm/devbox.json 裡的值（不要把值印出來）。
+- 不開 VM（要開先問使用者；開機花錢）。
+- 改任何函式或文件裡的字之前，grep 找出所有用到它的地方。中途發現的事記進 HANDOFF，不岔出去修。
+- subagent 一次最多兩個。主控會收尾：不要自己開 session，也不要存 limit-guard 的開場 JSON。
+- 上一個專案 C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler 的檔案只讀不改（~/.claude/mods 照第 5 題改，但它的行為必須完全一樣）；它的 .local/references/ 不讀。
+
+做完要交：每項一個 commit（這個 repo 的推到 origin claude/claude-home-workflow；客廳的推到它自己的 repo）、PR 合進 main、HANDOFF 更新。
+最後回覆用繁體中文簡短說做了什麼、PR 連結、還留著什麼。
+```
+
+## 段 6 審查結果（2026-10-28）
+
+`matt-code-review` 兩軸（Standards、Spec），兩個 repo 一起審：這個 repo `main...claude/claude-home-workflow`、客廳 `e8f9058..8c968b1`（客廳的 `skills/`、`agents/`、`licenses/` 是上游複本，只確認跟這裡一致）。
+主控另外自己查：測試、公開 repo 的私人值、上一個專案的工作目錄與它的同步。**照規矩一個都沒修**；要修的在「要使用者決定的」第 5 題。
+
+### 測試與自己查的
+
+| 查什麼 | 結果 |
+|---|---|
+| `claude plugin test` | dash 16、e2e-progress 5、guard 19、limit-guard 24、notify 3，全過，跟基準一樣 |
+| tsc | dash、e2e-progress、guard、limit-guard 0 錯；notify 沒有 `tsconfig.json`（`e8f9058` 就沒有），不適用 |
+| 客廳 `node --test` | autosync 12、devbox 11 全過。段 6 開場寫的 `node --test tools/` 在 Node 24 會失敗（資料夾被當成一支檔案），要寫檔名 |
+| `e8f9058` 既有的測試檔 | 一個字沒改，只多了 3 個新檔 |
+| 客廳 `mods/` 對 `~/.claude/mods` | 逐檔 sha256 相同（39 個檔） |
+| 客廳寫回 `~/.claude/mods` | 沒有：autosync（含 `--restore`）、devbox、sync-skills、`vm/` 都只讀 mods |
+| skill 正本 | `sync-skills.mjs --dry-run`：37 支，新增、改動、刪除都是 0 |
+| `~/.claude/CLAUDE.md`、狀態列、`settings.json` | 跟客廳的 `user/`、`statusline/`、`settings/` 一致 |
+| 上一個專案 | 工作目錄沒有改動；`.firebaserc` 讀出來＝ `LEGACY`；它的 `.local` 有 4 個自動同步 commit 帶走新的 mods（照設計，mods 的搬運還是它的事）；`claude-handoffs` 沒有子資料夾（沒帶走這個專案的開場） |
+| 公開 repo | GitHub 上是 PUBLIC、還沒有 PR；commit 作者都是 GitHub noreply；diff 裡沒有 email、金鑰、token、Tailscale 位址。**但 issue 13 有私人值**（見下面 ①） |
+| 客廳 | GitHub 上是 PRIVATE；歷史沒有 `mods-data`、`backups`、credentials、金鑰；email 只有 noreply 與 `example.com` |
+
+### 要緊的（程度由重到輕）
+
+| # | 哪裡 | 什麼 | 哪一軸 |
+|---|---|---|---|
+| ① | 這個 repo `issues/13-vm-add-project.md:14,20,23` | **公開 repo 帶到 VM 的 SSH host 與 GCP 專案 id**（跟客廳 `vm/devbox.json` 的 `host`、`gcpProject`、`instance` 同一個字）。規劃時（`dfb150a`）就寫進去、已推上公開分支 | 兩軸都抓到 |
+| ② | 客廳 `tools/devbox.mjs:222,224` | **出門的 VM 那一半，失敗會被吞掉**：`set -e` 管不到 `a && b && c` 裡不是最後一個的指令。fetch／checkout 失敗、`.local` 的 `pull --ff-only` 失敗、`--restore` 失敗（接在 `\| sed` 後面）、`npm ci` 失敗都照樣往下走，最後印「✅ 可以出門了」。`vm/README.md:13` 寫「整個停住」。測試沒有「VM 那一半失敗」的案例 | Spec |
+| ③ | 客廳 `tools/devbox.mjs:256-266`、`:319-321` | **VM 關著時按回家，可能讀到舊的 `vm-state.json`**：關機時 presync 沒推成只印一行，家裡拉到的是上一次關機的狀態，回家照樣往下走（可能漏掉 VM 上沒推的 commit） | Spec |
+| ④ | `mods/guard/hooks/classify.ts:75,84` | **上一個專案的行為有一處變了**：`e8f9058` 的 staging 比對（`STAGING`）只比字、沒有邊界，新版用 `idAlt` 加了邊界（前後不能接字或 `-`）→ 它的 preview channel 網址（`<staging 專案 id>--pr-…web.app`）不再算 staging。只會多問、不會少問。新測試是新版跟新版比，所以抓不到 | Spec |
+| ⑤ | `mods/limit-guard/hooks/register.ts:158-167` | **上一個專案在 worktree 開的對話**（它有 `.claude/worktrees/*`、`Desktop/wt-*`）：資料夾名字不是 `baobao-wellness-clinic-scheduler`，開場改寫進 `handoffs/<worktree 名字>/`，不再被它的同步帶進 `.local`。本機自動放進輸入框照舊。現有 8 份開場都是在主資料夾存的，所以實際上還沒發生過 | Spec＋主控 |
+| ⑥ | `mods/limit-guard/hooks/advice.ts:173` | `segmentRule` 多的那一段（start_session 開下一段就不存）**也進上一個專案的系統提示**。段 4 開場叫做的（段 2 中途發現的建議），不在 issue 10 的「做法」、也不在「使用者已經決定的」。上一個專案的 kickoff 不用 start_session，實際行為不變 | Spec |
+| ⑦ | 客廳 `tools/devbox.mjs:111`、`docs/project-config.md:54` | `devbox.json` 少了 `legacy` 這一格，出門／回家就**不聲不響跳過上一個專案**（「沒有這一格就不叫」），跟 12「涵蓋每一個專案」不合。現在的檔有這一格，沒有害處 | Spec |
+
+### Standards 軸（其他）
+
+**硬違規**
+
+- 這個 repo：同一條路由規則（決策沒定走 grill、一輪改動走 kickoff、bug 直接做）寫在三處：`CLAUDE.md:23-27`、kickoff 的 description、kickoff `SKILL.md`「兩條路」。違反 skill-checklist E4、M8（kickoff 自己也寫「這裡不重寫」）。現在三處一致。
+  description 那份是觸發要用的，留著；另外兩處擇一（kickoff 是跨專案的，別的專案的 `CLAUDE.md` 不一定有這段）。
+- 這個 repo：issue 用 `Status: done`／`wontfix`，`docs/agents/issue-tracker.md` 說用 `triage-labels.md` 的角色字串，kickoff 卻寫 `todo`／`done`。兩份規範要定一個。
+- 這個 repo：`.claude/scripts/autosync.mjs` 是每個專案都要的 hook 腳本，正本卻在這個專案（客廳 README「新專案怎麼接」第 4 步叫新專案從這裡複製）。違反 spec「每樣東西只有一個正本」「hook 腳本屬客廳」。建議第 3 階段前把正本搬進客廳，跟 skill 一樣同步。
+- 客廳：寫死專案名字 —— dash 的 `LEGACY_DIR`、limit-guard 的 `FLAT_PROJECTS`，`vm/devbox.json` 的 `legacy.name` 是第三份。issue 10、12 的做法要的、程式裡註明是第 3 階段前的例外。
+  但「認上一個專案」有三種認法：資料夾名字（dash、limit-guard）、沒有 `project.json`（guard、dash）、`devbox.json` 的 `legacy`。第 3 階段要改四處；⑤ 就是認法不一致造成的。
+- 客廳：issue 13 拆成三個 commit（`d060d20`、`2332772`、`8c968b1`，後兩個只改 `vm/README.md`）。不影響什麼。
+
+**判斷題（異味，記著，這一輪不修）**
+
+| 異味 | 哪裡 |
+|---|---|
+| Duplicated Code | 這個 repo 的 `.claude/scripts/autosync.mjs:13-16` 自己開背景程序帶 `--worker`，跟客廳 `tools/autosync.mjs:43-50` 做同一件事；客廳那支第 7 行的註解說「hook 叫的不帶 --worker」，跟實際叫法不符。另外：`%28`／`%29` 解碼（`classify.ts:112,275`）、台北時間戳（`autosync.mjs:34`、`devbox.mjs:309`）、`opt`（兩支 tools）、記憶路徑的代號（`autosync.mjs:157`、`vm/add-project.sh:32`） |
+| Repeated Switches | `rules.legacy` 在 `classify.ts` 七處、guard `register.ts:91` 反覆分支；可以把上一個專案限定的規則變成 `Rules` 裡的資料 |
+| Primitive Obsession | `NeverWrite` 是一包選填欄位（`classify.ts:22`），所以有 6 個 `n.firebaseProject!`，可以改成判別聯集；`devbox.mjs` 的 ahead／dirty 用 `'0'`、`'none'` 字串 |
+| Mysterious Name | `devbox.mjs:32` 的 `stop` 是「印字並結束」，`:425` 的指令 `stop` 卻是關 VM；dash 的 `script` 裝的是 `{ script, project }`；`sync-skills.mjs` 的 `HOME` 指客廳，其他工具叫 `HOME_REPO` |
+| 寫死 | VM 使用者的家目錄（`/home/<使用者>`）寫死在 `vm/devbox-proj-rc@.service`、`vm/claude-home-presync.service`（`devbox.json` 的 `host` 已經有使用者名字） |
+
+### Spec 軸（其他）
+
+- **範圍外**：這個 repo 沒有（`skillOverrides`、合併、Playwright 都對得到「使用者已經決定的」）。客廳只有 ⑥。
+- **只做一半（都已知、自述有寫）**：03、04 的 `/doctor prompt-audit`（G10、G11）與 `claude -p` 觸發量測沒跑；13「手機看得到 Remote Control」、14「桌面 app 看得到儀表板」等使用者確認；13「關機前對上一個專案的 `.local` 跑 `pull --ff-only`」因為分岔沒做（第 3 題）。
+- **對過、沒問題**：07 的 skill 複本與正本一致；11 確認沒做；guard 在沒有 `neverWrite` 的 `gitRepo` 時不叫 `git remote`（上一個專案不會多跑指令）；dash 在上一個專案的資料夾 argv 逐字一樣；上一個專案的 devbox.mjs 不見就停、它停下來 VM 就不關。
+- 09 的自述「沒有 `project.json`＝`LEGACY`」不夠精確：實際是讀 `.firebaserc` 的值加上 legacy 旗標（`classify.ts:68`）。上一個專案的 `.firebaserc` 今天剛好等於 `LEGACY`、有測試釘住，行為沒錯；它哪天改 `.firebaserc`，guard 會跟著變。
+
+**總結**：Standards 硬違規 6（含 ①）、異味 5 類；最重的是 ①（公開 repo 帶到私人值）。Spec 13 條（含 ①～⑦）；最重的是 ②（出門的 VM 那一半失敗會被吞掉，印「✅」）。
+
 ## 中途發現
 
 - **段 5（13）**：**VM 上上一個專案的 `.local` 早就分岔了**：從 10/21 19:10 起每次推送都被拒（VM 上它的 `tools/autosync.log` 全是「沒推成」），fetch 後 ahead 5、behind 28；VM 獨有的只差 `tools/devbox/vm-state.txt`（記憶、mods 跟分岔點一樣）。
@@ -263,6 +367,22 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的、要使用者做
 3. **VM 上上一個專案的 `.local` 分岔了，要怎麼處理？**（段 5 發現，見「中途發現」；不處理的話上一個專案的「出門」「回家」在 VM 那一步會停）
    建議：**丟掉 VM 那一份獨有的 commit，對齊 GitHub**。VM 獨有的只有 `vm-state.txt`（每次關機都會重寫），記憶與 mods 跟 GitHub 的分岔點一樣，沒有東西會不見。
    做法（要開 VM，使用者說好才做）：在 VM 上 `git -C ~/baobao-wellness-clinic-scheduler/.local reset --hard origin/main`，然後在家裡照常按一次上一個專案的「出門」，看它走完。
+4. **公開 repo 的 issue 13 寫了 VM 的 SSH host 與 GCP 專案 id，怎麼處理？**（段 6 審查 ①；規劃時就寫進去、已推上公開分支）
+   建議：**段 7 把那三行換成佔位字（`<VM 的 ssh host>`、`<VM 名字>`），照常開 PR、用 merge commit 合併，不改寫歷史**。
+   理由：值已經在公開的分支上，改寫只能讓它比較難找；這兩個值不是金鑰（SSH 只走 Tailscale，GCP 專案 id 沒有權限做不了事）；
+   改寫歷史要 force push，而且 HANDOFF、issue 裡記的這一輪的 commit 編號會全部對不上。
+   另一個選法：合併時用 squash（main 的歷史乾淨，但 PR 頁面還是看得到原來的 commit）。
+5. **審查找到的，段 7 先修這四個再合併嗎？**（段 6 審查 ②～⑤；都是照你定的規矩「上一個專案行為完全一樣」「出門／回家停下來就整個停」該修的）
+   建議：**修**，每項一個 commit；段 7 的 effort 從 medium 提到 high。
+   - ② 出門的 VM 那一半：`&&` 串起來的拆成一行一個，任何一個失敗就停；加「VM 那一半失敗」的測試。
+   - ③ 回家時 VM 關著：`vm-state.json` 比 VM 最後一次關機舊（presync 沒推成），就停下來、要先開 VM 檢查；加測試。
+   - ④ guard：上一個專案的 staging 比對恢復成沒有邊界（preview channel 照舊算 staging）；加一條拿 `e8f9058` 那一版逐條比對的測試。
+   - ⑤ limit-guard：「是不是上一個專案」改成跟 guard 一樣看「有沒有 `.claude/project.json`」，它的 worktree 的開場照舊放第一層；加測試。
+     （代價：沒有 `project.json` 的資料夾也放第一層＝這一輪之前的樣子；照客廳 README 接上來的新專案都有 `project.json`。）
+   其他的記著、這一輪不修：
+   - ⑥ `segmentRule` 多的那段留著：上一個專案不用 start_session，實際行為不變。
+   - ⑦ 少了 `legacy` 就跳過：現在的設定有這一格。
+   - Standards 的硬違規與異味：多半是第 3 階段（上一個專案改用客廳的工具）時一起整理。
 
 ## 使用者已經決定的（2026-10-28）
 
