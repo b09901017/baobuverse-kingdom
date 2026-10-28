@@ -13,8 +13,8 @@
 | 2 kickoff、CLAUDE.md、skill 重疊 | 03、04、05 | xhigh | ✅ 10/28（03：`435506f`；04：`3e141d3`；05：`c0cd4fe`） |
 | 3 客廳 repo 與 skill 正本 | 06、07 | high | ✅ 10/28（06：`63f4a65`；07：`9f1fe71`；客廳 GitHub repo 使用者點頭後主控建好、PRIVATE、已推；共用 CLAUDE.md 加兩條 `4ad4390`） |
 | 4 交接開場分專案、專案同步、guard、桌面 app 載入 mods | 10 → 08 → 09 → 14 | high | ✅ 10/28（中途額度用完，接手的 session 做完 09、14）：10 `254518e`（客廳 `2c6ec10`）、08 `ea91111`（客廳 `d0beb35`）、09 `dcd4ae9`（客廳 `0b44bbd`＋`c1cf8f8`）、14（`~/.claude/settings.json`＋客廳 `3731361`） |
-| 5 VM 多專案 | 12 → 13 | high | 可以開始（開場在下面） |
-| 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | 等 5 |
+| 5 VM 多專案 | 12 → 13 | high | ✅ 10/28：12 `a4be610`（客廳 `be89500`）、13（客廳 `d060d20`、`2332772`、`8c968b1`）；VM 已關機 |
+| 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | 可以開始（開場在下面） |
 | 7 收尾 | 手動檢查清單、PR、合併、更新 `docs/env-notes.md` | medium | 等 6 |
 
 11 不做（見 issue 裡的理由）。
@@ -172,8 +172,45 @@ issues/08、09、14 底下的「做完時留下的」、客廳的 README.md（�
 HANDOFF 更新（狀態、中途發現、要使用者決定的、要使用者做的、VM 的 free -h）、段 6 的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪。
 ```
 
+## 段 6 的開場
+
+建議 effort：**xhigh**（整輪的審查，兩個 repo、改到上一個專案每天在用的 mods）。
+
+```
+這一輪在建「客廳」：跨專案共用的工作流。分支 claude/claude-home-workflow（已經在這個 checkout 上）。
+段 1～5 做完了（issue 01～10、12～14；11 不做）。段 5：12 客廳的通用 tools/devbox.mjs、autosync --restore、dash 的雲端分頁照專案叫（客廳 be89500）；
+13 VM 上加了這個專案（客廳 d060d20、2332772、8c968b1：vm/existing/、vm/add-project.sh、vm/README.md），VM 已關機。
+這是第 6 段：審查。用 Skill 叫 matt-code-review，審兩樣：
+  1. 這個 repo：main...claude/claude-home-workflow（spec 是 .scratch/claude-home-workflow/spec.md 與 issues/）
+  2. 客廳 C:/Users/DELL/claude-home：從第一個 commit e8f9058（未改過的 ~/.claude/mods 複本＝審查基準）到 HEAD
+     （注意 0b44bbd 是自動同步備份的半成品，跟 c1cf8f8 合起來才是 09；mods/ 的改動要對照 ~/.claude/mods 現在的檔）。
+不做段 7（收尾）。不修審查找到的問題：結果寫進 HANDOFF，要使用者決定的一題一題附建議。
+
+先讀：.scratch/claude-home-workflow/HANDOFF.md 的「每一段共同的規矩」「中途發現」「要使用者決定的」「使用者已經決定的」、spec.md、
+每支 issue 底下的「做完時留下的」、CLAUDE.md、docs/agents/lessons.md、客廳的 README.md、docs/project-config.md、vm/README.md。
+
+要特別注意：
+- 審查要看的重點：上一個專案（C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler）的行為是不是完全一樣（guard、limit-guard、dash 改過；它既有的測試不改就要全過）；
+  公開 repo（這個）有沒有帶到真名、帳號、email、金鑰、VM host／GCP id（客廳是私人的，可以有）；客廳有沒有寫回 ~/.claude/mods。
+- 跑測試：每支 mod `claude plugin test <mod 資料夾>`（基準：dash 16、e2e-progress 5、guard 19、limit-guard 24、notify 3）、
+  tsc（`npx -y -p typescript@5 tsc -p <mod 資料夾> --noEmit`）、客廳 `node --test tools/`（autosync 12、devbox 11）。測試不要平行全開（共用 CLAUDE.md：留核心）。
+- 不開 VM（審查不需要；要開先問使用者）。
+- subagent 一次最多兩個（matt-code-review 本身就是兩個，不要再多開）。主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON。
+- 上一個專案的檔案只讀不改；它的 .local/references/ 不讀。公開 repo 不帶真名、帳號、email、金鑰。
+
+做完要交：審查結果（兩個軸、兩個 repo）寫進 HANDOFF（新的一節「段 6 審查結果」）、要使用者決定的加進去、段 7 的開場與建議 effort 寫進 HANDOFF、commit 推到 origin claude/claude-home-workflow。
+最後回覆用繁體中文簡短說審查找到什麼、要使用者決定什麼。
+```
+
 ## 中途發現
 
+- **段 5（13）**：**VM 上上一個專案的 `.local` 早就分岔了**：從 10/21 19:10 起每次推送都被拒（VM 上它的 `tools/autosync.log` 全是「沒推成」），fetch 後 ahead 5、behind 28；VM 獨有的只差 `tools/devbox/vm-state.txt`（記憶、mods 跟分岔點一樣）。
+  影響：**上一個專案的「出門」現在會停在 VM 那一步**（它在 VM 上對 `.local` 跑 `git pull --ff-only`，`set -e` 會停）；回家（VM 開著時）也會停在「VM 的 .local 沒推成」。客廳的通用版會叫它，所以也跟著停（設計就是這樣：不跳過它）。
+  GitHub 沒事（推送被拒，不會蓋掉）；這一段關機時它的 presync 又在 VM 上多 commit 一次。見「要使用者決定的」第 3 題。
+- **段 5（13）**：VM 上新專案的 Remote Control 在等 workspace trust；trust 的提問列出 `.mcp.json` 的 playwright —— 家裡用 `.claude/settings.local.json` 關掉（不進 git），**VM 上沒有那個檔，所以 playwright 會開**。跟「Playwright 只給雲端用」不衝突（VM 不是家裡電腦），但記一下。
+- **段 5（13）**：VM 上上一個專案的 `devbox-rc@2` 的程式掛在 `@1` 的 tmux server（同一個 cgroup）底下：`systemctl stop devbox-rc@1` 會連帶停掉帳號 2 的 Remote Control。以前就這樣、沒改；新專案的用各自的 tmux server（`-L`）。
+- **段 5（12）**：06 的格式把「專案在 VM 上的資料夾」放在各專案的 `.local/project.json`；12 改成集中在客廳 `vm/devbox.json` 的 `projects`（出門／回家要逐一處理每一個專案，清單只能有一份）。那個檔從沒建過；`docs/project-config.md` 已改。
+- **段 5（12）**：VM 上的 `~/.claude/mods` 還是舊版 dash（mods 照舊靠上一個專案「出門」的 `--restore` 搬，而它的出門現在會停，見上面）。舊版在 VM 上也不畫按鈕（找不到 Desktop 路徑），所以沒有害處。
 - **段 4（09）**：客廳的自動同步（SessionStart／SessionEnd）把 `~/.claude/mods` 裡**還沒做完、沒 commit 的改動**也備份進客廳（09 的前半在 `0b44bbd`「自動同步」，後半在 `c1cf8f8`）。單向備份、不影響審查基準 `e8f9058`，但客廳的 commit 會有半成品。段 6 審查看整段 diff 就好。
 - **段 4（09）**：寫測試時發現的洞（已在 09 修，只對有 `project.json` 的專案）：`firebase deploy --project <不是正式站也不是 staging 的 id>` 以前一律當 staging。
   **上一個專案照舊**（為了行為完全一樣）：在它那邊打錯專案 id 也不會問。第 3 階段（上一個專案改用客廳的工具）時可以考慮一起收緊。
@@ -211,6 +248,10 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的、要使用者做
 2. **在同一個新對話試 guard**：請 Claude 跑下面這一行（沒有登入，就算放行也寫不進去）：
    `curl -X PATCH "https://firestore.googleapis.com/v1/projects/baobu-app/databases/(default)/documents/guard-test/x" -d "{}"`
    應該跳出「Claude 要寫絕對不能寫的地方，要讓它做嗎？」的框 → 按「不要」。
+3. **VM 上這個專案的 workspace trust，要你本人答**（段 5，issue 13；Claude 不能替你答）：下次 VM 開著時，用 Termius 連進 VM，
+   打 `tmux -L rc1-baobuverse-kingdom attach` → 看清楚提問 → 按 `y` → 按 `Ctrl-b` 再按 `d` 離開；再打 `tmux -L rc2-baobuverse-kingdom attach` 同樣一次。
+   （提問會列出這個資料夾的 hook 與 playwright MCP。）
+4. **手機確認**：答完之後，在手機的 Claude app 找 `baobuverse-kingdom@devbox`（帳號 1、帳號 2 各一個，登哪個帳號看到哪一個），點進去試一句話。
 
 ## 要使用者決定的
 
@@ -219,8 +260,13 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的、要使用者做
    做法（使用者自己做，Claude 不改 VS Code 設定）：VS Code 設定 `claudeCode.environmentVariables` 裡 `CLAUDE_CODE_PLUGIN_DIRS` 的值最後加上 `;C:\Users\DELL\.claude\mods\guard`，開新對話生效。
 2. **notify 在桌面 app 最前面時要不要也不跳？**（現在只有 VS Code 在最前面時不跳，桌面 app 自己也有通知，可能重複）
    建議：**要**，在 `~/.claude/mods/notify/scripts/toast.ps1` 的判斷加上桌面 app 的程式名字；VS Code 的行為不變。使用者說好再做（改的是上一個專案每天在用的 mod，照 09 的規矩加測試、複製進客廳）。
+3. **VM 上上一個專案的 `.local` 分岔了，要怎麼處理？**（段 5 發現，見「中途發現」；不處理的話上一個專案的「出門」「回家」在 VM 那一步會停）
+   建議：**丟掉 VM 那一份獨有的 commit，對齊 GitHub**。VM 獨有的只有 `vm-state.txt`（每次關機都會重寫），記憶與 mods 跟 GitHub 的分岔點一樣，沒有東西會不見。
+   做法（要開 VM，使用者說好才做）：在 VM 上 `git -C ~/baobao-wellness-clinic-scheduler/.local reset --hard origin/main`，然後在家裡照常按一次上一個專案的「出門」，看它走完。
 
 ## 使用者已經決定的（2026-10-28）
+
+- **VM 這一段可以開，2026-10-28**（使用者在主控 session 說「開始，VM 可以開」）。段 5 開過、用完已關機。
 
 - **Playwright MCP 選 B**：只給雲端用，本機關掉。主控已做：`.claude/settings.local.json`（不進 git）＋ `docs/env-notes.md` 補一節。
 - **桌面 app 也要載入 mods**：加成 issue 14，排在段 4 的 09、10 之後。
