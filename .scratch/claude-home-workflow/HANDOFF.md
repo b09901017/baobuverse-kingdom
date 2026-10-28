@@ -12,7 +12,7 @@
 | 1 盤點與檢查基準 | 01、02 | high | ✅ 10/28（01：私人 repo `20f9eb9`，已推；02：`7bfd180`） |
 | 2 kickoff、CLAUDE.md、skill 重疊 | 03、04、05 | xhigh | ✅ 10/28（03：`435506f`；04：`3e141d3`；05：`c0cd4fe`） |
 | 3 客廳 repo 與 skill 正本 | 06、07 | high | ✅ 10/28（06：`63f4a65`；07：`9f1fe71`；客廳 GitHub repo 使用者點頭後主控建好、PRIVATE、已推；共用 CLAUDE.md 加兩條 `4ad4390`） |
-| 4 交接開場分專案、專案同步、guard、桌面 app 載入 mods | 10 → 08 → 09 → 14 | high | 可以開始（開場在下面「段 4 的開場」）；08 的「推到客廳」要等使用者建好 repo |
+| 4 交接開場分專案、專案同步、guard、桌面 app 載入 mods | 10 → 08 → 09 → 14 | high | ⏸ 額度用完中斷（10/28）：10 ✅（`254518e`，客廳 `2c6ec10`）、08 ✅（`ea91111`，客廳 `d0beb35`）；09 做一半、14 沒開始，見下面「段 4 停在哪」 |
 | 5 VM 多專案 | 12 → 13 | high | 等 4 |
 | 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | 等 5 |
 | 7 收尾 | 手動檢查清單、PR、合併、更新 `docs/env-notes.md` | medium | 等 6 |
@@ -138,7 +138,19 @@ spec.md「談定的策略」（特別是「上一個專案一律不能壞」的�
 HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 5 的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪。
 ```
 
+## 段 4 停在哪（額度用完，10/28）
+
+- **09 做一半**：`~/.claude/mods/guard/hooks/classify.ts`、`register.ts` 已改（**沒 commit、還沒複製進客廳**）：
+  `rulesFrom(.firebaserc, .claude/project.json)`；沒有 `project.json` 的專案（上一個專案）＝ `LEGACY`，判斷跟以前一樣；
+  有的專案：`.firebaserc` default 不是 staging 時認不出的 firebase 寫入要問、npm 名稱與「推 main＝部署」不套用、新的 `neverWrite` 風險（firebase CLI／gcloud firestore／REST／腳本／`git push`／gh 寫入，`git push origin` 會問 `git remote get-url`）。
+  **既有 10 條測試不改全過、`tsc` 0 錯**。還沒做：新測試（用上一個專案 `.firebaserc` 的複本跑舊案例走 `rulesFrom` 那條路；`firebase deploy --project baobu-app`、對 `baobu-app` `(default)` 的 REST 寫入、`git push` 到 `baobu_money_track`）、這個 repo `.claude/project.json` 加 `neverWrite`、複製進客廳＋commit＋推、issue 09 收尾。
+- **14 沒開始**（`plugin-authoring` 已讀過：桌面 app 用 `CLAUDE_CODE_PLUGIN_DIRS` 或 `--plugin-dir` 載入）。
+- 段 5 的開場還沒寫：下一段先接完段 4 的 09、14，再寫段 5 的開場。
+
 ## 中途發現
+
+- **段 4**：上一個專案的 `autosync.mjs --dry-run` 其實會把記憶與 mods 抄進它的 `.local` 工作目錄，所以 10 的判準改用它的 `sync-claude.mjs` 複本在暫存資料夾驗。
+- **段 4**：`tools/autosync.mjs` 只做「這台 → repo」；VM 接手的反方向（repo → 這台）留給 12、13。
 
 - **段 1**：`docs/env-notes.md` 寫「新建一個原本不存在的頂層 skills 目錄時要重開」—— 官方現在有 `/reload-skills` 可以不重開（[Commands](https://code.claude.com/docs/en/commands)、[Skills](https://code.claude.com/docs/en/skills)「Live change detection」）。建議段 7 更新 `env-notes.md` 時一起改。
 - **段 1**：上一個專案的 `docs/agents/domain.md` 有一段「推翻舊 ADR 的慣例」（舊的一個字不改、新的寫「推翻：」、同一個 commit 改索引、測試盯著），這個 repo 的 `domain.md` 沒有帶過來。這個專案還沒有 ADR，建議第一支 ADR 出現時再補。
