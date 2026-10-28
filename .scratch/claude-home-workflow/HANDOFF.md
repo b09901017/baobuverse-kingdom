@@ -10,8 +10,8 @@
 | 段 | issue | 建議 effort | 狀態 |
 |---|---|---|---|
 | 1 盤點與檢查基準 | 01、02 | high | ✅ 10/28（01：私人 repo `20f9eb9`，已推；02：`7bfd180`） |
-| 2 kickoff、CLAUDE.md、skill 重疊 | 03、04、05 | xhigh | 可以開始（開場在下面「段 2 的開場」） |
-| 3 客廳 repo 與 skill 正本 | 06、07 | high | 等 2 |
+| 2 kickoff、CLAUDE.md、skill 重疊 | 03、04、05 | xhigh | ✅ 10/28（03：`435506f`；04：`3e141d3`；05：`c0cd4fe`） |
+| 3 客廳 repo 與 skill 正本 | 06、07 | high | 可以開始（開場在下面「段 3 的開場」） |
 | 4 交接開場分專案、專案同步、guard、桌面 app 載入 mods | 10 → 08 → 09 → 14 | high | 等 3 |
 | 5 VM 多專案 | 12 → 13 | high | 等 4 |
 | 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | 等 5 |
@@ -27,7 +27,10 @@
 - 公開 repo：commit、`.scratch`、PR 不帶真名、帳號名字、email、金鑰。引用上一個專案記憶的原話只能放 `.local/`
 - **10 做完之前不要在 `~/.claude/mods-data/handoffs/` 存開場 JSON**（會被上一個專案的同步推進它的私人 repo）
 - 推到私人 repo 可能被 auto mode 當成資料外流擋下；被擋就停，寫進下面，請使用者自己推，不要繞
-- 中途發現的事不岔出去修，記進下面「中途發現」
+- 中途發現的事不岔出去修，記進下面「中途發現」；使用者說要修的，修之前再 grep 一次牽連
+- 改一個函式、一段文件或畫面上的字之前，grep／graphify 找出所有用到它的地方
+- subagent 同時最多兩個
+- 段自己不開 session、不存 limit-guard 的開場 JSON：主控照這份的開場開下一段（kickoff「第三段」）
 - 一段做完：更新這份（狀態、中途發現、要使用者決定的）、寫好下一段的開場，然後結束
 
 ## 段 1 的開場
@@ -73,6 +76,36 @@ research/skill-checklist.md（第三節的十一個衝突與裁定、第四節�
 HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 3 的開場寫進 HANDOFF。
 ```
 
+## 段 3 的開場
+
+建議 effort：**high**。
+
+```
+這一輪在建「客廳」：跨專案共用的工作流。分支 claude/claude-home-workflow（已經在這個 checkout 上）。
+段 1、2 做完了：01 盤點（私人 repo .local/research/old-workflow.md）、02 檢查基準（.scratch/claude-home-workflow/research/skill-checklist.md）、
+03 kickoff 改寫（435506f）、04 claude-md skill 與 CLAUDE.md（3e141d3）、05 skill 重疊報告（c0cd4fe，題目在 HANDOFF「要使用者決定的」）。
+這是第 3 段：做 issue 06（建客廳私人 repo）→ 07（skill 正本放客廳、專案用一個 node 指令更新複本），照這個順序。不做 08 以後的 issue。
+
+先讀：.scratch/claude-home-workflow/HANDOFF.md 的「每一段共同的規矩」「中途發現」「要使用者決定的」「使用者已經決定的」、
+spec.md「談定的策略」、issues/06、07 全文、issues/03、04 底下的「做完時留下的」、
+research/skill-checklist.md 第一節 C6 與 H、docs/env-notes.md 的「Skills」一節、CLAUDE.md、docs/agents/lessons.md。
+
+要特別注意：
+- 06：動工前先存一份 ~/.claude/mods/ 的 sha256 清單，做完比對完全相同。客廳的第一個 commit 是還沒改過的 mods 複本（段 6 審查的基準）。
+  絕對不放 ~/.claude/mods-data/、~/.claude/backups/、任何 credentials、金鑰、ADC；推之前 git ls-files 自己看一遍。
+- 推到私人 repo 可能被 auto mode 當成資料外流擋下：被擋就停，記進 HANDOFF，請使用者自己推，不要繞。
+- 07：同步指令用 node（Windows 與 Linux 都能跑），不用 bash；不刪專案獨有的 skill；不在上一個專案跑；不裝進 ~/.claude/skills/。
+  版本表從 docs/env-notes.md 搬到客廳時，「重裝時要重做的修改」一起搬，並記 kickoff、claude-md 是自己寫的、正本在客廳。
+- HANDOFF「要使用者決定的」裡跟這段有關的：要不要有共用的 ~/.claude/CLAUDE.md（06 的 settings／README 會碰到）、skill 重疊第 7 組（skillOverrides）。
+  動到時先看 HANDOFF 有沒有記下使用者的答案；沒有就不做，留位置、記進 HANDOFF。
+- 改任何函式或文件裡的字之前，grep 找出所有用到它的地方。中途發現的事記進 HANDOFF，不岔出去修。
+- subagent 一次最多兩個。主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON（10 做完前本來就不能存）。
+- 上一個專案 C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler 只讀不改；它的 .local/references/ 不讀。公開 repo 不帶真名、帳號、email、金鑰。
+
+做完要交：每支一個 commit（這個 repo 的推到 origin claude/claude-home-workflow；客廳的推到它自己的 repo）、Status: done、issue 底下「做完時留下的」、
+HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 4 的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪。
+```
+
 ## 中途發現
 
 - **段 1**：`docs/env-notes.md` 寫「新建一個原本不存在的頂層 skills 目錄時要重開」—— 官方現在有 `/reload-skills` 可以不重開（[Commands](https://code.claude.com/docs/en/commands)、[Skills](https://code.claude.com/docs/en/skills)「Live change detection」）。建議段 7 更新 `env-notes.md` 時一起改。
@@ -80,11 +113,20 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 3 的開
 - **段 1**：這個 repo `CLAUDE.md` 的「絕對不寫入國王日記」只是文字；官方說一定要成立的要用 hook（skill-checklist M9、衝突 8）。等開始寫 Firebase 的程式時再考慮加 PreToolUse hook，不在這一輪。
 - **段 1**：`claude-md` 這個名字含 `claude`，Agent Skills 的命名規則不允許，但 Claude Code 照常載入（skill-checklist 衝突 6）。只有要上傳 claude.ai 時才要改名。
 - **段 1**：上游的 `graphify`（793 行）、`firestore-rules-creation`（600 行）超過官方建議的 500 行。上游的不改，交給 05 一起報告。
+- **段 2**：本機 CLI 的登入過期（`claude -p` 回 `OAuth session expired`），所以觸發測試沒辦法用真的 session 量，改用兩個 subagent 當受試者（`research/trigger-test/results.md`）。
+  腳本 `research/trigger-test/run_trig.py` 留著；使用者在終端機重新登入 `claude` 之後可以重跑。不是這一輪必要的事。
+- **段 2**：`/doctor prompt-audit`（skill-checklist G11）這個 session 叫不到，03、04 改完都沒跑。建議段 7 收尾時在終端機跑一次 `/doctor prompt-audit CLAUDE.md` 與 `.claude/skills/kickoff`、`.claude/skills/claude-md`。
+- **段 2**：limit-guard 的 `segmentRule()`（`~/.claude/mods/limit-guard/hooks/advice.ts`）在系統提示裡叫 Claude「每段做完都存開場 JSON」，跟新的「主控用 `start_session` 開了就不存」相反。
+  現在靠 kickoff 與開場裡的一句話蓋過去（評估裡有效）。建議段 4 做 10（交接開場分專案）時，順便讓 `segmentRule()` 說「下一段已經用 start_session 開了就不存」，從源頭解。
+- **段 2**：`grill-with-docs` 是 `disable-model-invocation: true`，模型自己叫不到它。沒改上游，改成 kickoff 的 description 與 `CLAUDE.md`「用哪個流程」指路：模型自己判斷時叫 `grilling`＋`domain-modeling`。評估裡 4/4 走對。
+- **段 2**：這個 session 的工作目錄加了上一個專案的資料夾，所以它的 skill 也載進來（`baobao-wellness-clinic-scheduler:kickoff` 這種有範圍的名字），清單裡同時有兩支 kickoff、兩支 claude-md。
+  有範圍限定、不會用錯檔，但多佔 context。主控開段時沒有要讀上一個專案的話，不必加那個資料夾。
 
 ## 要使用者決定的
 
 - **（段 2 的 03 會用到）一輪做完，合併要不要等你說？** 上一個專案：合進測試環境（develop）是做完直接合（你 10/15 說的），進正式（main）要你說。這個專案目前只有 main，合進去就是正式。
   建議：**CI 綠了先停，等你說「合」再合**，直到這個專案有測試環境為止。
+  （段 2 的 kickoff 沒有替你選：它寫「照專案 `CLAUDE.md` 的合併規定；沒寫就問一次，答案寫進 `CLAUDE.md`」。你回答之後，在這個 repo 的 `CLAUDE.md` 加一行「合併」就好。）
 - **（段 3 的 06、07 會用到）要不要有一份所有專案共用的 `~/.claude/CLAUDE.md`，由客廳管？** 現在不存在。上一個專案的通用偏好（一次一題、subagent 最多兩三個、危險動作先問、不要把電腦跑滿）目前散在它的記憶裡，每個新專案都要再說一次。
   建議：**要**，只放你說過、跨專案都成立的那幾條，客廳 repo 是正本。
 
