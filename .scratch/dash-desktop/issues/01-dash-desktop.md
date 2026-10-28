@@ -63,7 +63,7 @@ Type: task
 
 ## 做完時留下的（2026-10-29）
 
-客廳 commit `b923ca8`、`5dd5d8a`（輸入框上方那一條，做法 5）、`d02937a`（花費的月圖寬度；前面還有一個自動同步 `c856baf`，見中途發現 ①）。改的是 `mods/dash` 的 `hooks/register.tsx`、`types/index.d.ts`，加 `tests/desktop.test.tsx`。
+客廳 commit `b923ca8`、`5dd5d8a`（輸入框上方那一條，做法 5）、`d02937a`（花費的月圖寬度）、`547f338`（暫時的探針）、`c33dc0c`（拿掉探針、更正註解；前面還有一個自動同步 `c856baf`，見中途發現 ①）。改的是 `mods/dash` 的 `hooks/register.tsx`、`types/index.d.ts`，加 `tests/desktop.test.tsx`。
 
 ### 一、帳號（做法 1、2）
 
@@ -98,9 +98,11 @@ Type: task
 
 ### 四、輸入框上方那一條（做法 5）
 
-- 原因：那一條看 `shownA` 讓開，`shownA` 是 `$.ui.panes()` 裡儀表板的 `isShown`。截圖時面板開在右邊、那一條還在，表示桌面 app 上 `isShown` 沒有變 true（桌面 app 的對話沒有自己的終端機；型別說 `isShown` 是「畫面顯示的那一個」，沒有講桌面 app）。測試裡沒辦法看到真的桌面 app 回什麼，所以**不靠它**。
+- 原因：那一條看 `shownA` 讓開，`shownA` 是 `$.ui.panes()` 裡儀表板的 `isShown`，只在幾個時間點（對話開始、每次量用量、每一輪結束）讀一次。
+  探針（見下面第二輪）查到桌面 app 上 `isShown` 會在 true 和 false（`isPlaced` 也 false）之間跳，讀到 false 那一刻就一直留著，所以面板開著、那一條還在。所以**不靠它**。
+  （一開始以為桌面 app 上 `isShown` 不會變 true，探針證明不對，已更正。）
 - 做法：自己記「面板開著」（`paneOpen`：mod 呼叫 `$.ui.open` 打開儀表板之後記 true ——對話開始、「打開儀表板」、`/dash`；`ui.close` 記 false）。**只在桌面 app**，那一條看到開著就讓開；終端機、VS Code 照舊只看 `shownA`。
-- 注意：關掉儀表板之後那一條回來，靠的是 `ui.close`；測試工具丟不出 `ui.close`，這一點只能截圖確認。
+- 關掉儀表板之後那一條回來，靠的是 `ui.close`：探針證實桌面 app 按 ✕ 會送 `ui.close`（origin `person`），收到就清掉「開著」，那一條跟著重畫。測試工具丟不出 `ui.close`，這一點沒有自動測試。
 
 ### 測試
 
@@ -111,7 +113,10 @@ Type: task
   帳號頁兩個資料夾登入的是同一個帳號，所以有兩張一樣的卡（設定本來就這樣）；那張卡的 5 小時是修之前被寫進去的桌面 app 帳號的數字（中途發現 ④）。
 - 截圖第二輪（10/29）：花費頁過了（月圖在卡片裡，1～30 的刻度都在）；Context、帳號也在框內。
 - **關掉儀表板後那一條沒回來**（第二輪 3.png）。可能是 A：桌面 app 的 ✕ 只收起側欄、mod 收不到 `ui.close`，「開著」一直是 true；也可能是 B：有收到，但那一條沒重畫（3.png 輸入框正上方剛好有「接下來要怎麼做？」的選項框）。
-  桌面 app 的 log（`Claude-Data/…/logs`）只到 9 月，型別也沒說，判斷不出來。加了暫時的探針（客廳 `547f338`）：只在桌面 app 的對話把 `ui.close`、`$.ui.open` 的結果、`$.ui.panes()` 的變化寫進 `~/.claude/mods-data/dash-desktop-probe.log`，等使用者按一次 ✕ 再讀。**開 PR 之前拿掉。**
+  桌面 app 的 log（`Claude-Data/…/logs`）只到 9 月，型別也沒說，判斷不出來。加了暫時的探針（客廳 `547f338`）：只在桌面 app 的對話把 `ui.close`、`$.ui.open` 的結果、`$.ui.panes()` 的變化寫進 `~/.claude/mods-data/dash-desktop-probe.log`，等使用者按一次 ✕ 再讀。
+- 探針結果（10/29 01:26，使用者在新的桌面 app 對話：hi → ✕ → hi → `/dash`，說「做完了 他有出現」）：按 ✕ 三次，三次都記到 `ui.close origin=person`；`/dash` 之後 `open {"isPlaced":true}`。
+  所以是 **B**：有收到關閉，那一條會回來；3.png 沒看到那一條，是被輸入框正上方「接下來要怎麼做？」的選項框擋住（有問卷時那一條本來就讓開，終端機也一樣）。**不用修**。
+  探針只記得到 mod 收到什麼，記不到「畫面幾時重畫」；程式是收到關閉就改值、那一條跟著重畫，不用等下一則訊息。探針已拿掉（`c33dc0c`），`~/.claude/mods-data/dash-desktop-probe.log` 還留著（只有面板狀態，沒有帳號資料），可以刪。
 
 ### 中途發現（沒修，等使用者說）
 
@@ -125,3 +130,5 @@ Type: task
    建議照 dash 這次的做法（桌面 app 用 `CLAUDE_CODE_USER_EMAIL`）。
 
 ④ 舊的錯資料：修好之前，桌面 app 把帳號 A 的額度寫進了帳號 B 的 `limits/<email>.json`。那個檔要等帳號 B 的對話下一次量到額度才會蓋掉；在那之前，帳號頁與 limit-guard 看到的帳號 B 是錯的數字。不用動，等它自己蓋過去就好。
+
+⑤ 收尾時（10/29 01:33）`~/.claude/mods/guard` 跟客廳 `mods/guard` 不一樣（`hooks/classify.ts` 改過、多了 `tests/own-sessions.test.ts`），是別的 session 在改，不是這一段；沒碰，客廳只 commit 了 `mods/dash`。
