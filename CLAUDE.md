@@ -1,22 +1,35 @@
 # 寶步宇宙王國
 
-寫任何程式碼之前，先讀 `CONTEXT.md`（詞彙）、`docs/spec.md`（規格）與 `docs/plan.md`（目前階段、待決定事項）。
-`docs/scope.md` 是第一版評估，與 plan.md 牴觸時以 plan.md 為準。
-決策理由與**刻意不做的事**在 `docs/adr/`。
+動工前先讀 `README.md`（初衷）與 `docs/plan.md`（使用者的決定、階段、還沒決定的事）。
+
+## 決定由使用者做
+
+- `docs/plan.md` 的「使用者的決定」只寫使用者**親口確認過**的。AI 的提議不寫進去，就算使用者當下說了好。
+- 「還沒決定」裡的事，動到時先問，不要自己挑一個做下去。
 
 ## 不能違反
 
-- 一次動作寫**一則**事件。帳戶餘額、日記、物品、追劇進度都是投影，不直接寫入。
-- 事件 append-only。畫面上的「編輯」和「刪除」，底層都是追加修正事件。
-- 投影在手機端由事件算出，不存成 collection（ADR-0008）。
-- 外部來源（國王日記鏡像、銀行通知、載具發票）以來源 id 去重；Cloud Function 觸發是 at-least-once，漏做會重複扣款。
-- 自動來源只產生收件匣草稿，同一筆消費的多個來源合併成同一則事件（ADR-0009）。
-- 支出與轉帳的差別只看入方是不是外部節點。不要為此新增類型欄位。
-- **絕對不寫入** `baobu_money_track`，也不寫入 `baobu-app` 的預設 database。
-- 結構化資料（金額、帳戶、標籤、對象）各自獨立成欄位，不塞進備註。
-- 不做預先彙總表。不做找規律的演算法。
+- 一次動作寫**一則**事件，事件上可以掛好幾個效果（README）。
+- 轉帳不是支出：錢在自己的帳戶之間搬動，淨資產不變（README）。
+- 日記不是一張表，是當天所有事件的查詢結果（README）。
+- **絕對不寫入**國王日記：`b09901017/baobu_money_track` 的資料，以及 `baobu-app` 的預設 Firestore database。
+
+## Agent skills
+
+### Issue tracker
+
+Issue 以 Markdown 放在 `.scratch/<slug>/`，不用 GitHub Issues。見 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+用預設的五個角色名稱。見 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+單一 context，`GLOSSARY.md` 與 `docs/adr/` 用到時才建立。見 `docs/agents/domain.md`。
 
 ## 環境
 
-- skill 放 `.claude/skills/` 並 commit。雲端 session 不讀 `~/.claude/skills/`。
+- skill 放 `.claude/skills/` 並 commit。雲端 session 不讀 `~/.claude/skills/`。來源與版本見 `docs/env-notes.md`。
+- 之前的 session 一再犯的坑在 `docs/agents/lessons.md`，動工前掃一遍。
 - Playwright 的瀏覽器路徑有陷阱，見 `docs/env-notes.md`。

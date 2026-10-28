@@ -106,18 +106,29 @@ const browser = await chromium.launch({
 
 ## Skills
 
-安裝在 [`.claude/skills/`](../.claude/skills/)，**在 git 裡**。
-清單、來源 SHA 與稽核結論見 [`skill-audit.md`](./skill-audit.md)。
+安裝在 [`.claude/skills/`](../.claude/skills/)，**在 git 裡**。2026-10-28 全部重裝。
 
-兩處安裝時的修改，重裝或同步上游時要重做：
+| skill | 來源 | 版本 |
+|---|---|---|
+| Matt Pocock 整套（`.claude-plugin/plugin.json` 列出的 27 個） | `mattpocock/skills` | `59db609eb1e18aaf59b63284d0e52255aff0c63c`（v1.3.1） |
+| `graphify` | `Graphify-Labs/graphify`：`graphify/skill.md` 與 `graphify/skills/claude/references/` | `0a8cd4e1e342235fe53e881fb5d591bf0460071f` |
+| `firebase-basics`、`firebase-auth-basics`、`firebase-firestore`、`firestore-rules-creation`、`firebase-security-rules-auditor`、`firebase-hosting-basics` | `firebase/agent-skills` | `629709b2d1193043d5508f6f1f3aa9993021da0f` |
+| `impeccable` 與 `.claude/agents/impeccable-*.md` | `pbakaus/impeccable`，從帳號 plugin 複製 | 4.8.0 |
+| `claude-md` | 自行撰寫 | — |
+| `kickoff` | 從 `baobao-wellness-clinic-scheduler` 改寫成通用版 | — |
 
-- **`ui-ux-pro-max`** 原本是 plugin 形式，SKILL.md 裡有 11 處 `${CLAUDE_PLUGIN_ROOT}`，
-  以一般 skill 安裝時該變數為空。已全部改寫成
-  `$(git rev-parse --show-toplevel)/.claude/skills/ui-ux-pro-max/`。
-  用 `git rev-parse` 而非相對路徑，因為 agent 的工作目錄不固定；
-  也不用 `~` —— 路徑在雙引號內 `~` 不展開。
-  另外 `scripts/core.py:14` 以 `Path(__file__).parent.parent / "data"` 解析資料路徑，
-  所以 `data/` 必須與 `scripts/` 同層，搬動時要保持這個結構。
-- **`matt-code-review`** 原名 `code-review`，目錄名與 frontmatter 的 `name:` 都已改。
-  避開與內建 `/code-review` 撞名 —— 文件明載 project 層的同名 skill 會**取代**內建版本，
-  改名後兩者並存。
+上游授權檔放在 [`licenses/`](./licenses/)（`impeccable` 標示 Apache 2.0，plugin 沒附授權檔）。
+
+同步上游時：`git clone` 上游，對照上表的版本 `git diff`，只審查差異，然後更新上表。
+**重裝時要重做以下修改**，上游不會有：
+
+- **`matt-code-review`** 原名 `code-review`，目錄名與 frontmatter 的 `name:` 都改了，
+  避開與內建 `/code-review` 撞名（project 層的同名 skill 會**取代**內建版本）。
+  `ask-matt`、`implement`、`implement-spec`、`tdd` 裡呼叫它的地方也一併改成 `matt-code-review`。
+- **`impeccable` 的 agents** 原本用 `${CLAUDE_PLUGIN_ROOT}`，以一般 skill 安裝時該變數為空，
+  已改寫成 `$(git rev-parse --show-toplevel)/.claude/skills/impeccable`。
+  用 `git rev-parse` 而非相對路徑，因為 agent 的工作目錄不固定。plugin 版的 hooks 沒有複製。
+- **`graphify`** 第一次用時會自己安裝 Python 套件 `graphifyy`。產出的 `graphify-out/` 不進版控。
+
+**帳號的 plugin 會同步進雲端 session**，repo 的 `.claude/settings.json` 關不掉它們
+（`syncClaudeAiPlugins: false` 放在 repo 檔案裡會被忽略）。要在 claude.ai 的設定裡關。
