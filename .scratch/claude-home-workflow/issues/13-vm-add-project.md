@@ -11,16 +11,16 @@ Blocked by: 06, 07, 08, 12
 
 ## 為什麼
 
-VM `baobao-devbox` 上只有上一個專案。手機能選專案，靠的是每個資料夾各有 Remote Control
+VM `<VM 名字>` 上只有上一個專案。手機能選專案，靠的是每個資料夾各有 Remote Control
 （上一個專案記憶：同一個資料夾一台機器只能有一個 Remote Control；帳號 1 用綁定掛載 `~/acct1/<專案>`）。
 VM 上的設定（`idle-shutdown`、`devbox-rc@` 服務、`devbox-presync`）只存在 VM 上，VM 壞了就沒了。
 
 ## 做法
 
-- 先讀上一個專案記憶 `cloud-vm-devbox-2026-10-21.md`（唯讀），照它的方式連：`ssh baobao@baobao-devbox`（Tailscale）；開機用 12 的通用版 `start`
+- 先讀上一個專案記憶 `cloud-vm-devbox-2026-10-21.md`（唯讀），照它的方式連：`ssh <VM 的 ssh host>`（Tailscale）；開機用 12 的通用版 `start`
 - **先把 VM 現有的設定讀出來存進客廳 `vm/`**（腳本、systemd unit、fstab 那一行、說明），不改 VM 上的任何現有檔案
 - 在 VM 上 clone 這個 repo 與 `baobuverse-kingdom-local`、客廳；加這個專案兩個帳號的 Remote Control（新的 systemd 服務，**不動** `devbox-rc@1`／`@2`），
-  `--name` 用跟 `baobao-devbox` 不同、看得出是哪個專案的名字
+  `--name` 用跟 `<VM 名字>` 不同、看得出是哪個專案的名字
 - 帳號 1 的綁定掛載：上一個專案用 `/etc/fstab`；這次**不改 fstab**，用新的 systemd `.mount` unit
 - 新資料夾的 workspace trust **要使用者本人答**（上一個專案記憶：不要替她預先寫 `hasTrustDialogAccepted`）—— 列成使用者的步驟
 - VM 的全域 hook 也會在新資料夾跑上一個專案的 autosync，跟家裡電腦一樣（11 決定不分流），知道就好
