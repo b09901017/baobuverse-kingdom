@@ -15,7 +15,7 @@
 | 4 交接開場分專案、專案同步、guard、桌面 app 載入 mods | 10 → 08 → 09 → 14 | high | ✅ 10/28（中途額度用完，接手的 session 做完 09、14）：10 `254518e`（客廳 `2c6ec10`）、08 `ea91111`（客廳 `d0beb35`）、09 `dcd4ae9`（客廳 `0b44bbd`＋`c1cf8f8`）、14（`~/.claude/settings.json`＋客廳 `3731361`） |
 | 5 VM 多專案 | 12 → 13 | high | ✅ 10/28：12 `a4be610`（客廳 `be89500`）、13（客廳 `d060d20`、`2332772`、`8c968b1`）；VM 已關機 |
 | 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | ✅ 10/28：結果在下面「段 6 審查結果」（照規矩沒修）；測試全過 |
-| 7 收尾 | （第 5 題說修的話）修審查找到的、手動檢查清單、PR、合併、更新 `docs/env-notes.md` | medium；第 5 題要修就 **high** | 先等「要使用者決定的」第 4、5 題（開場在下面） |
+| 7 收尾 | （第 5 題說修的話）修審查找到的、手動檢查清單、PR、合併、更新 `docs/env-notes.md` | medium；第 5 題要修就 **high** | 🟡 10/28：1～4 做完、推了；**PR 還沒開、還沒合併**（額度用完停下，見「段 7 狀態」） |
 
 11 不做（見 issue 裡的理由）。
 
@@ -306,8 +306,43 @@ spec.md、CLAUDE.md（「合併」）、docs/agents/lessons.md、docs/env-notes.
 
 **總結**：Standards 硬違規 6（含 ①）、異味 5 類；最重的是 ①（公開 repo 帶到私人值）。Spec 13 條（含 ①～⑦）；最重的是 ②（出門的 VM 那一半失敗會被吞掉，印「✅」）。
 
+## 段 7 狀態（2026-10-28，額度用完停在開 PR 之前）
+
+做完、推了（這個 repo 推到 `origin claude/claude-home-workflow`；客廳推到它的 main）：
+
+| 項 | commit | 驗證 |
+|---|---|---|
+| 第 4 題：issue 13 的 VM ssh host、VM 名字換成佔位字 | `e98a5f0` | 整個 repo 與這個分支的 commit 訊息 grep 客廳 `devbox.json` 的 host／gcpProject／instance／zone：0 |
+| ② 出門的 VM 那一半失敗就停（`set -eo pipefail`、一行一個指令） | 客廳 `6538a03` | 假的 ssh 把指令交給這台的 bash、在暫存資料夾的「VM」上真的跑：fetch 失敗、`.local` 拉不下來、`--restore` 失敗各一條（改之前紅、改之後綠） |
+| ③ 回家時 `vm-state.json` 比 VM 最後一次開機（Google 的 `lastStartTimestamp`）舊就停；presync 多寫到秒的 `at` | 客廳 `8f544ef` | 3 條新測試（拿改之前的 devbox.mjs 跑是紅的） |
+| ④ guard：上一個專案的 staging 比對恢復成沒有邊界 | 客廳 `6c96a41` | `tests/legacy-parity.test.ts` 拿 `e8f9058` 那一版的 classify（`tests/fixtures/`，一字不改的複本）逐條比，改之前紅在 preview channel 網址 |
+| ⑤ limit-guard：上一個專案的 worktree 的開場照舊放第一層 | 客廳 `d73c35f` | `tests/worktree-handoff.test.ts` 6 條 |
+| `env-notes.md` 的 `/reload-skills`（官方 Skills 頁 10/28 查過） | `2906a6b` | — |
+| 客廳 README：儀表板「用 X 開新對話」只管 VS Code；autosync 測試的跑法寫檔名 | 客廳 `67e1d6c` | — |
+| `docs/agents/lessons.md` 第一條（「回家」把家裡切到 VM 的舊分支） | `782bfd4` | — |
+
+測試（一支一支跑）：dash 16、e2e-progress 5、guard **22**、limit-guard **30**、notify 3 全過；tsc dash、e2e-progress、guard、limit-guard 0 錯；
+`claude plugin validate` guard、limit-guard 過（警告只有原本就有的「沒有 author」）；客廳 autosync 12、devbox **18** 全過；`e8f9058` 既有的測試檔一個字沒改；客廳 `mods/` 跟 `~/.claude/mods` 逐檔相同。
+分支對 `origin/main` 沒有衝突（`git merge-tree`）。
+
+**還沒做（下一個接手的照這個做）**：
+1. 開 PR（Skill 叫 `pr`，繁體中文）。PR 說明放「手動檢查清單」：下面「要使用者做的」1～4，加上在終端機跑 `/doctor prompt-audit CLAUDE.md`、`.claude/skills/kickoff`、`.claude/skills/claude-md`（段 2 中途發現）。
+2. 照 `CLAUDE.md`「合併」：沒有 CI，這一輪驗證全過、沒有衝突 → 用 merge commit 合進 `main`。
+3. 這一節的狀態改成 ✅、寫上 PR 連結。
+
+**照第 5 題做，但做法跟建議不同的一處（⑤）**：建議是「看有沒有 `.claude/project.json`」，但既有的 `handoff-dir.test.ts` 裡其他專案的假資料夾沒有 `project.json`，照那個認法有 4 條既有測試不過（既有測試一條都不能改）。
+改成看 worktree 的 `.git` 檔（`gitdir: <主資料夾>/.git/worktrees/<名字>`）：主資料夾是上一個專案就放第一層。上一個專案的行為回到這一輪之前；其他資料夾不變，所以建議裡寫的代價（沒有 `project.json` 的資料夾也放第一層）也沒有了。
+
+**還留著沒做的（這一輪不做）**：⑥ `segmentRule` 多的那段、⑦ 少了 `legacy` 就跳過、Standards 的硬違規與異味（見「段 6 審查結果」，多半第 3 階段一起整理）；第 3 階段（上一個專案改用客廳的工具）；「要使用者決定的」第 1、2 題；「要使用者做的」1～4。
+
 ## 中途發現
 
+- **段 7（第 3 題，主控做的）**：上一個專案自己的 `devbox.mjs home` 會把家裡的程式碼切到 VM 上的分支。VM 從 10/21 之後沒照「出門」接手過，停在舊的 `claude/boot-card-staging-only`，
+  所以家裡被從 `claude/availability-sheet-chart-no` 切過去（工作目錄乾淨、沒東西不見）；主控已切回去、跟 GitHub 一致。寫進了 `docs/agents/lessons.md` 第一條。
+- **段 7（③）**：`vm-state.json` 整個不存在時（那個專案從沒在 VM 上關過機、或第一次關機就沒推成）照舊當成「沒在 VM 上」，不擋。
+- **段 7（②）**：「VM 那一半真的跑」的 4 條測試要 bash（Windows 用 Git for Windows 的 `bin/bash.exe`），找不到就跳過；`npm ci` 失敗那一行沒有測試（同一個 `set -e` 管）。
+- **段 7（⑤）**：在 Windows 上跑 mod 的測試時，`/home/…` 這種路徑會先被解析成 `C:/home/…` 才到 `fs.read` 的 mock；新測試的 mock 把磁碟代號拿掉。知道就好。
+- **段 7**：客廳的自動同步會連同 `main` 上還沒推的 commit 一起推（② 是它在 22:34 推的）。照設計，不影響什麼。
 - **段 5（13）**：**VM 上上一個專案的 `.local` 早就分岔了**：從 10/21 19:10 起每次推送都被拒（VM 上它的 `tools/autosync.log` 全是「沒推成」），fetch 後 ahead 5、behind 28；VM 獨有的只差 `tools/devbox/vm-state.txt`（記憶、mods 跟分岔點一樣）。
   影響：**上一個專案的「出門」現在會停在 VM 那一步**（它在 VM 上對 `.local` 跑 `git pull --ff-only`，`set -e` 會停）；回家（VM 開著時）也會停在「VM 的 .local 沒推成」。客廳的通用版會叫它，所以也跟著停（設計就是這樣：不跳過它）。
   GitHub 沒事（推送被拒，不會蓋掉）；這一段關機時它的 presync 又在 VM 上多 commit 一次。見「要使用者決定的」第 3 題。
@@ -384,7 +419,14 @@ spec.md、CLAUDE.md（「合併」）、docs/agents/lessons.md、docs/env-notes.
    - ⑦ 少了 `legacy` 就跳過：現在的設定有這一格。
    - Standards 的硬違規與異味：多半是第 3 階段（上一個專案改用客廳的工具）時一起整理。
 
+（上面第 3～5 題已經決定、做完，見下面與「段 7 狀態」；還沒回答的是第 1、2 題。）
+
 ## 使用者已經決定的（2026-10-28）
+
+- **第 3、4、5 題：「都照建議」／第 3 題「照建議對齊」**（使用者在主控 session 說的）。
+  - 第 3 題：**主控做完**：`.local` 與 mods 先確認家裡跟 GitHub 一致 → 開 VM → VM 那份 `reset --hard origin/main`（VM 獨有的 6 個 commit 只動 `vm-state.txt`）→ 在 VM 跑上一個專案的 `sync-claude.mjs --restore` → 用上一個專案自己的 `devbox.mjs home` 關機、顯示「接好了」。兩邊都沒分岔、VM 關著、家裡 mods 是新版。副作用見「中途發現」段 7。
+  - 第 4 題：佔位字、照常 PR、merge commit、不改寫歷史（段 7 `e98a5f0`）。
+  - 第 5 題：②～⑤ 都修、每項一個 commit（段 7，⑤ 的做法見「段 7 狀態」）。
 
 - **VM 這一段可以開，2026-10-28**（使用者在主控 session 說「開始，VM 可以開」）。段 5 開過、用完已關機。
 
