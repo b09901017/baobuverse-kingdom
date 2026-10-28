@@ -12,7 +12,7 @@
 | 1 盤點與檢查基準 | 01、02 | high | 待開始 |
 | 2 kickoff、CLAUDE.md、skill 重疊 | 03、04、05 | xhigh | 等 1 |
 | 3 客廳 repo 與 skill 正本 | 06、07 | high | 等 2 |
-| 4 交接開場分專案、專案同步、guard | 10 → 08 → 09 | high | 等 3 |
+| 4 交接開場分專案、專案同步、guard、桌面 app 載入 mods | 10 → 08 → 09 → 14 | high | 等 3 |
 | 5 VM 多專案 | 12 → 13 | high | 等 4 |
 | 6 審查 | `/matt-code-review`：這個 repo 的分支＋客廳 repo 從第一個 commit（未改的 mods）以來 | xhigh | 等 5 |
 | 7 收尾 | 手動檢查清單、PR、合併、更新 `docs/env-notes.md` | medium | 等 6 |
@@ -52,5 +52,9 @@
 
 ## 要使用者決定的
 
-- **Playwright MCP 要怎麼處理**：A 改成 node 腳本（本機與雲端都能啟動）／B 只給雲端用、本機關掉（主控建議）／C 整個拿掉。這一輪不做。
-- **桌面 app 要不要也載入 mods（儀表板等）**：上一個專案是靠 VS Code 設定 `CLAUDE_CODE_PLUGIN_DIRS` 載入的，桌面 app 看起來沒載入。
+（目前沒有）
+
+## 使用者已經決定的（2026-10-28）
+
+- **Playwright MCP 選 B**：只給雲端用，本機關掉。主控已做：`.claude/settings.local.json`（不進 git）＋ `docs/env-notes.md` 補一節。
+- **桌面 app 也要載入 mods**：加成 issue 14，排在段 4 的 09、10 之後。

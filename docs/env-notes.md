@@ -102,6 +102,19 @@ const browser = await chromium.launch({
 `.claude/settings.json`，在未信任的目錄下也會被忽略。每個新的雲端 session 都要跑一次
 `claude` 並接受 workspace trust 對話框。這是刻意的安全設計，不是 bug。
 
+### 本機（Windows）關掉，只給雲端用
+
+**使用者 2026-10-28 的決定**：Playwright MCP 只給雲端 session 用。
+
+- 在 Windows 上它本來就起不來：Claude Code 照腳本第一行的 shebang 去找 `bash`，但 Git Bash 不在 Windows 的 PATH 上
+  （MCP log：「'bash' 不是內部或外部命令」）。腳本本身沒壞，用 Git Bash 直接跑是正常的。
+- 桌面 app 有內建瀏覽器可以開本機的開發伺服器、點畫面、截圖，本機用不到這個 MCP。
+- 所以本機在 `.claude/settings.local.json`（不進 git）寫 `"disabledMcpjsonServers": ["playwright"]`，
+  每次開 session 不會再跳連線失敗。換一台 Windows 電腦要再寫一次。
+- 雲端與 Linux（例如 VM）照 `.mcp.json` 啟動，不受影響。
+
+E2E 測試是另一回事：等開始寫 app 時，像上一個專案一樣裝 `@playwright/test` 跑測試，不靠 MCP。
+
 ---
 
 ## Skills
