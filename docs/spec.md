@@ -28,7 +28,7 @@ monorepo 分四個 package：
 - **`ui`** — 設計系統：導覽、字級階梯、間距節奏、動畫曲線、觸覺回饋、共用元件。
 - **`treasury`** / **`nest`** — 各自的畫面與各自世界的主色、關鍵視覺、標誌性互動。
 
-技術棧：React + Vite + TypeScript + Tailwind + motion，PWA（不打包 APK），
+技術棧：React + Vite + TypeScript + Tailwind + motion，先做 PWA，需要時再用 Capacitor 包 APK，
 Firebase Auth / Firestore / Cloud Functions（Blaze）/ Hosting，pnpm workspaces。
 開發規劃與階段見 [`plan.md`](./plan.md)。
 
@@ -420,7 +420,6 @@ AI 對話框之後接上。接上時需要處理 API 金鑰與費用。
 | 全自動簡訊記帳 | 重複、預授權、取消會讓餘額飄掉，然後失去信任 |
 | 草稿自動過期 | 使用者明確要求保留 |
 | 存網銀帳密代登入抓資料 | 帳密外洩損失真錢、一直壞、可能違反銀行條款（plan.md） |
-| NFC 讀悠遊卡 | PWA 做不到，卡片資料受加密保護；以轉帳加值 + 對帳替代（plan.md） |
 
 ---
 
