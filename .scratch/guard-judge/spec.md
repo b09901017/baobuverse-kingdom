@@ -76,6 +76,7 @@
 | 14 | `rm "$TEMP/x/server.pem"`（暫存區的金鑰檔名） | 不問（暫存區） | 問（底線） |
 | 14 審查 5 | `rm -rf "$TEMP/.."`、`rm -rf /tmp/../..`、`Remove-Item -Recurse "$env:TEMP\.."`（字像暫存區、實際在外面） | 不問（13 就有的洞） | 交給 Claude 判斷 |
 | 14 審查 | `node -e "require('fs').rmSync('out', …)"`、import 進來的 `rmSync(…)` | 不問（不算刪東西） | 交給 Claude 判斷（字上有 `.git`、`.local`…就一定問） |
+| 合併後 | `git -C repo reset --hard`、`git -c k=v restore a.js`、`git --no-pager -C x branch -D old`、`git -C x push --force …` | 不問（不算刪東西） | 交給 Claude 判斷；`git -C ~/.claude reset --hard`、`git -C .local/x checkout -- a` 一定問 |
 | 15 a | `powershell -enc ZgBp…`、`pwsh -ec …`、`powershell.exe -NoProfile -EncodedCommand …` | 不問 | 問「跑看不到內容的指令」（新的風險種類 `opaque`） |
 | 15 b | `gcloud config set project baobu-app && gcloud firestore import gs://b/x`、`CLOUDSDK_CORE_PROJECT=baobu-app gcloud firestore import …` | 不問 | 照 `neverWrite` 擋（寫絕對不能寫的地方） |
 | 15 b | `gcloud firestore import gs://b/x`（同一串沒有 `--project`、也沒有 config set） | 不問 | 問「看不出打哪一個專案」 |

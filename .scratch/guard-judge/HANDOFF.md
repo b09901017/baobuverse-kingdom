@@ -52,6 +52,7 @@ kickoff 的「唯讀 subagent 過目」這一輪沒做：規劃的帳號額度�
 | 2 | 14 的 fork 看得到什麼 | `$.model.fork` 接的是主線**上一次送出的那一份**：看得到之前的工具結果，看不到 Claude 這一則正在寫的字（下這個指令之前的想法）。所以另外送 `description`。subagent 跑的刪除，fork 看的也是主線的對話（不是 subagent 的），多半會判斷成要問（安全的那一邊） | 不用修；記著。真的常常多問再看要不要把 subagent 的說明也送進去 |
 | 3 | 14 新對話第一輪 | 第一輪沒得 fork，改用 `$.model.complete`（沒有對話內容），模型只看得到指令與路徑，多半會說要問 | 不用修（照 issue）；新對話的第一個刪除比較常跳框是預期的 |
 | 4 | 審查第 5 條、`require('fs').rmSync`（13 之前就有的兩個洞） | `rm -rf "$TEMP/.."` 被當暫存區放行；`require('fs').rmSync(…)` 不算刪東西 | **已順手修**（客廳 `73ca1c4`，在正在改的 `byPath`／`deletes()`，都是多問），寫在 issue 14「做完時留下的」 |
+| 6 | 合併後修 git -C 時看到的：`classify.ts` 推 main 那條、`barePush`、register `branchRisks` | `git -C x push origin main`、`git -C x push`（現在在 main）：推 main ＝ 部署正式站（`mainDeploysProd`，沒有 project.json 的資料夾也是）認不出，不問 | 下一輪：跟 `4dd33a5` 一樣允許 git 後面接全域旗標；沒寫分支的要用 `-C` 的資料夾問 `git branch --show-current`（多問） |
 | 5 | 14 等模型時的 hook 預算 | 型別說明 fork 跑的時候 hook 的 10 秒預算是停的；測試量不到（測試不計預算），還沒在真的對話裡跑過「fork 超過 10 秒」 | PR 手動檢查清單一條：在長一點的對話裡刪沒進 git 的檔，看會不會出「檢查這一行指令時出錯了」。真的會就改成不等模型、照 13 的框問 |
 
 ## 要使用者決定的
@@ -62,7 +63,9 @@ kickoff 的「唯讀 subagent 過目」這一輪沒做：規劃的帳號額度�
 
 ## 下一輪要做的
 
-- [ ] 中途發現 1：`git -C <資料夾> reset --hard`／`clean`／`branch -D`／`checkout --` 不算刪東西（`git` 後面接全域旗標就認不出；13 之前就有）。多問、小。
+- [x] 中途發現 1：`git -C <資料夾> reset --hard`／`clean`／`branch -D`／`checkout --` 不算刪東西（`git` 後面接全域旗標就認不出；13 之前就有）。多問、小。
+  ✅ 合併後使用者說「好，修」（2026-10-30），客廳 `4dd33a5`：`-C`、`-c`、`--git-dir=`、`--work-tree=`、`--no-pager` 之類的全域旗標後面接的那五種都算刪東西、交給 Claude 判斷；`-C` 指到 `~/.claude`、`.local` 這種底線的地方一定問；git 狀態從 `-C` 那個資料夾讀。guard 111 → 113。
+- [ ] 中途發現 6：同樣的形狀在「寫正式站」那邊：`git -C x push origin main`（推 main ＝ 部署正式站，沒有 project.json 的資料夾照最嚴的規則）認不出；`barePush`、`branchRisks` 也不看 `-C`。多問、小，跟上一條一樣換成允許全域旗標的 regex；`branchRisks` 要用 `-C` 的資料夾問現在的分支。
 - [ ] 中途發現 5：新對話裡實際刪一個沒進 git 的檔（對話長一點，fork 要久一點），確認不會出「檢查這一行指令時出錯了」（hook 10 秒預算在等模型時有沒有停）。PR 的手動檢查清單有這一條。
 - [ ] 15 d 留下的：shell 腳本裡的刪檔案不看（跟 node／python 腳本一樣）。要看的話，腳本內容的刪除要能交給 14 的模型（現在只有指令本身的刪除有位置可以對）。
 - [ ] 工具收尾段 1 第 2 條：`gcloud firestore export` 要不要問（要使用者決定，這一輪照 issue 15 不做）。
