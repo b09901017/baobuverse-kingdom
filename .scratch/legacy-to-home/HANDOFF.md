@@ -15,9 +15,24 @@
 | 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ✅（客廳 `8139692`；上一個專案 PR #186 CI 全綠、合進 `develop` `3a39a17`；家裡平放的 8 份刪了，VM 上的留著；guard 32、limit-guard 52；上一個專案的工作目錄、分支、worktree 前後相同） |
 | 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ✅ 10/29：結果在「段 7 審查結果」（12 條＋9 條判斷題；照規矩沒修）；測試全過、mods 兩份相同、上一個專案 develop 的 CI 綠。**要使用者決定的段 7 三題，開段 8 之前先問第 1、2 題** |
 | 8 收尾（一）guard 與文件 | 段 7 第 6、7、10 條（guard；第 7 條含段 1 中途發現 2「`project.json` 壞掉」，照段 7 第 1 題的答案）、第 3、4、9、12 條（換行、文件、註解）、第 2 條（照段 7 第 2 題的答案改上一個專案的記憶與 `.local/README.md`） | high | ✅ 前半第 6、7、10 條（客廳 `9529bce`、`32923b0`、`f264938`；guard 33→38 全過、tsc 0 錯、validate 過、兩份 mods 相同；額度 86% 停下）；續：第 3 條（客廳 `4324caf`）、第 4、9、12 條（客廳 `3d13dec`）、第 2 條（上一個專案的記憶與 `.local/README.md`，它的 `.local` `2ca53a6` 已推）。guard 38、limit-guard 52 全過、limit-guard tsc 0 錯、validate 過、兩份 mods 逐檔相同 |
-| 9 收尾（二）同步、儀表板、PR | 段 5 中途發現 1（客廳 `.local` 推之前 `pull --rebase`，紅燈先）、段 7 第 8 條（`--check-mods` 改成「這台改的推上去了」，紅燈先；跟段 5 中途發現 1 同在 `autosync.mjs`／`devbox.mjs`）、第 11 條要不要順手（`vm/README.md` 一句）、段 2 中途發現 1（dash 總覽「新對話會用 X」改成比 email，要截圖）、手動檢查清單、PR、合併 | xhigh（兩台同時寫 git 的測試、devbox 流程） | ⬜ |
+| 9 收尾（二）同步、儀表板、PR | 段 5 中途發現 1（客廳 `.local` 推之前 `pull --rebase`，紅燈先）、段 7 第 8 條（`--check-mods` 改成「這台改的推上去了」，紅燈先；跟段 5 中途發現 1 同在 `autosync.mjs`／`devbox.mjs`）、第 11 條要不要順手（`vm/README.md` 一句）、段 2 中途發現 1（dash 總覽「新對話會用 X」改成比 email，要截圖）、手動檢查清單、PR、合併 | xhigh（兩台同時寫 git 的測試、devbox 流程） | ⏳ 四條做完：段 5 中途發現 1（客廳 `7345fbf`）、段 7 第 8 條（客廳 `360a313`；`mods.test.mjs:128` 主控照 A）、第 11 條（客廳 `1da2f16`）、段 2 中途發現 1（客廳 `0a3c7cd`）。這個 repo `81d14f5`、`e7b1901`、`6f269b5`、`a5a6319`。最後一支一支跑：guard 38、limit-guard 52、dash 38、e2e-progress 5、notify 6；客廳 autosync 19、mods 13、devbox 14、devbox-mods 22，全過。**等總覽截圖 → PR、合併** |
 
 段 7 建議把原本的段 8 拆成兩段（guard 與文件／同步與儀表板）：段 7 多找到 4 條要改程式的，跟原本 3 條加起來分在 guard、客廳 autosync／devbox、dash 三處，一段做完會很長。兩段改的檔不重疊。**主控開段 8 之前先跟使用者說這個拆法。**
+
+## 下一輪要做的（第 3 階段留下的）
+
+| 哪一條 | 要做的 | 備註 |
+|---|---|---|
+| 段 1 中途發現 1、段 8 中途發現 2、5 | guard 每一種指令（firebase CLI、Firestore REST、`neverWrite` 的 `git push`／`gh`／`gcloud`）都只看「一段指令的開頭」，跳過 heredoc 內文與引號裡的字 | 只是多問；修好之前寫這類測試字串先跟使用者說「會跳框」 |
+| 段 8 中途發現 4 | `project.json` 合法但 `neverWrite` 壞掉（不是陣列、某一項沒有 `firebaseProject`／`gitRepo`）也當成讀不懂 | 只會多問 |
+| 判斷題 J1 | autosync 加「推不上就 exit 1」的模式，devbox 只看 exit code，拿掉 devbox 自己的兩份「`.local` 推完了沒」 | 段 9 照 J1 沒加第三套 |
+| 判斷題 J2～J8 | `--no-home` 改名 `--no-mods`（J2）、autosync 開頭算一次 mode（J3）、limit-guard 與 dash 認帳號的寫法加一條測試釘住一致（J4）、`mainDir`／`worktreeOf` 兩處（J5）、`vm-state.json` 的 `'ok'`／`'none'`／`'bad'`（J6）、dash `devboxScript` 的命名與寫死的退路路徑（J7）、客廳測試小工具抽 `tools/test-helpers.mjs`（J8） | 異味，不擋 |
+| 段 4 中途發現 1 | 儀表板帶的 `--project` 是 worktree 時，`checkProjectArg` 改成看主資料夾（不再多印一行「還沒加進 VM 的清單」） | 不急 |
+| 段 6 中途發現 1 | dash「雲端」分頁的標題讀客廳 `vm/devbox.json` 的 `instance`，不寫死 | 畫面的字會變，要截圖 |
+| 段 9 中途發現 1 | 回家的家裡那一半 `pullLocal` 也 `pull --rebase --autostash`、衝突就 abort 停 | 很少碰到 |
+| spec 第 7 題 | 刪上一個專案 `.local/tools/` 的舊工具與 `.local/claude-mods/` | 記憶與 `.local/README.md` 已經寫「不要再叫」（段 8） |
+| spec 第 2 題、「不做」 | 上一個專案的 skill 換成客廳的版本（先看差異）；E2E 加速的 skill | |
+| 段 2 中途發現 2、段 8 中途發現 1、6 | 記進 `docs/agents/lessons.md`：測試裡 `$` 不能直接叫模組的函式；Bash heredoc 把 `\\` 變 `\`；`$(…)` 裡有 `$'…'` 報錯但前半已經跑了、awk 會把 CRLF 變 LF | 可以考慮 |
 
 ## 每一段共同的規矩
 
