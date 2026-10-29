@@ -335,7 +335,8 @@ CLAUDE.md；docs/agents/lessons.md。動工前 git -C C:/Users/DELL/claude-home 
 要特別注意：
 - 改 ~/.claude/mods 的規矩照 HANDOFF「每一段共同的規矩」。測試一支一支跑（電腦曾過熱斷電）：guard 38、limit-guard 52。客廳 tools/ 不改，客廳的 node 測試不用跑。
 - 這個環境的 Bash heredoc 會把 \\ 變成 \（段 8 中途發現 1）：要寫反斜線的檔用 Write／Edit，不要用 heredoc 餵 python。
-- guard 會把指令字串裡的 firebase CLI、firestore 網址當成指令（段 1 中途發現 1，下一輪修）：被跳框或被記成「碰了 Firebase」時照實說明，不要改寫法繞。
+- guard 會把指令字串裡的 firebase CLI、firestore 網址、neverWrite 的 git push／gh／gcloud 當成指令，heredoc 內文也算（段 1 中途發現 1、段 8 中途發現 2、5，下一輪修）：
+  被跳框或被記成「碰了 Firebase」時照實說明，不要改寫法繞。要在指令裡寫這類測試字串之前，先在對話裡跟使用者說「等一下會跳框，是測試字串」。
 - 公開 repo 不帶真名、帳號、email、金鑰、VM host／GCP 專案 id／zone／VM 的 instance 名。
 - 中途發現記進 HANDOFF，不岔出去修。subagent 一次最多兩個。主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON。
 
@@ -415,6 +416,7 @@ CLAUDE.md；docs/agents/lessons.md。動工前 git -C C:/Users/DELL/claude-home 
 | 2 | guard 的 Firestore REST 那一段（`curl …firestore.googleapis.com…` 掃整行） | 段 8 寫測試時，heredoc 裡的測試字串含 `curl https://firestore.googleapis.com/…`，guard 記成「看不出是哪一個環境讀（Firestore REST）」。其實什麼都沒讀。跟段 1 中途發現 1 同一類（指令文字裡的字被當成指令） | 下一輪修段 1 中途發現 1 時一起：REST 那一段也只看一段指令的開頭 |
 | 3 | 第 7 條的範圍 | 使用者答的是「碰 Firebase／`gcloud`（模擬器除外）與 `git push`」。段 8 另外把 `gh` 的寫入（`gh pr create`、`gh api -X …` 等，`GH_WRITE`）也算進「讀不懂要問」：`neverWrite` 的 git repo 本來就也擋 `gh` 寫入，讀不懂時這一半保護也會消失。只會多問，寫進 spec「行為會變的」 | 不用決定；記著。要拿掉只要刪 `classify.ts` 裡 `rules.broken` 那一段的 `GH_WRITE` 一行 |
 | 4 | 第 7 條，`project.json` 合法但欄位壞掉 | 例如 `"neverWrite": {}`（不是陣列）照舊當成「沒有 neverWrite」、不標成讀不懂，國王日記那道保護一樣消失。段 7 第 1 題只講整個檔讀不懂 | 下一輪：`neverWrite` 在但不是陣列（或某一項沒有 `firebaseProject`／`gitRepo`）也當成讀不懂。只會多問 |
+| 5 | guard 的 `neverWrite`（`git push`、`gh` 寫入、`gcloud firestore` 都掃整串指令文字，heredoc 內文也算） | 段 8 13:43 用 python heredoc 改兩個測試檔時，heredoc 裡的**測試字串**（推國王日記的 repo、`gh` 開 PR 到它、`gcloud` 匯入到國王日記的專案）被當成真的指令，跳出「Claude 要寫絕對不能寫的地方」的框。使用者嚇了一跳去問主控；主控核對過整條指令（只改兩個本地測試檔再跑測試）、跟使用者說明、建議允許。跟段 1 中途發現 1 同一類，但範圍更大：不只 firebase CLI | 下一輪跟段 1 中途發現 1 一起修：每一種指令都只看「一段指令的開頭」，跳過 heredoc 內文與引號裡的字。修好之前，要寫這類測試字串時**先在對話裡跟使用者說「等一下會跳框，是測試字串」**；改測試檔用 Write／Edit（不經過 guard 的 Bash 檢查）也可以避開 |
 
 ### 段 6
 
@@ -470,6 +472,8 @@ CLAUDE.md；docs/agents/lessons.md。動工前 git -C C:/Users/DELL/claude-home 
 
 ## 要使用者做的
 
+- **送 GitHub Support 清 force push 之前那個舊 commit**（段 7 第 1 條、第 3 題「要清」）：要填的內容在這個專案的 `.local/github-support-request.md`（私人）。對外送出，只能本人送。
+  GitHub 文件說 Support 不處理「不敏感」的資料，GCP 專案 id 可能被回不處理；被拒就算了。
 - ~~**段 3 做完到段 5 做完之間，不要按出門／回家**~~ → 段 5（10/29）VM 那一半換完了，這個區間結束。
   但**下次按「出門」之前先看段 5 中途發現 1**：沒修之前，「出門」會停在這個專案的 `.local`（VM 開著）；VM 關著時按「回家」也會停、叫 `--check-vm`（現在家裡已經是最新的，不用按）。
 - **下次開 VM 時順便**（不用特地開；開了再做，段 5 留下的）：
@@ -502,7 +506,8 @@ CLAUDE.md；docs/agents/lessons.md。動工前 git -C C:/Users/DELL/claude-home 
    這些都會被自動同步推進它的私人 repo（有版控，改錯救得回來）；`.local/tools/` 不動（第 7 題）。
    建議：**改**。不改的話，在上一個專案說「出門」「回家」「同步一下」，Claude 照記憶跑舊工具，會把 10/29 之前的舊 mods 蓋回來、再被推進客廳。
    另一個做法：不改，下一輪刪舊工具時一起改；這段時間在上一個專案出門／回家只用儀表板，不叫 Claude 做。
-3. **force push 之前那個 commit（含 GCP 專案 id、VM 的 instance 名）要不要請 GitHub Support 清掉？**（段 7 第 1 條）
+3. ~~**force push 之前那個 commit（含 GCP 專案 id、VM 的 instance 名）要不要請 GitHub Support 清掉？**（段 7 第 1 條）~~ → **使用者 2026-10-29「要清（建議）」**（主控 session）。
+   主控把要填的內容寫在這個專案的 `.local/github-support-request.md`（私人，不進公開 repo），由使用者本人送（見「要使用者做的」）。原本的題目：
    現在：分支上已經沒有，但 GitHub 上用 SHA 還拿得到，repo 的 Activity 頁（公開 repo 誰都看得到）列著那次 force push。要清只能**本人**送 GitHub Support 的表單（對外送出，Claude 不能代送）；
    Claude 可以先把要填的字寫好（repo、那個 commit 的 SHA、「force push 移除了敏感資料，請清掉快取的 view 與沒有分支指著的 commit」，不寫值本身）。
    建議：**請 Support 清**（10/29 選了改寫歷史，就是要它不在公開的地方；force push 只做到一半）。另一個做法：接受（GCP 專案 id 不是金鑰，沒有權限進不去）。
@@ -545,3 +550,4 @@ CLAUDE.md；docs/agents/lessons.md。動工前 git -C C:/Users/DELL/claude-home 
 - 段 6 的公開 commit 帶了 VM 的 instance 名（＝GCP 專案 id）：使用者 2026-10-29 選「改寫歷史（建議）」（主控 session），主控 amend 成 `eee6b6e`、`push --force-with-lease`。
 - 段 7 第 1 題（guard 兩處多問：`project.json` 壞掉＝最嚴預設＋碰 Firebase／`gcloud`／`git push` 一律要問；`firebase use <認不出的>` 要問、`firebase use default` 改回不問）：使用者 2026-10-29「照建議」（主控 session）。段 8 修。
 - 段 7 第 2 題（上一個專案的兩份記憶、`MEMORY.md` 那兩行、`.local/README.md` 三段加「舊工具不要再叫」）：使用者 2026-10-29「改（建議）」（主控 session）。段 8 改；`.local/tools/` 不動。
+- 段 7 第 3 題（force push 之前那個舊 commit 請 GitHub Support 清）：使用者 2026-10-29「要清（建議）」（主控 session）。內容在這個專案的 `.local/github-support-request.md`，使用者本人送；被拒（不算敏感資料）就算了。
