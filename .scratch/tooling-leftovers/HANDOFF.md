@@ -13,7 +13,7 @@
 | 4 儀表板 | 07 | high（要截圖） | ✅ 07（客廳 `3d925e7`；10/29 截圖過了）；dash 38 → 56、limit-guard 58 → 67、客廳 `tools/shared-fixtures.test.mjs` 1 |
 | 5 E2E | 10 | high（每次跑之前使用者點頭） | ✅ 10（客廳 `e977e8b`、`2a0c53a`）：skill `e2e-speed`；實驗 10 個檔 1 個 worker 6.3 分 → 2 個 worker 各一組 3.5 分、0 紅（中間一次斷網紅 8，重跑全過）→ 3 個 worker 各一組 3.0 分、0 紅、CPU 平均 40%／最高 77% |
 | 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ✅ 09（上一個專案 `.local` `dca9cd8`：刪 59 個檔、`pre-push` 留著；客廳 `24d8413`）、08（差異報告 `08-skill-diff-report.md`；使用者照建議換 6 支＋kickoff 的合併規定搬進它的 `CLAUDE.md`；PR b09901017/baobao-wellness-clinic-scheduler#187 CI 全綠、合進 `develop` `869503d`） |
-| 7 VM | 段 2 中途發現 1 → 12 | high（開 VM、花錢，主控開段前再提醒使用者） | ⬜ |
+| 7 VM | 段 2 中途發現 1 → 12 | high（開 VM、花錢，主控開段前再提醒使用者） | ✅ 段 2 中途發現 1（客廳 `62adaf0`；devbox-mods 30 → 31、devbox 17）、12（客廳 `1abf957`；VM 21:28 開 → 21:33 回家關機，status 關著） |
 | 8 審查 | `/matt-code-review`：這個 repo `main...claude/tooling-leftovers`＋客廳這一輪的 commit＋上一個專案這一輪的 PR 與 `.local` commit | xhigh | ⬜ |
 | 9 修審查、教訓、PR、合併 | 審查找到的、11、手動檢查清單、PR、合併 | high | ⬜ |
 
@@ -316,9 +316,46 @@
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
 ```
 
+## 段 8 的開場
+
+```
+這一輪在做「工具收尾」：第 3 階段留下的清單全部做完，加上 E2E 加速的 skill。分支 claude/tooling-leftovers（已經在這個 checkout 上）。
+這是第 8 段：只做審查（/matt-code-review），不修。11、修審查、PR、合併是段 9。段 1～7 做完了（issue 01～10、12、13 與段 2 中途發現 1 都 done；11 還沒做）。
+
+先讀：.scratch/tooling-leftovers/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」「中途發現」段 1～7、「使用者已經決定的」；spec.md（全部，特別是「不能違反」「允許改的既有測試」「行為會變的」）；每支 issue 的「做完時留下的」；CLAUDE.md；docs/agents/lessons.md。
+
+審查範圍（三個 repo，各自對 spec 與 issue）：
+- 這個 repo：main...claude/tooling-leftovers（merge-base 2ca61ce；這一輪只有 .scratch 與文件，程式在客廳）。
+- 客廳 C:/Users/DELL/claude-home：3945ae2..1abf957（main 上 16 個 commit，含自動同步的；這一輪的是 d3bc4a0、3950996、b5631ea、0ef32ab、baebee3、52da7a7、fbf35e9、3d925e7、e977e8b、2a0c53a、24d8413、62adaf0、1abf957）：mods/guard、mods/limit-guard、mods/dash、tools/、skills/e2e-speed、vm/。
+- 上一個專案：PR b09901017/baobao-wellness-clinic-scheduler#187（已合進 develop 869503d）與 .local dca9cd8（刪 59 個舊檔）。上一個專案的資料夾、分支、worktree 不動；.local/references/ 不讀。
+
+段 7 留下、審查要對的：
+- 62adaf0：出門的 VM 那一半改叫 autosync --strict --no-mods；devbox.test.mjs 的假 autosync 照主控同意改了 setup（spec「允許改的既有測試」最後一列），斷言沒改。VM 上真的走過一次出門／回家（issue 12「做完時留下的」）。
+- 1abf957：vm/existing/devbox-presync* 拿掉、vm/README.md 換成收掉的步驟。
+
+要特別注意：
+- 只審、不修：找到的寫進 HANDOFF「段 8 審查結果」（# | 哪裡 | 什麼情境會錯 | 嚴重度 | 建議），照「提出問題之前先確定是真的」：能重現就重現，沒有就說沒有。
+- 「少問」的改動（02、13）最重：每一條照舊要問的有沒有守住的測試。
+- 公開 repo 不帶私人值（VM host、GCP 專案 id、zone、instance 名、帳號、email）：審查也查這一輪這個 repo 的 commit 有沒有漏。
+- subagent 同時最多兩個；測試一支一支跑，不要 node --test tools/。不開 VM。
+
+做完要交：HANDOFF「段 8 審查結果」、分段表段 8、段 9 的開場（修審查找到的、11、手動檢查清單、PR、合併，high；照段 1 的開場的格式）；commit、推。
+額度快用完時：停在可以交接的地方，commit、推、記進 HANDOFF。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：xhigh。
+```
+
 ## 中途發現
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
+
+### 段 7
+
+進度：段 2 中途發現 1 ✅（客廳 `62adaf0`）、12 ✅（客廳 `1abf957`）。照主控的話只記、不加進這一輪。沒有會壞東西的。
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | VM 上看 `journalctl -u claude-home-presync -b -1` | VM 的使用者不在 `adm`／`systemd-journal`：不加 `sudo` 只看得到 node 印的行，看不到 systemd 的 Stopping／Stopped，算不出關機花幾秒（還會印一段 Hint） | 客廳 `vm/README.md`「要知道的」加一句「看 presync 花多久用 `sudo journalctl …`」。小，不急 |
+| 2 | 客廳 `vm/claude-home-presync.service:11` 註解「舊的 devbox-presync 停用」 | 12 已經收掉了，註解舊了。不會錯；改了 VM 上裝的那份就跟客廳不同（`vm/README.md` 要求 `cmp` 相同），要在 VM 上重裝、`daemon-reload` | 下次動這個 unit 時一起改註解、重裝 |
 
 ### 段 6
 
