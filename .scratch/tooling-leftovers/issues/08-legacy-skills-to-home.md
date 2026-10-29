@@ -47,4 +47,5 @@ Blocked by: ~~10~~（10 done，客廳 `skills/e2e-speed`；`test-speed` 現在�
 - 做法：從 GitHub 網址 clone（`--filter=blob:none`，在這個 session 的 scratchpad，不動它的工作資料夾）、從 `develop` 開 `claude/skills-from-home`；`project.json` 加 `skills`（改完 node 讀過，合法）；跑客廳 `sync-skills`：改 10 個檔、新增 `docs/licenses/` 2 個、刪 0（選了的 6 支沒有客廳沒有的檔）；`CLAUDE.md`「上線」那節 PR 基底後面加一段「合併」。
   14 個檔 +574 −239，一個 commit `b05e3a7`。
 - PR [b09901017/baobao-wellness-clinic-scheduler#187](https://github.com/b09901017/baobao-wellness-clinic-scheduler/pull/187)（→ `develop`）。commit 訊息與 PR 內文看過：沒有真名、帳號、email。
+  CI：`rules` 54 秒、`test` 42 秒、`e2e` 2 分 57 秒全過（`deploy` 在 PR 上跳過）；使用者「綠了就合」→ 合進 `develop` `869503d`（merge commit，跟 #186 一樣；那個 repo 不允許 GitHub 自動合併，是段在背景等 CI 跑完再合的）。合進去會重新部署 staging。
 - 上一個專案的工作資料夾前後相同：`claude/availability-sheet-chart-no`、`5b785ad8`、worktree list 10 行。

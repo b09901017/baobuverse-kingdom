@@ -12,7 +12,7 @@
 | 3b guard 刪東西 | 13（使用者 10/29 加的） | high（「少問」的改動，守住的測試多） | ✅ 13（客廳 `fbf35e9`，段 3b；量測與收尾段 3b 續）；guard 56 → 64 |
 | 4 儀表板 | 07 | high（要截圖） | ✅ 07（客廳 `3d925e7`；10/29 截圖過了）；dash 38 → 56、limit-guard 58 → 67、客廳 `tools/shared-fixtures.test.mjs` 1 |
 | 5 E2E | 10 | high（每次跑之前使用者點頭） | ✅ 10（客廳 `e977e8b`、`2a0c53a`）：skill `e2e-speed`；實驗 10 個檔 1 個 worker 6.3 分 → 2 個 worker 各一組 3.5 分、0 紅（中間一次斷網紅 8，重跑全過）→ 3 個 worker 各一組 3.0 分、0 紅、CPU 平均 40%／最高 77% |
-| 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ✅ 09（上一個專案 `.local` `dca9cd8`：刪 59 個檔、`pre-push` 留著；客廳 `24d8413`）、08（差異報告 `08-skill-diff-report.md`；使用者照建議換 6 支＋kickoff 的合併規定搬進它的 `CLAUDE.md`；PR b09901017/baobao-wellness-clinic-scheduler#187 → `develop`） |
+| 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ✅ 09（上一個專案 `.local` `dca9cd8`：刪 59 個檔、`pre-push` 留著；客廳 `24d8413`）、08（差異報告 `08-skill-diff-report.md`；使用者照建議換 6 支＋kickoff 的合併規定搬進它的 `CLAUDE.md`；PR b09901017/baobao-wellness-clinic-scheduler#187 CI 全綠、合進 `develop` `869503d`） |
 | 7 VM | 段 2 中途發現 1 → 12 | high（開 VM、花錢，主控開段前再提醒使用者） | ⬜ |
 | 8 審查 | `/matt-code-review`：這個 repo `main...claude/tooling-leftovers`＋客廳這一輪的 commit＋上一個專案這一輪的 PR 與 `.local` commit | xhigh | ⬜ |
 | 9 修審查、教訓、PR、合併 | 審查找到的、11、手動檢查清單、PR、合併 | high | ⬜ |
@@ -301,7 +301,7 @@
 
 09、08 留下、這一段要接著用的：
 - 上一個專案的 .local（dca9cd8）沒有 tools/autosync.mjs、sync-claude.mjs、tools/devbox/、claude-mods/ 了：VM 出門時 .local 拉下來，VM 上停用的 devbox-presync（ExecStop 是 /bin/true）指的舊工具就不在了，12 第 4 步把它收掉。tools/pre-push 還在。
-- 上一個專案 develop 多了 PR #187（skill 換成客廳版、CLAUDE.md 加合併規定），合進去會重新部署 staging。回家對上一個專案 checkout＋pull --ff-only 是既有流程。
+- 上一個專案 develop 多了 PR #187（skill 換成客廳版、CLAUDE.md 加合併規定；合進去是 869503d，會重新部署 staging）。回家對上一個專案 checkout＋pull --ff-only 是既有流程。
 - 上一個專案家裡的工作資料夾：claude/availability-sheet-chart-no、5b785ad8、worktree list 10 行、乾淨（段 6 前後相同）。出門前確認它也推了（git status -sb 沒有 ahead）。
 
 要特別注意：
