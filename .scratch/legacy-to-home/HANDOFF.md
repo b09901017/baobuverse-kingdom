@@ -7,7 +7,7 @@
 
 | 段 | issue | 建議 effort | 狀態 |
 |---|---|---|---|
-| 1 guard、規則文件 | 01、07 | high | ⬜ |
+| 1 guard、規則文件 | 01、07 | high | ✅ `701b8fa`、`927b43c`（客廳 `30a7191`、`0aa707a`） |
 | 2 limit-guard 與儀表板帳號頁（都以 email 為單位） | 02 → 03 | high | ⬜（03 改到畫面：停下來等截圖） |
 | 3 客廳的出門／回家、mods 改從客廳搬 | 04 | xhigh | ⬜（做完到段 5 做完之間，使用者不要按出門／回家） |
 | 4 換手 | 05 | high | ⬜（開段前主控問使用者：上一個專案有沒有開著的對話） |
@@ -82,9 +82,44 @@
 HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 2 的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪。
 ```
 
+## 段 2 的開場
+
+建議 effort：**high**。
+
+```
+這一輪是「第 3 階段」：上一個專案改用客廳的工具，拿掉所有寫死它的特例。分支 claude/legacy-to-home（已經在這個 checkout 上）。
+段 1 做完了：issue 01（guard 的特例變成 Rules 的欄位、沒有 project.json 用最嚴預設；這個 repo 701b8fa、客廳 30a7191）、07（規則文件；927b43c、客廳 0aa707a）。
+這是第 2 段：做 issue 02（limit-guard：剛開對話不亂喊快用完、桌面 app 認對帳號）→ 03（儀表板帳號頁：同一個 email 一張卡、另一個帳號能在 VS Code 一鍵切），照這個順序。不做其他的。
+
+先讀：.scratch/legacy-to-home/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」（第 6 條是 02 的）、「中途發現」「要使用者決定的」段 1；spec.md（含「允許改的既有測試」「行為會變的」）；
+issues/02、03 全文；issues/01、07 底下「做完時留下的」；CLAUDE.md；docs/agents/lessons.md；
+.scratch/dash-desktop/issues/01-dash-desktop.md 的「中途發現」② ③ 與「三、額度預報」；客廳 C:/Users/DELL/claude-home 的 README.md「mods」一節。動工前 git -C C:/Users/DELL/claude-home pull --ff-only。
+
+要特別注意：
+- 02 與 03 是同一件事「以 email 為單位認帳號」：先在 02 定好認帳號的做法（桌面 app 用 CLAUDE_CODE_USER_EMAIL，跟 dash 的 refreshAccounts 一致），03 照用，不要兩支各寫一套。
+- 02 的速度：已用的 % 還低（< 20%）時兩段都要取樣夠長，不夠就用整個視窗平均；門檻剛好 20% 有既有測試。判準寫明距離重置幾分鐘。
+- 03 改 ~/.claude/mods-data/accounts.json（使用者資料、有 email 與名字）：改之前先備份到 scratchpad，值不要印出來、不要抄進任何 repo。
+- 03 改到畫面：電腦操作不能控制 Claude 自己的視窗。改完停下來回報「要截圖看哪幾頁、怎麼點」，主控請使用者在新對話點、截圖；截圖沒過之前 03 不算 done。
+- 改 ~/.claude/mods 的規矩照 HANDOFF「每一段共同的規矩」（既有測試不改全過——允許改的只有 spec 列的、紅燈先、tsc、validate、複製進客廳、推、客廳 mods/ 跟 ~/.claude/mods 逐檔相同）。
+  客廳那邊不要求一支一個 commit，最後一個 commit 狀態完整就算數（kickoff 新規矩）。這個 repo 照舊一支一個 commit。
+- guard 會把 commit 訊息、heredoc 裡寫到的「firebase deploy」當成指令（中途發現 1）：被跳框問時照實說明，不要改寫法繞。
+- 改任何函式或畫面上的字之前 grep 所有用到它的地方。中途發現的事記進 HANDOFF，不岔出去修。subagent 一次最多兩個。
+- 主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON。
+- 上一個專案 C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler 的檔案只讀不改；它的 .local/references/ 不讀。公開 repo 不帶真名、帳號、email、金鑰。
+
+做完要交：每支一個 commit（這個 repo 推到 origin claude/legacy-to-home；客廳推到它的 main）、Status: done、issue 底下「做完時留下的」、
+HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 3 的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪（03 要截圖的頁面列清楚）。
+```
+
 ## 中途發現
 
-（各段寫）
+### 段 1
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | guard `classify.ts` 的 firebase CLI 那一段（`/\bfirebase\s+([\w:-]+)…/g` 掃整行指令） | 指令**字串裡**寫到 `firebase deploy` 也算：`git commit -m` 的訊息、`python - <<EOF` 裡的字串、PR 內文。段 1 有 4 次被記成「看不出是哪一個環境寫（firebase deploy）」（有寫入的那種照規則還會跳框問）。`node -e`／heredoc 那一段已經有「只算真的交給 node 跑的」判斷，firebase CLI 這段沒有 | firebase CLI 只看「一段指令的開頭」（`;`、`&&`、`\|`、換行之後的第一個字），跳過 heredoc 的內文與引號裡的字。屬於「多問」不是「少問」，不急；下一輪或段 8 一起修 |
+| 2 | guard `rulesFrom` | `project.json` 壞掉（不是合法 JSON）照舊當成「有設定、沒有特例」：比最嚴預設**少問**推 main、`npm run restore`（但不會把認不出的推定成 staging）。這是 09 定的，01 沒動 | 要「只會多問」就改成壞掉＝最嚴預設；要的話是一行，但會改 `project-config.test.ts:112` 的意思 |
+
 
 ## 要使用者做的
 
@@ -92,7 +127,13 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 2 的開
 
 ## 要使用者決定的
 
-（各段寫）
+### 段 1
+
+1. **spec「允許改的既有測試」漏了兩行，段 1 已經照建議改了**（段 1 跟主控說「先照建議做，回『不行』再退」，到段 1 結束主控都還沒回）：
+   `guard.test.ts` 的 `touched('firebase deploy --only hosting')`（`staging:write` → `unknown:write`）、`project-config.test.ts` 的「讀設定那條路跟 `classify()` 一樣」（改成跟 `e8f9058` 比）。
+   兩行都靠 `classify()` 預設參數裡寫死的上一個專案 id；01 要拿掉寫死的 id，預設參數變成最嚴預設之後，這兩行就是判準允許的第 2 類（讀不到 `.firebaserc` → 看不出環境 → 要問）。
+   另一個做法是預設參數留著寫死的 id（違反 01 判準 4）。**建議：照現在這樣，把這兩行補進 spec 的清單。** 不行的話退客廳 `30a7191` 的這兩行、預設參數改回帶 id。
+2. （不擋）中途發現 1、2 要不要這一輪修：建議 1 放下一輪（只是多問）、2 不改（09 的決定）。
 
 ## 使用者已經決定的（2026-10-29）
 
