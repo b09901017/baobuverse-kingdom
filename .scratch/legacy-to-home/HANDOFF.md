@@ -11,7 +11,7 @@
 | 2 limit-guard 與儀表板帳號頁（都以 email 為單位） | 02 → 03 | high | 02 ✅ `01e946d`（客廳 `8419bac`）；03 ✅ `7179dc9`（客廳 `06369c8`；截圖 10/29 過了） |
 | 3 客廳的出門／回家、mods 改從客廳搬 | 04 | xhigh | ✅ `985c485`（客廳 `d7f980c`；主控查過：四支測試一支一支跑全綠、照 A 的三個條件都在、客廳 `mods/` 跟 `~/.claude/mods` 相同）。**從現在到段 5 做完，使用者不要按出門／回家**（客廳的工具已經生效，VM 那一半還沒換） |
 | 4 換手 | 05 | high | ✅（客廳 `859bf74`、`8d49a61`（mods，自動同步）、`fe4af86`；開關對話重測過了；05 的截圖 10/29 過了；`~/.claude-account1` 的 `hooks` 主控 10/29 代改好了）。主控查過：limit-guard 52、dash 34、autosync 16、mods 兩份相同 |
-| 5 開 VM 走一次 | 08 | high | ⬜（緊接段 4；開 VM 花錢，使用者已同意一次） |
+| 5 開 VM 走一次 | 08 | high | ✅（10/29 12:03～12:22 開一次、照「回家」關機；VM 那一半換完：`devbox-presync` drop-in＋disable、全域 hook 換成客廳的、平放的開場複製進子資料夾、客廳 pull、unit 重裝；出門後 VM 跟家裡一樣、回家後家裡分支沒變；trust 使用者本人答了。客廳只有判準 5 的兩個自動同步 `807bc91`、`7e375d5`）。**關機時這個專案的 `vm-state.json` 沒推上去**（中途發現段 5 第 1 條） |
 | 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ⬜ |
 | 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ⬜ |
 | 8 收尾 | 修審查找到的、guard：`project.json` 壞掉＝最嚴預設（段 1 中途發現 2）、dash 總覽「新對話會用 X」改成比 email（段 2 中途發現 1，要截圖）、手動檢查清單、PR、合併 | medium（要修 mods 就 high） | ⬜ |
@@ -208,7 +208,44 @@ issues/04、05 底下「做完時留下的」（04 的對照表、05 的全域 h
 HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段 6 的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪。
 ```
 
+## 段 6 的開場
+
+建議 effort：**high**。開段前主控先問使用者「要使用者決定的」段 5 第 1 題（段 5 中途發現 1 什麼時候修；建議段 8）；答案寫進這個開場的「主控補充」再開。段 6 不開 VM。
+
+```
+這一輪是「第 3 階段」：上一個專案改用客廳的工具，拿掉所有寫死它的特例。分支 claude/legacy-to-home（已經在這個 checkout 上）。
+段 1～4 做完 issue 01、07、02、03、04、05；段 5 做完 issue 08（10/29 開 VM 一次：devbox-presync 停用（drop-in＋disable）、VM 的全域 hook 換成客廳的、
+VM 平放的開場複製進子資料夾、客廳 pull、unit 重裝；出門後 VM 跟家裡一樣、回家後家裡分支沒變；VM 已關機）。VM 那一半換完了，VM 上已經沒有東西會叫舊的 sync-claude。
+這是第 6 段：只做 issue 06（上一個專案加 .claude/project.json、刪家裡平放的開場、把剩下寫死它的地方收乾淨、legacy-parity 加一組）。不做其他的，不開 VM。
+
+先讀：.scratch/legacy-to-home/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」（第 4、11 條是 06 的）、「中途發現」段 5 與段 4、「要使用者做的」「要使用者決定的」；
+spec.md（「換手的順序」第 5 步、「使用者選的答案」第 1、2 題、「上一個專案一律不能壞」「允許改的既有測試」）；issues/06 全文（「動工前先讀」列的檔都要讀，含上一個專案的 CLAUDE.md、.firebaserc）；
+issues/01、04、05、08 底下「做完時留下的」；CLAUDE.md；docs/agents/lessons.md。動工前 git -C C:/Users/DELL/claude-home pull --ff-only。
+
+要特別注意：
+- 上一個專案 C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler 的工作目錄、目前分支（claude/availability-sheet-chart-no）、10 個 worktree 都不動：在 scratchpad 另外 clone（短路徑、git -c core.longpaths=true，錯誤導到檔案只算行數；它的 .local/references/ 不讀），
+  從它的基底分支開分支，只新增 .claude/project.json（值＝最嚴預設、不寫 skills）。照它自己的 CLAUDE.md 開 PR、合併；做完對一次它的分支與 worktree list 跟做之前一樣。
+- 刪平放的開場：只刪家裡 ~/.claude/mods-data/handoffs/ 第一層那 8 份（子資料夾有一樣的，刪前逐檔 cmp）。VM 上那 8 份留著（要開 VM；HANDOFF「要使用者做的」下次開 VM 時刪）。
+- 收乾淨的 grep 照 06 判準列的範圍；vm/existing/ 與測試的假資料可以留名字。客廳文件裡「第 3 階段換手」那一節是 VM 重建時要照做的，改寫成「已經做完」但步驟留著。
+- 段 5 中途發現 1（兩台同時寫 .local，VM 關機時推不上去）不在這一段修：照主控補充。
+- 改 ~/.claude/mods 或客廳的規矩照 HANDOFF「每一段共同的規矩」；允許改的既有測試只有 spec 列的；會「少問」的停下來問主控。改任何函式或文件裡的字之前 grep 所有用到它的地方。
+- 推私人 repo、改 ~/.claude/settings.json 被 auto mode 擋下就停，寫進 HANDOFF，不要繞。中途發現的事記進 HANDOFF，不岔出去修。subagent 一次最多兩個。
+- 公開 repo 不帶真名、帳號、email、金鑰、VM host／GCP id。主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON。
+
+做完要交：這個 repo 一個 commit（推到 origin claude/legacy-to-home；客廳推它的 main；上一個專案照它的規定 PR、合併）、Status: done、issue 06 底下「做完時留下的」、
+HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段 7（審查）的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪。
+```
+
 ## 中途發現
+
+### 段 5
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | 客廳 `autosync.mjs` 的 `commitAndPush`（推之前不 `pull`），VM 關機時的 presync | VM 開著的時候，家裡（主控 session）在 12:20 推了這個專案 `.local` 一個 commit；12:22 VM 關機，presync 在 VM 那份舊的 `.local` 上寫 `vm-state.json`、commit、push → **被拒（不是 fast-forward）**，GitHub 上這個專案的 `vm-state.json` 還是 10/28 那份（上一個專案的推上去了）。VM 上那份 `.local` 現在多一個沒推的 commit（或沒 commit 的 `vm-state.json`；要開 VM 看 `journalctl -u claude-home-presync -b -1` 才確定）。後果：① 下次「出門」，VM 那一半的 `git -C .local pull --ff-only` 會停在這個專案（「VM 上 baobuverse-kingdom 沒接好」，VM 開著）；② VM 關著時按「回家」，這個專案的 `vm-state.json` 比 VM 最後一次開機舊 → 停、叫 `--check-vm`。這次沒出事是因為用 VM 開著的「回家」關機。主控在家裡、VM 開著，兩台同時寫 `.local` 是常態（主控交接檔、開場） | `commitAndPush` 推之前 `pull --rebase`（`.local` 只有自動產生的檔），推失敗再 `pull --rebase` 重推一次；`out` 的 VM 那一半 `.local` 用 `pull --rebase`。要紅燈測試（兩台各一個 commit）。見「要使用者決定的」段 5 |
+| 2 | VM 開機就有 session 程序 | `devbox-rc` 開機後 Remote Control 馬上帶起 `--sdk-url` 的程序（12:03 就有兩個，在上一個專案的資料夾）；`vm/README.md` 說「VM 上任何對話開始之前」換 hook，但 `out` 開機後也馬上在 VM 上做事。這次舊的同步沒跑（log 沒有新行），換好之後也不會再有這個問題 | 不用修（換手只有這一次）。新 VM 重建時照 `vm/README.md`「VM 壞了」第 4 步先換 hook 再 enable Remote Control |
+| 3 | VM 上 `~/.claude/mods` | 判準 5 加的那一行註解（`e2e-progress/tests/parse.test.ts`）還在 VM 上（家裡改回來時 VM 關著）。VM 的基準點 `807bc91`、上游 `7e375d5` 之後改過 → VM 對話結束不會推回去；下次「出門」`--restore-mods` 接回客廳那一份 | 不用修；下次出門後 `--check-mods` 看一次 |
+| 4 | VM 的平放開場 | VM 第一層的 8 份還在（只複製、沒刪）。VM 上已經沒有東西會叫舊的 sync-claude（hook 換了、`devbox-presync` 停了），limit-guard 也跳過跟子資料夾同名的 | 06 刪家裡的；VM 的等下次開 VM 再刪（要開 VM，06 不開） |
 
 ### 段 4
 
@@ -248,8 +285,13 @@ HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段
 
 ## 要使用者做的
 
-- **段 3 做完到段 5 做完之間，不要按出門／回家**（客廳的工具存檔就生效；VM 那一半要在段 5 開 VM 時才換完）。主控在段 3 開始前跟使用者說。
-  段 3 已經做完（2026-10-29）：**現在就在這個區間裡**，哪個資料夾的「雲端」分頁都不要按（段 3 中途發現 2）。
+- ~~**段 3 做完到段 5 做完之間，不要按出門／回家**~~ → 段 5（10/29）VM 那一半換完了，這個區間結束。
+  但**下次按「出門」之前先看段 5 中途發現 1**：沒修之前，「出門」會停在這個專案的 `.local`（VM 開著）；VM 關著時按「回家」也會停、叫 `--check-vm`（現在家裡已經是最新的，不用按）。
+- **下次開 VM 時順便**（不用特地開；開了再做，段 5 留下的）：
+  1. `journalctl -u claude-home-presync -b -1`：10/29 那次關機 presync 實際跑了幾秒、兩個專案各寫了什麼（段 3 中途發現 3；這個專案應該是「沒推成」，段 5 中途發現 1）
+  2. 這個專案 VM 上的 `.local`：`git -C ~/baobuverse-kingdom/.local status`、`log @{u}..HEAD`；有那個沒推的 `vm-state.json` commit 就 `pull --rebase` 再推（或等段 5 中途發現 1 修好）
+  3. VM 上 `~/.claude/mods-data/handoffs/` 第一層 8 份刪掉（06 之後；子資料夾有一樣的）
+- ~~VM 上這個專案的 workspace trust ×2、手機確認~~：10/29 段 5 使用者本人做了。
 - ~~**03 的截圖**（段 2）~~：10/29 截好、過了（issue 03 底下「截圖結果」）。
 - ~~**05 的截圖**~~ → **10/29 過了**（主控看過：上一個專案資料夾的儀表板「雲端」分頁，狀態「關著」照常，按鈕下多出「在 baobao-wellness-clinic-scheduler 按的：VM 上的每一個專案都會一起處理（客廳的 devbox.mjs）」）。原本的步驟：
   （段 4，儀表板「雲端」分頁的字變了）：在**上一個專案的資料夾**開新對話（桌面 app 或 VS Code），打開儀表板 → 點「雲端」分頁，**不要按出門／回家**。
@@ -260,6 +302,12 @@ HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段
   主控查過 JSON 合法、其他三個 key 沒動；段 4 也對過一次：`hooks` 跟 `~/.claude-account2` 的一樣。11:20 那個 account1 的對話在補上之前，沒同步是預期的。
 
 ## 要使用者決定的
+
+### 段 5
+
+1. **段 5 中途發現 1（兩台同時寫 `.local`，VM 關機時推不上去）什麼時候修？** 建議：**段 8 修**（客廳 `autosync.mjs` 的 `commitAndPush` 推之前 `pull --rebase`、推失敗再試一次；`devbox.mjs out` 的 `.local` 改 `pull --rebase`；先寫紅燈測試）。
+   理由：不修的話下次「出門」很可能停在這個專案（VM 上那個沒推的 commit），而主控在家裡、VM 開著時兩台同時寫 `.local` 是常態，之後每次都可能再發生。這一輪的範圍是「上一個專案改用客廳的工具」，presync 換成客廳的才暴露出來，算這一輪的。
+   另一個做法：放下一輪，這一輪結束前不按「出門」；要按就先照「要使用者做的」第 2 項手動處理。
 
 ### 段 3
 
