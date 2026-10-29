@@ -12,7 +12,7 @@
 | 4 儀表板 | 07 | high（要截圖） | ⬜ |
 | 5 E2E | 10 | high（每次跑之前使用者點頭） | ⬜ |
 | 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ⬜ |
-| 7 VM | 12 | high（開 VM、花錢，主控開段前再提醒使用者） | ⬜ |
+| 7 VM | 段 2 中途發現 1 → 12 | high（開 VM、花錢，主控開段前再提醒使用者） | ⬜ |
 | 8 審查 | `/matt-code-review`：這個 repo `main...claude/tooling-leftovers`＋客廳這一輪的 commit＋上一個專案這一輪的 PR 與 `.local` commit | xhigh | ⬜ |
 | 9 修審查、教訓、PR、合併 | 審查找到的、11、手動檢查清單、PR、合併 | high | ⬜ |
 
@@ -209,7 +209,7 @@
 
 | # | 哪裡 | 什麼情境會錯 | 建議 |
 |---|---|---|---|
-| 1 | 客廳 `devbox.mjs:281`：「出門」VM 那一半 `git -C .local pull -q --rebase --autostash \|\| { abort; exit 3; }`，接著 `--restore` | **重現過**（git 2.55，暫存 repo）：沒 commit 的改動跟拉下來的改了同一個檔時，`--autostash` 套回衝突，**exit 0**、檔案裡留著衝突記號（`<<<<<<< Updated upstream`）、stash 留著。`\|\|` 那段不會跑，接著 `--restore` 把衝突記號的檔鏡像進 VM 的記憶，印「✅ 可以出門了」；VM 下一次對話結束的同步 `git add -A` 會把衝突記號 commit、推上去。要 VM 的 `.local` 有沒 commit 的改動（presync 寫完檔、commit 前被殺掉；既有測試「VM 上 .local 有沒 commit 的 vm-state.json」承認這種狀態），而且家裡也改了同一個檔推上去（`vm-state.json` 只有 VM 寫，會撞的是 `claude-memory/`、`claude-handoffs/` 裡的檔），很少見 | 出門的 ③ 在專案迴圈之前已經把 VM 的客廳 `pull --ff-only` 了，所以 VM 那一半可以跟回家的家裡那一半一樣改叫 `node ~/claude-home/tools/autosync.mjs --project "$PWD" --strict --no-home`，exit 不是 0 就停、不跑 `--restore`。12 會真的走一次出門，主控看要不要排在 12 之前（多一支小 issue，紅燈：VM `.local` 沒 commit 的檔＋家裡推了同一個檔） |
+| 1 | 客廳 `devbox.mjs:281`：「出門」VM 那一半 `git -C .local pull -q --rebase --autostash \|\| { abort; exit 3; }`，接著 `--restore` | **重現過**（git 2.55，暫存 repo）：沒 commit 的改動跟拉下來的改了同一個檔時，`--autostash` 套回衝突，**exit 0**、檔案裡留著衝突記號（`<<<<<<< Updated upstream`）、stash 留著。`\|\|` 那段不會跑，接著 `--restore` 把衝突記號的檔鏡像進 VM 的記憶，印「✅ 可以出門了」；VM 下一次對話結束的同步 `git add -A` 會把衝突記號 commit、推上去。要 VM 的 `.local` 有沒 commit 的改動（presync 寫完檔、commit 前被殺掉；既有測試「VM 上 .local 有沒 commit 的 vm-state.json」承認這種狀態），而且家裡也改了同一個檔推上去（`vm-state.json` 只有 VM 寫，會撞的是 `claude-memory/`、`claude-handoffs/` 裡的檔），很少見 | 出門的 ③ 在專案迴圈之前已經把 VM 的客廳 `pull --ff-only` 了，所以 VM 那一半可以跟回家的家裡那一半一樣改叫 `node ~/claude-home/tools/autosync.mjs --project "$PWD" --strict --no-home`，exit 不是 0 就停、不跑 `--restore`。12 會真的走一次出門，主控看要不要排在 12 之前（多一支小 issue，紅燈：VM `.local` 沒 commit 的檔＋家裡推了同一個檔）→ 使用者：段 7 開頭修 |
 | 2 | 客廳 `devbox.mjs` `pullLocal` 的 `--restore` 用 `sh()` 跑 | `--restore` 失敗時原因印在 stdout（「接回來的時候出錯了：…」），`sh()` 丟的錯只帶 stderr，最外層印成「出錯了：Command failed: <node 路徑> <autosync 路徑> --project … --restore」，看不到原因（Node 的 `execFileSync` 錯誤訊息不含 stdout）。少見（`mirror` 出錯才會），小 | 改用 `autosync('--project', p.home, '--restore')`＋`said(r)`（跟 pushLocal 一樣）。05 整理 devbox 時順手、或不修 |
 
 ### 段 1
@@ -239,3 +239,4 @@
 - 第 1 題 VM：「開一次（建議）」
 - 第 2 題 E2E：「照建議」（客廳通用 skill＋另一份 clone 的實驗分支試 2 個 worker 各一顆模擬器，不推、不開 PR）
 - 上一輪的：GitHub Support 不送；`.local/tools/` 與 `claude-mods/` 這一輪刪；上一個專案的 skill 看過差異再換
+- 段 2 中途發現第 1 條（出門 VM 那一半 `--autostash` 套回衝突 exit 0）：「段 7 開頭修（建議）」——開 VM 走出門之前，先把出門 VM 那一半改成跟回家一樣叫 `autosync --strict --no-home`，exit 不是 0 就停、不跑 `--restore`；紅燈先（VM `.local` 沒 commit 的檔＋家裡推了同一個檔）。（段 3 補：05 之後新名字是 `--no-mods`；出門的 ③ 先把 VM 的客廳 pull 了，VM 上已經是新版，用 `--no-mods` 就好）
