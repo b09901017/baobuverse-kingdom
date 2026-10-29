@@ -1,31 +1,5 @@
 {
   "skillOverrides": {
     "frontend-design": "off"
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/scripts/autosync.mjs"],
-            "timeout": 30
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/scripts/autosync.mjs"],
-            "timeout": 30
-          }
-        ]
-      }
-    ]
   }
 }

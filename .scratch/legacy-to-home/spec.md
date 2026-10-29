@@ -92,6 +92,8 @@ hook 換手、「mods 改由客廳搬」、VM 那一半**一定要接著做完**
     「出門：都好 → …」（標題的「先叫上一個專案的 out，再」拿掉，連同「它的 out 印在 ③ 之前」那一行）、「--project 不在清單上…」。理由：`legacy` 拿掉之後沒有東西會叫那支假的 devbox.mjs
   - `before()` 的假設定拿掉 `legacy` 那一格（新的 `devbox.mjs` 看到這一格會停下來叫你搬進 `projects`）；開頭說明改成「假的上一個專案 devbox.mjs 留著，確認它沒被叫到」
 - dash：`tests/vm-projects.test.tsx:63-81`、`tests/vm.test.tsx:7`（雲端分頁一律叫客廳的 devbox）
+- dash：`tests/vm-projects.test.tsx:98-106`「新專案但客廳還沒 clone → 照舊叫上一個專案那一支」（**主控 2026-10-29 照 A**；段 4 發現）：改成「客廳還沒 clone → 不畫出門／回家、不叫任何一支、寫出要 clone 到哪」。
+  理由：05 做法 2 要拿掉 `LEGACY_DIR`，留這條退路的話上一個專案的 devbox.mjs 會叫到舊的 sync-claude（過目抓到的第 1 條）；拿掉之後是「不做」，不是少問
 
 ### 行為會變的（使用者點過頭的）
 

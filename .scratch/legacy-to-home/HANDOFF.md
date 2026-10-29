@@ -10,7 +10,7 @@
 | 1 guard、規則文件 | 01、07 | high | ✅ `701b8fa`、`927b43c`（客廳 `30a7191`、`2e1f9b5`、`0aa707a`） |
 | 2 limit-guard 與儀表板帳號頁（都以 email 為單位） | 02 → 03 | high | 02 ✅ `01e946d`（客廳 `8419bac`）；03 ✅ `7179dc9`（客廳 `06369c8`；截圖 10/29 過了） |
 | 3 客廳的出門／回家、mods 改從客廳搬 | 04 | xhigh | ✅ `985c485`（客廳 `d7f980c`；主控查過：四支測試一支一支跑全綠、照 A 的三個條件都在、客廳 `mods/` 跟 `~/.claude/mods` 相同）。**從現在到段 5 做完，使用者不要按出門／回家**（客廳的工具已經生效，VM 那一半還沒換） |
-| 4 換手 | 05 | high | ⬜（開段前主控問使用者：上一個專案有沒有開著的對話） |
+| 4 換手 | 05 | high | ✅（客廳 `859bf74`、`8d49a61`（mods，自動同步）、`fe4af86`；開關對話重測過了）。還差：05 的截圖、`~/.claude-account1/settings.json` 使用者自己貼 `hooks`（被擋，見「要使用者做的」） |
 | 5 開 VM 走一次 | 08 | high | ⬜（緊接段 4；開 VM 花錢，使用者已同意一次） |
 | 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ⬜ |
 | 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ⬜ |
@@ -178,14 +178,54 @@ issues/04 底下「做完時留下的」（對照表、autosync 的新旗標 --m
 HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段 5 的開場與建議 effort 寫進 HANDOFF（段 5 要開 VM，緊接段 4）。最後回覆用繁體中文簡短說做了什麼、卡在哪。
 ```
 
+## 段 5 的開場
+
+建議 effort：**high**。緊接段 4。開段前主控先跟使用者說：**這一段會開 VM（花錢，使用者已同意一次），用完關機**。
+
+```
+這一輪是「第 3 階段」：上一個專案改用客廳的工具，拿掉所有寫死它的特例。分支 claude/legacy-to-home（已經在這個 checkout 上）。
+段 1～3 做完 issue 01、07、02、03、04；段 4 做完 issue 05（家裡的換手：全域 hook 叫客廳的 autosync --project ${CLAUDE_PROJECT_DIR}、這個 repo 的專案 hook 拿掉、
+儀表板一律叫客廳的 devbox、limit-guard 拿掉 FLAT_PROJECTS（worktree 一律主資料夾名）、平放的 8 份開場複製進 handoffs/baobao-wellness-clinic-scheduler/、客廳 autosync 在 worktree 照主資料夾同步）。
+這是第 5 段：只做 issue 08（開 VM 走一次出門／回家，把 VM 那一半換完）。不做其他的。
+
+先讀：.scratch/legacy-to-home/HANDOFF.md 的「每一段共同的規矩」「中途發現」段 3（第 3、5 條是 08 的）與段 4、「要使用者做的」；
+spec.md（「換手的順序」第 4 步、「使用者選的答案」第 5、7 題、「上一個專案一律不能壞」）；issues/08 全文（「動工前先讀」列的檔都要讀）；
+issues/04、05 底下「做完時留下的」（04 的對照表、05 的全域 hook 寫法）；客廳 vm/README.md「第 3 階段換手」；CLAUDE.md；docs/agents/lessons.md（第一條）。
+動工前 git -C C:/Users/DELL/claude-home pull --ff-only。
+
+要特別注意：
+- 開 VM 之前：記下家裡每個專案的分支與 git status；確認客廳、兩個 .local 都推上去了；在對話裡說一聲要開 VM 了。連不上（Tailscale 沒開等）就停，寫進 HANDOFF。
+- 出門之後、VM 上**任何對話開始之前**，照客廳 vm/README.md「第 3 階段換手」1→5 做：devbox-presync 先 drop-in 把 ExecStop 換成 /bin/true、daemon-reload、確認、再 disable（不要 disable --now）；
+  VM 的全域 hook 換成客廳的（exec 形式，跟家裡客廳 settings/settings.json 同一種寫法，路徑換 VM 的）；VM 上平放的開場**複製**（不搬）進 handoffs/baobao-wellness-clinic-scheduler/；
+  客廳 pull、重裝 claude-home-presync.service；不要對上一個專案跑 add-project.sh。改 VM 的 ~/.claude/settings.json 被擋就停、寫進 HANDOFF。
+- 段 3 中途發現 5：devbox-presync 停用一定要在 VM 關機之前。關機後下次開 VM 時看 journalctl -u claude-home-presync -b -1 實際幾秒（段 3 中途發現 3；這次沒有下次就留給之後）。
+- 回家之後：家裡每個專案的分支跟開 VM 前記下的一樣（lessons 第一條）；devbox.mjs status 是「關著」。
+- VM 的 host、GCP 專案 id、zone 是私人值：不寫進這個 repo（commit、.scratch、PR）。不替使用者答 workspace trust、不放金鑰或 ADC 到 VM。
+- 改 ~/.claude/mods 或客廳的規矩照 HANDOFF「每一段共同的規矩」。中途發現的事記進 HANDOFF，不岔出去修。subagent 一次最多兩個。
+- 主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON。
+
+做完要交：一個 commit（這個 repo 推到 origin claude/legacy-to-home；客廳有改就推它的 main）、Status: done、issue 08 底下「做完時留下的」、
+HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段 6 的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪。
+```
+
 ## 中途發現
+
+### 段 4
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | 儀表板帶的 `--project`（在 worktree 開的對話） | 帶的是 worktree 的路徑，客廳 `devbox.mjs` 的 `checkProjectArg` 拿它跟 `devbox.json` 的 `home` 比，對不到 → 多印一行「⚠️ <worktree 名> 還沒加進 VM 的清單」。處理的照樣是清單上每一個專案 | 儀表板或 `checkProjectArg` 改成看主資料夾（跟 autosync 的 `mainDir` 同一種認法）。不急；段 8 或下一輪 |
+| 2 | 從現在到段 5 換完 VM 那一半 | 家裡在上一個專案存的新開場只在 `handoffs/baobao-wellness-clinic-scheduler/`。段 5 在 VM 上如果先開了對話（VM 的全域 hook 還是舊的），舊的 sync-claude 用 VM 的第一層鏡像 `.local/claude-handoffs/`，會把家裡新存的那份從 `.local` 刪掉並推上去（家裡子資料夾那份還在，下次家裡同步再加回去） | 段 5 照 `vm/README.md` 的順序：VM 上**任何對話開始之前**先換全域 hook、複製平放的開場（已寫進段 5 開場） |
+| 3 | limit-guard 讀開場 | 子資料夾裡的開場不再比 `root`（worktree 存的要讓主資料夾接得到）。同一台電腦上兩個不同的專案資料夾名字相同時會互相接到；之前比資料夾名字也一樣分不出來 | 不用修；記著 |
+| 4 | `~/.claude-account1/settings.json` | 沒有 `hooks`（換手前後都沒有）：VS Code 切到 account1 開的對話，記憶、開場、mods 都不自動同步，要等下一個在別的資料夾開的對話才補上 | 加同一段 `hooks`（跟 `~/.claude`、`~/.claude-account2` 一樣）。改 settings，要主控／使用者點頭 |
+| 5 | issue 05 的「動工前先讀」 | 只列了 `~/.claude/settings.json`，漏了 VS Code 讀的 `~/.claude-account2/settings.json`，判準 1 第一次在 VS Code 測才露出來（舊的同步又跑了一次，推了 `claude-mods/`） | 已改（段 4）。08 在 VM 上也要看：VM 有沒有用 `CLAUDE_CONFIG_DIR` 的帳號資料夾（例如 `acct1`），每一份 `settings.json` 的 `hooks` 都要換 |
 
 ### 段 3
 
 | # | 哪裡 | 什麼情境會錯 | 建議 |
 |---|---|---|---|
 | 1 | 在暫存資料夾 clone 上一個專案的 `.local`（判準 5 的試跑） | 第一次 clone 在 scratchpad 的深路徑，Windows 路徑太長、checkout 失敗，git 的錯誤訊息**印出了 5 個 `references/` 底下的檔名**（月底對帳測試截圖的檔名，沒有內容；只出現在這個對話，沒進任何檔案或 repo）。違反「`references/` 不讀」 | 改用短路徑＋`git -c core.longpaths=true`、錯誤導到檔案只算行數，第二次 0 行。之後的段照這個做（已寫進段 4 開場） |
-| 2 | 段 3 做完到 05 做完之間的儀表板 | 這個專案的「雲端」分頁叫客廳的 devbox，現在**也會處理上一個專案**；上一個專案資料夾裡的「雲端」分頁還是叫它自己的舊 devbox（還原 `claude-mods/` 的舊 mods）。VM 那一半還沒換（`devbox-presync` 還在、VM 的全域 hook 還是舊的），按了哪一邊都可能兩套同步一起跑 | 照舊：段 5 做完之前**不要按出門／回家**（哪個資料夾都一樣）。05 讓儀表板一律叫客廳的 |
+| 2 | 段 3 做完到 05 做完之間的儀表板 | 這個專案的「雲端」分頁叫客廳的 devbox，現在**也會處理上一個專案**；上一個專案資料夾裡的「雲端」分頁還是叫它自己的舊 devbox（還原 `claude-mods/` 的舊 mods）。VM 那一半還沒換（`devbox-presync` 還在、VM 的全域 hook 還是舊的），按了哪一邊都可能兩套同步一起跑 | 照舊：段 5 做完之前**不要按出門／回家**（哪個資料夾都一樣）。05 讓儀表板一律叫客廳的（**段 4 做了**：家裡哪個資料夾都叫客廳的；VM 那一半在段 5） |
 | 3 | VM 關機時給 `presync` 多久 | Google 文件只寫「短時間」，沒給秒數。改成並行、每一步限時（約 75 秒內），`TimeoutStopSec=80` 沒動，但沒在真的 VM 上量過 | 08 回家關機之後，下次開 VM 看 `journalctl -u claude-home-presync -b -1` 實際跑了幾秒、每個專案都寫了「…」那一行 |
 | 4 | 05 做法 7（複本上比新舊同步） | 複本的路徑跟真的不同，客廳的 `memoryDir` 找不到記憶（看起來「0 個變動」其實是沒找到）；舊工具寫死了 `c--…` 的代號所以找得到。另外 clone 時全域 `core.autocrlf=true`，記憶看起來 54 個檔「改了」，其實只有換行（`--ignore-cr-at-eol` 0 個） | 用暫存的 `CLAUDE_CONFIG_DIR` 放 `projects/<複本路徑代號>/memory`；複本 `core.autocrlf false` 再 `reset --hard`。段 3 照這樣試過：記憶 0 個變動、`references/` 多一個檔 → 1 個會 commit |
 | 5 | 08 的順序 | VM 上的客廳 `pull` 之後，`claude-home-presync` 就會處理上一個專案（寫它的 `vm-state.json`、整個 `.local` commit）；如果 `devbox-presync` 還沒停用，關機時兩個同步一起動上一個專案的 `.local` | `vm/README.md`「第 3 階段換手」第 1 步（停用 `devbox-presync`）一定要在 VM 關機之前做；08 照那個順序 |
@@ -211,6 +251,20 @@ HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段
 - **段 3 做完到段 5 做完之間，不要按出門／回家**（客廳的工具存檔就生效；VM 那一半要在段 5 開 VM 時才換完）。主控在段 3 開始前跟使用者說。
   段 3 已經做完（2026-10-29）：**現在就在這個區間裡**，哪個資料夾的「雲端」分頁都不要按（段 3 中途發現 2）。
 - ~~**03 的截圖**（段 2）~~：10/29 截好、過了（issue 03 底下「截圖結果」）。
+- **05 的截圖**（段 4，儀表板「雲端」分頁的字變了）：在**上一個專案的資料夾**開新對話（桌面 app 或 VS Code），打開儀表板 → 點「雲端」分頁，**不要按出門／回家**。
+  要看到：狀態（開著／關著）照常、按鈕底下多一行「在 baobao-wellness-clinic-scheduler 按的：VM 上的每一個專案都會一起處理（客廳的 devbox.mjs）」。
+  對照：在這個專案的資料夾看同一頁，那一行寫「在 baobuverse-kingdom 按的：…」（之前就有）。
+- **`~/.claude-account1/settings.json` 加 `hooks`**（段 4 中途發現 4，使用者 2026-10-29 選「補上」；段 4 改的時候被 auto mode 擋了 Self-Modification，所以要使用者自己改）。
+  改前的備份在段 4 的 scratchpad（`account1-settings.before-05.json`）。步驟：
+  1. 用記事本打開 `C:\Users\DELL\.claude-account1\settings.json`。
+  2. 第一行 `{` 的下一行，貼上下面這一段（最後有逗號），存檔：
+     ```
+       "hooks": {
+         "SessionStart": [ { "hooks": [ { "type": "command", "command": "node", "args": ["C:/Users/DELL/claude-home/tools/autosync.mjs", "--project", "${CLAUDE_PROJECT_DIR}"], "timeout": 30 } ] } ],
+         "SessionEnd": [ { "hooks": [ { "type": "command", "command": "node", "args": ["C:/Users/DELL/claude-home/tools/autosync.mjs", "--project", "${CLAUDE_PROJECT_DIR}"], "timeout": 30 } ] } ]
+       },
+     ```
+  3. 跟主控說改好了；主控（或下一段）跑 `node -e "JSON.parse(require('fs').readFileSync(process.env.USERPROFILE+'/.claude-account1/settings.json','utf8'))"` 確認沒寫壞，再跟 `~/.claude-account2/settings.json` 的 `hooks` 比一次。
 
 ## 要使用者決定的
 
@@ -239,3 +293,5 @@ HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段
   - 1（dash 總覽「新對話會用 X」比資料夾不比 email）：**段 8 修**，畫面的字會變，要截圖。
   - 3（`accounts.json` 的 account1 `label` 還寫「終端機」）：主控改成跟另外兩個同一個寫法（「account1 資料夾」）；私人資料，不在任何 repo，改前備份在主控 scratchpad。
 - 主控換帳號（2026-10-29，使用者：「你先休息換另一個帳號做，等到12:00之後或他也到limit之後我再請她換回來給妳接手主控台」）：另一個帳號的新對話讀 `.local/main-session-handoff.md` 接手主控，照這份開段 3。之後可能再換回來，兩邊都照這份與主控交接檔接續。
+- 段 4 中途發現 4（`~/.claude-account1/settings.json` 沒有 `hooks`）：主控建議 A（加同一段），使用者 2026-10-29 選「補上」（主控 session 轉達）。段 4 改的時候被 auto mode 擋了，改由使用者照「要使用者做的」自己改。
+- 段 4 dash `vm-projects.test.tsx:98-106`（客廳還沒 clone → 照舊叫上一個專案那一支）：主控 2026-10-29「照 A」（主控的決定，不是使用者）：拿掉退路、寫清楚要 clone 到哪；spec「允許改的既有測試」已補。
