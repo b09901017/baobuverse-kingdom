@@ -1,0 +1,100 @@
+# guard 刪東西：程式粗篩 → Claude 判斷 → 真的重要才問
+
+分支 `claude/guard-judge`（從 `origin/main` `ad0a858` 開）。程式在客廳 `C:/Users/DELL/claude-home` 的 `mods/guard`（`~/.claude/mods/guard` 是正在用的那份）。
+這一輪預計**一段做完**（下一個帳號、xhigh、一個 5 小時額度）：issue 14 一定做，15 有額度才做。
+
+## 使用者的原話（2026-10-29～30，主控 session `local_d2eb6981-…`）
+
+> 但是其實我不是想知道，刪 tmp/draft.md（沒進 git，救不回來）
+> 救不救得回來，我最想知道這個檔案是幹嘛的，影響什麼，然後基本上我都會同意，能不能真的是你建議不刪的在問我 ? 但是我又怕我拒絕會導致你出問題，就是基本上我都會同意，不論救不救得回來，對我沒有參考意義，我只想要不要不小心刪到重要文件，檔案或是重要資料就好，像是今天問的 tmp/，看不出要刪什麼 我都覺得沒必要問我，你能幫我判斷嗎 ? 因為基本上你問我都會同意那不如你直接刪，但是我又怕你刪到重要的東西，但是你問我我也不知道這是不是重要的東西啊 ?
+
+> 其實我幾乎都是交給你，所以能她問前你在幫我判斷一次嗎，就是用程式碼guard先粗篩(上面那些說不用問的就篩掉)，如果真的還有要問的，你先幫我判斷，但其實基本上我都會同意，所以你的判斷我希望可以寫白話幫助我判斷，但如果你自己判斷可以刪就不要再問我了，可以嗎 ? 我都交給你判斷，我給你xhigh effort 你有辦法一段完成嗎包含有關guard的改動
+
+> 那我換帳號做，他是5 小時額度 0% 可以嗎 ? 還有什麼你覺得可以一段5 小時額度做完的就一起順手做吧 ? 你可以先kickoff規劃之類的，把這邊的額度耗完後在交給下一個帳號接手，但是我希望再一個一段5 小時額度就可以做完
+
+「上面那些說不用問的」＝主控前一則回覆的表：暫存區、測試／建置產物、git 追蹤又沒改過的、專案裡沒進 git 的暫存（→ 這一輪交給 Claude 判斷，見下面）。
+
+## 談定的做法
+
+| 步驟 | 誰 | 什麼 |
+|---|---|---|
+| ① 粗篩 | guard 程式（現在的 13） | 暫存區、測試／建置產物、git 追蹤又沒改過的 → 直接刪（照舊） |
+| ② 判斷 | guard 叫模型（`$.model.fork`，帶這個對話） | ① 篩剩的「刪東西」：模型判斷不重要 → **直接刪、不問**；重要或拿不準 → ③ |
+| ③ 問 | 跳框 | 框上寫白話：這是什麼、刪了影響什麼、Claude 的建議；不再寫「救不救得回來」當主角 |
+
+主控提的、使用者沒反對的三條保險（**不是**使用者確認過的決定；使用者說「我都交給你判斷」）：
+
+1. **底線照樣問**（不交給模型決定，模型只幫忙寫白話）：`.local`、`.git`、`~/.claude`、整個專案資料夾或更上層、家目錄或更上層，加上看起來是金鑰的檔名（`.env*`、`*.pem`、`*.key`、`*-sa.json`、`*credentials*.json`、`application_default_credentials.json`）。
+2. **判斷失敗就問**：沒得 fork 又叫不到模型、API 錯、逾時、回答讀不懂 → 照現在的框問（框上多一行「Claude 沒判斷成：原因」）。
+3. **自己判斷刪掉的留紀錄**：每一輪結束的「🛡 這一輪」摘要列出「Claude 自己判斷刪了：什麼（為什麼不重要）」。
+
+範圍只有 `kind: 'delete'`。寫正式站、絕對不能寫的地方（國王日記）、傳出去、付錢、`project.json` 讀不懂：**照舊直接問使用者，不經模型**。
+
+## 不能違反
+
+- `CLAUDE.md`：絕對不寫入國王日記（`neverWrite`）。這一輪不能讓任何 `neverWrite`／`prodWrite` 的框少跳。
+- 底線那幾種刪除一律問使用者，模型說可以也一樣。
+- 模型那一步失敗時不可以默默放行。
+- 既有 guard 測試一條都不改就要全過；真的要改，寫進下面「允許改的既有測試」並寫理由（這一輪沒有主控可以問：段自己判斷，最後回覆跟使用者說）。
+
+## 允許改的既有測試
+
+（段寫：檔名:行、改什麼、為什麼）
+
+| 檔:行 | 改什麼 | 為什麼 | 誰 |
+|---|---|---|---|
+| 客廳 `mods/guard/tests/not-executed.test.ts:240-241` | 「改之前就不問的兩種」拿掉 `powershell -enc …` 那個例子（標題改成只剩 python 串列），加一行註解說搬去哪 | 那條釘住的就是 15 a 要補的洞（工具收尾 02 時記成「改完跟改之前一樣」）；新行為在 `tests/small-holes.test.ts` | 主控，2026-10-30（客廳 `2245538`） |
+
+做 15 c（python／node 串列寫法）時同一條會再拿掉 python 那個例子：照同樣的理由改、記在這張表。
+
+| 檔:行 | 改什麼 | 為什麼 | 誰 |
+|---|---|---|---|
+| 客廳 `mods/guard/tests/not-executed.test.ts:240-245` | 「改之前就不問的（python 用串列叫 subprocess）」整條拿掉（剩下的唯一一個例子就是它），留兩行註解說 a、c 搬去 `tests/small-holes.test.ts` | 它釘住的就是 15 c 要補的洞；15 c 之後那個指令要問 | 段 1，2026-10-30（客廳 `1d3f7ec`） |
+
+14：沒有（既有 75 條一字未改就全過；跟 13 那幾條比框上字的 `recoverable.test.ts:208,220`，靠「判斷失敗時保留原本那一行」照過）。
+
+## 行為會變的
+
+（段寫：少問／多問兩張表，每列一個指令例子）
+
+### 少問（14：交給 Claude 判斷，它說不重要的就不跳框、一輪做完列在「Claude 自己判斷刪了」）
+
+| issue | 指令例子 | 之前 | 之後 |
+|---|---|---|---|
+| 14 | `rm -rf tmp/notes`（沒進 git）、`rm docs/plan.md`（有沒 commit 的修改）、`rm C:/elsewhere/a.txt`（不在 git 裡） | 問（救不回來） | Claude 判斷：不重要不問；重要或拿不準照問，框上寫是什麼、刪了影響什麼 |
+| 14 | `rm -rf tmp/*`、`find . -name "*.log" -exec rm {} \;`、`cd notes; rm old.md`、`rm -rf $UNKNOWN/x` | 問（看不出刪什麼） | Claude 判斷（同上） |
+| 14 | `git clean -fd`、`git reset --hard`、`git checkout -- a.js`、`git branch -D x`、`git push --force`、`python -c "…shutil.rmtree('build')"` | 問 | Claude 判斷（reset／clean／checkout 附上現在沒 commit 的檔名） |
+
+不變（照舊問，不交給模型決定）：底線（`.local`、`.git`、`~/.claude`、整個專案或家目錄、金鑰檔名、裡面有金鑰檔的資料夾、刪底線地方底下東西的萬用字元）；模型那一步失敗；寫正式站、寫國王日記、傳出去、付錢、看不到內容的指令、`project.json` 讀不懂。
+不變（照舊不問、不叫模型）：暫存區、建置產物、git 追蹤又沒改過的。
+
+### 多問
+
+| issue | 指令例子 | 之前 | 之後 |
+|---|---|---|---|
+| 14 | `rm .env`、`rm -rf conf`（裡面的 `.env.local` 都是 git 追蹤又沒改過） | 不問（救得回來） | 問（底線：看起來是金鑰的檔名） |
+| 14 | `rm "$TEMP/x/server.pem"`（暫存區的金鑰檔名） | 不問（暫存區） | 問（底線） |
+| 14 審查 5 | `rm -rf "$TEMP/.."`、`rm -rf /tmp/../..`、`Remove-Item -Recurse "$env:TEMP\.."`（字像暫存區、實際在外面） | 不問（13 就有的洞） | 交給 Claude 判斷 |
+| 14 審查 | `node -e "require('fs').rmSync('out', …)"`、import 進來的 `rmSync(…)` | 不問（不算刪東西） | 交給 Claude 判斷（字上有 `.git`、`.local`…就一定問） |
+| 15 a | `powershell -enc ZgBp…`、`pwsh -ec …`、`powershell.exe -NoProfile -EncodedCommand …` | 不問 | 問「跑看不到內容的指令」（新的風險種類 `opaque`） |
+| 15 b | `gcloud config set project baobu-app && gcloud firestore import gs://b/x`、`CLOUDSDK_CORE_PROJECT=baobu-app gcloud firestore import …` | 不問 | 照 `neverWrite` 擋（寫絕對不能寫的地方） |
+| 15 b | `gcloud firestore import gs://b/x`（同一串沒有 `--project`、也沒有 config set） | 不問 | 問「看不出打哪一個專案」 |
+| 15 c | `python - <<'EOF'` 裡 `subprocess.run(['firebase', 'deploy', '--project', 'baobu-app'])`、`node -e "…spawnSync('firebase', ['deploy', '--project', 'baobu-app'])"` | 不問 | 照 `neverWrite` 擋；沒有 project.json 的資料夾問「寫正式站」 |
+| 15 d | `bash scripts/deploy.sh`、`./scripts/deploy.sh`、`source x.sh`、`. x.sh`（腳本裡有 `firebase deploy --project baobu-app`、`git push origin main`…） | 不問（不讀腳本內容） | 讀得到內容就照裡面的指令判斷（刪東西除外） |
+
+13 本來就問、14 也不交給模型決定（底線）的：`cd x; rm -rf .git`、`cd ~; rm -rf .claude`、`cd x; rm -rf *`、`python -c "…rmtree('.git')"`、`bash -c "rm -rf .local"`、`git clean -fdx`、`git clean -fd`（現在沒追蹤的檔裡有金鑰檔名）、專案根目錄的 `rm -rf *`。
+
+不變：`-File`、`-Command`、`-ExecutionPolicy`／`-ep`；`gcloud firestore export`、`indexes list`；前面設的是別的專案、或 `--database=` 別的 database；
+串列裡是讀的子指令或模擬器；`cat ./x.sh`、`chmod +x ./x.sh`、`bash -c "…"`；腳本裡的 `rm`。
+
+### 少問（15 e）
+
+| issue | 指令例子 | 之前 | 之後 |
+|---|---|---|---|
+| 15 e | `node --check scripts/fix.mjs`、`node -c scripts/fix.mjs`（腳本會寫 Firebase） | 問（當成跑了腳本） | 不問（只檢查語法）；`node scripts/fix.mjs`、`python -c "…"` 照舊問 |
+
+## 共用偏好要跟著改的
+
+客廳 `user/CLAUDE.md`（同步到 `~/.claude/CLAUDE.md`，改完比雜湊）：
+- 「刪東西的指令，說明那一行（允許框上會顯示）寫清楚刪哪些檔、幾個、救不救得回來」→ 改成寫清楚**是什麼檔、刪了影響什麼**（guard 會拿這一行給模型判斷、也顯示在框上）。
+- 「先問再做」第一條的「刪掉沒有版控救不回來又可能有後果的檔案或資料」→ 改成跟這一輪一致（重要的才問；guard 先篩、Claude 判斷）。其他字不動。
