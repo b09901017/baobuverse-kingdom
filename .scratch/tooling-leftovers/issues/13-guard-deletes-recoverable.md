@@ -1,0 +1,67 @@
+# 13 guard：刪東西時救得回來的不問、框上說清楚刪什麼
+
+Status: ready
+Blocked by: 02（同一個檔；02 已做完，客廳 `3950996`）
+動工前先讀：這份 HANDOFF「每一段共同的規矩」、spec「不能違反」guard 那一條與「行為會變的」01、02；issues/02 的「做完時留下的」；
+客廳 `mods/guard/hooks/classify.ts`（`TEMP` 與 `deletes` 約 `:243-269`、`KIND_WORD`、`shown`）、`mods/guard/hooks/register.ts`（框上的字「Claude 要刪東西，要讓它做嗎？」從哪裡組出來、hook 拿不拿得到 cwd）、`mods/guard/tests/`（`legacy-parity`、`strict-default`、`not-executed`）
+
+## 使用者要的
+
+（2026-10-29，主控 session）
+
+> 有一些刪除的檔案，其實不太重要，可能就是一些過程檔或是測試檔，你想刪就刪……除非是你覺得會有後果的，或是真的需要我判斷的，在問我就好，然後也要說清楚我準備刪什麼
+
+> 我想要連auto mode 的權限系統自己跳出來的允許框也少跳
+
+（主控查過：四份 settings.json 都沒有權限規則，刪檔時跳的框是 guard 的，不是 auto mode。）
+
+使用者貼了一個框問「像這個是guard跳出來的嗎 ? 但是他也沒有說清楚我要刪的是甚麼?」：
+
+```
+Claude 要刪東西，要讓它做嗎？
+・刪檔案：rm -rf $S/exp
+指令：S="/c/Users/DELL/AppData/Local/Temp/claude/…/scratchpad"; diff -r -q … && echo same; rm -rf $S/exp; mkdir -p $S/home/mods && cp -r …
+```
+
+`$S` 在同一串前面設成 scratchpad（暫存區），guard 只看 `rm` 那一段、不知道 `$S` 是什麼，所以問了；框上也只貼指令，看不出刪的是什麼、救不救得回來。
+
+主控提的範圍，使用者答「好，照建議」（issue 13，段 3 之後單獨一段，high）。
+
+## 做法
+
+1. **找出要刪的東西**：`rm`／`rmdir`／`unlink`、PowerShell `Remove-Item`／`del`／`rd`…的路徑參數（跳過旗標）。
+   - 同一串前面設定的變數代進去：Bash `S=…;`、`export S=…`；PowerShell `$S = "…"`；`$TEMP`、`$env:TEMP`、`~`。
+   - 相對路徑照 hook 拿到的 cwd 算；前面有 `cd` 的跟著 `cd` 算，算不出來就當成看不出來。
+   - 看不出來的（萬用字元 `*`、`$(…)`、沒設定的變數、`cd` 算不出來）→ 照舊問。
+2. **全部的目標都是下面其中一種才不問**；有一個不是就問：
+   - 暫存區（現在的 `TEMP`）。
+   - 在 git repo 裡、已追蹤，而且底下沒有沒 commit 的修改、沒有沒追蹤的檔、沒有被 ignore 的檔（`git status --porcelain --ignored -- <目標>` 是空的）→ 從 git 救得回來。
+   - 跑測試或建置產生、重跑就有的資料夾：路徑裡有 `node_modules`、`coverage`、`test-results`、`playwright-report`、`blob-report`、`.pytest_cache`、`.nyc_output`、`__pycache__`。`build`、`dist` 這種有些專案是原始碼的，拿不準就不放（記進中途發現）。
+3. **照舊問**（不管救不救得回來）：
+   - `.local/` 底下（私人資料，記憶會被同步鏡像出去）、`~/.claude/` 底下（設定、mods 即時生效、記憶）、`.git` 本身、repo 根目錄或家目錄整個。
+   - `git clean`、`git reset --hard`、`git checkout --`／`git restore`、`git branch -D`、強推、「程式裡刪檔案」：照現在，不動。
+   - git 指令跑失敗或逾時（hook 裡跑 git 要有時間上限）→ 問。
+4. **框上說清楚**：要問的時候，用白話寫刪什麼、幾個、救不救得回來，例如「刪 3 個檔：a.md、b.md、c.md（沒進 git，救不回來）」「刪資料夾 tmp-x（裡面 12 個檔，2 個有沒 commit 的修改）」「刪 $S/exp（看不出 $S 是哪裡）」。名字太多列前 5 個＋「等 N 個」。原本那行指令照樣留著。
+   不要改既有的 `why`（`legacy-parity` 逐條比整個 Verdict）：新的說明另外放（例如 Risk 多一個欄位、框上優先顯示它），怎麼放段裡定。
+5. PowerShell 也一樣（`Remove-Item -Recurse -Force coverage`、`$S = "$env:TEMP\x"; Remove-Item -Recurse $S\y`）。
+
+## 判準
+
+1. 少問（先紅，現在會問）：
+   - `S=<scratchpad 路徑>; …; rm -rf $S/exp`（使用者貼的那個）→ 不問
+   - 暫存 git repo 裡已 commit、沒改過的 `rm notes/old.md`、`rm -rf notes/`（底下全都 commit 過）→ 不問
+   - `rm -rf node_modules`、`rm -rf test-results playwright-report` → 不問
+   - PowerShell `Remove-Item -Recurse -Force coverage`、`$S = "$env:TEMP\x"; Remove-Item -Recurse "$S\y"` → 不問
+2. 照舊要問（守住的綠燈測試，改完還要問）：
+   - 沒進 git 的檔、已追蹤但有沒 commit 修改的檔、資料夾底下有一個沒追蹤的檔、被 ignore 的檔
+   - `rm -rf *`、`rm -rf $UNKNOWN/x`、`rm -rf $(cat list)`、`cd "$(…)" && rm x`
+   - 已 commit 也照問：`.local/claude-memory/x.md`、`~/.claude/settings.json`、`~/.claude/mods/guard`、`.git`、repo 根目錄、`~`
+   - 一次刪兩個、一個救得回來一個救不回來 → 問，框上只列救不回來的那個（或兩個都列、各寫救不救得回來）
+   - git 跑失敗（例如不是 git repo、`git` 找不到）→ 問
+3. 框上的字：上面每一條要問的，測試斷言框上的說明有檔名（或「看不出」）、個數、救不救得回來。
+4. 既有 guard 測試（56）斷言一條都不改就全過；`legacy-parity` 有 CASES 因為「救得回來不問」而判斷變了的，先停、SendMessage 問主控（不要自己改既有測試）。
+5. 這是「少問」的改動：改完在 spec「行為會變的」逐條列出不再問的寫法；拿過去對話真的跑過的刪除指令量一次（只算筆數：少問幾條、多問幾條），寫進「做完時留下的」。
+6. hook 跑 git 的時間：量一下最慢一次多久，寫進「做完時留下的」；超過 1 秒的想辦法（只在有刪除指令時才跑、一次問完）。
+
+## 做完時留下的
+

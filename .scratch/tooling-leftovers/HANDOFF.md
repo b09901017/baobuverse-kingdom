@@ -9,6 +9,7 @@
 | 1 guard | 01 → 02 | xhigh（02 是這一輪唯一「少問」的改動，白名單與守住的測試很多） | ✅ 01（客廳 `d3bc4a0`）、02（客廳 `3950996`，段 1 續）；guard 38 → 56 |
 | 2 同步的兩個 git 行為 | 03 → 04 | xhigh（兩台同時寫 git 的紅燈測試） | ✅ 03（客廳 `b5631ea`）、04（客廳 `0ef32ab`）；autosync 19 → 31、devbox-mods 22 → 29 |
 | 3 tools 整理 | 05 → 06 | high | ✅ 05（客廳 `baebee3`）、06（客廳 `52da7a7`）；autosync 31 → 33、devbox 14 → 17、devbox-mods 29 → 30、limit-guard 52 → 58 |
+| 3b guard 刪東西 | 13（使用者 10/29 加的） | high（「少問」的改動，守住的測試多） | ⬜ |
 | 4 儀表板 | 07 | high（要截圖） | ⬜ |
 | 5 E2E | 10 | high（每次跑之前使用者點頭） | ⬜ |
 | 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ⬜ |
@@ -166,6 +167,33 @@
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
 ```
 
+## 段 3b 的開場
+
+```
+這一輪在做「工具收尾」：第 3 階段留下的清單全部做完，加上 E2E 加速的 skill。分支 claude/tooling-leftovers（已經在這個 checkout 上）。
+這是第 3b 段：只做 issue 13（guard：刪東西時救得回來的不問、框上說清楚刪什麼）。這支是使用者 10/29 這一輪中途加的。07 以後不做。段 1～3 做完了（guard 01、02 在客廳 d3bc4a0、3950996）。
+
+先讀：.scratch/tooling-leftovers/HANDOFF.md 的「每一段共同的規矩」「中途發現」段 1；spec.md（「不能違反」guard 那一條、「行為會變的」01、02）；issues/02 的「做完時留下的」、issues/13；CLAUDE.md；docs/agents/lessons.md。
+
+02 留下、13 要接著用的：
+- classify.ts 有 Bash 切段器 parseShell、遮字 maskShell、readable（讀不懂照舊掃整串）；deletes 約 :243-269，TEMP 只看 rm 那一段（所以 `S=<scratchpad>; rm -rf $S/exp` 會問：使用者貼的框就是這個）。
+- 「環境只看同一段＋同一層前面 export 的段」的寫法可以參考來代變數；變數代法不要另寫一套切段。
+- legacy-parity 比整個 Verdict（含 why）：不要改既有的 why，新的白話說明另外放。CASES 有判斷變了的，先停、SendMessage 問主控。
+- tests/fixtures/classify-d3bc4a0.ts 是 02 之前的 classify，不要動。
+
+要特別注意：
+- 這是「少問」的改動：判準 2 每一條「照舊要問」都要有守住的測試（現在問、改完還問）；拿不準救不救得回來的，當成救不回來（問），記進中途發現。
+- hook 裡跑 git：要有時間上限，失敗或逾時就問；量最慢一次多久。
+- ~/.claude/mods 即時生效：在 scratchpad 複本改、tsc 0 錯、validate 過、複製進客廳 mods/、兩份逐檔相同。改壞了 guard 會擋下這個對話的指令，先用 Edit 改回能跑的版本。
+- 寫含 firebase／firestore 網址／git push 國王日記 repo 的測試字串前，先跟使用者說「等一下會跳框，是測試字串」；測試檔用 Write／Edit。
+- 測試一支一支跑：guard（56＋新的）、最後 limit-guard 58 也跑一次。
+- 框上的字會變：做完附 2～3 個「改之前／改之後」框上說明的例子在最後回覆裡（不用截圖：guard 的框是 hook 跳的，測試斷言就好）。
+
+做完要交：13 一個 commit（這個 repo；客廳 mods 照規矩）、Status: done、「做完時留下的」、spec「行為會變的」13、HANDOFF 分段表段 3b ✅、中途發現。段 4 的開場已經寫好（下面），不用重寫；有要補的加在它的「主控補充」。
+額度快用完時：停在可以交接的地方，commit、推、記進 HANDOFF。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
+```
+
 ## 段 4 的開場
 
 ```
@@ -235,6 +263,7 @@
 
 ## 使用者已經決定的（2026-10-29，主控 session）
 
+- 加 issue 13（guard 刪東西救得回來的不問、框上說清楚刪什麼），段 3 之後單獨一段：「好，照建議」。原話與範圍在 issues/13。
 - 「下一輪，候選清單就一起做吧，全部完成」
 - 第 1 題 VM：「開一次（建議）」
 - 第 2 題 E2E：「照建議」（客廳通用 skill＋另一份 clone 的實驗分支試 2 個 worker 各一顆模擬器，不推、不開 PR）
