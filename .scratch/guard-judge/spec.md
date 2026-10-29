@@ -47,14 +47,33 @@
 
 做 15 c（python／node 串列寫法）時同一條會再拿掉 python 那個例子：照同樣的理由改、記在這張表。
 
+14：沒有（既有 75 條一字未改就全過；跟 13 那幾條比框上字的 `recoverable.test.ts:208,220`，靠「判斷失敗時保留原本那一行」照過）。
+
 ## 行為會變的
 
 （段寫：少問／多問兩張表，每列一個指令例子）
+
+### 少問（14：交給 Claude 判斷，它說不重要的就不跳框、一輪做完列在「Claude 自己判斷刪了」）
+
+| issue | 指令例子 | 之前 | 之後 |
+|---|---|---|---|
+| 14 | `rm -rf tmp/notes`（沒進 git）、`rm docs/plan.md`（有沒 commit 的修改）、`rm C:/elsewhere/a.txt`（不在 git 裡） | 問（救不回來） | Claude 判斷：不重要不問；重要或拿不準照問，框上寫是什麼、刪了影響什麼 |
+| 14 | `rm -rf tmp/*`、`find . -name "*.log" -exec rm {} \;`、`cd notes; rm old.md`、`rm -rf $UNKNOWN/x` | 問（看不出刪什麼） | Claude 判斷（同上） |
+| 14 | `git clean -fd`、`git reset --hard`、`git checkout -- a.js`、`git branch -D x`、`git push --force`、`python -c "…shutil.rmtree('build')"` | 問 | Claude 判斷（reset／clean／checkout 附上現在沒 commit 的檔名） |
+
+不變（照舊問，不交給模型決定）：底線（`.local`、`.git`、`~/.claude`、整個專案或家目錄、金鑰檔名、裡面有金鑰檔的資料夾、刪底線地方底下東西的萬用字元）；模型那一步失敗；寫正式站、寫國王日記、傳出去、付錢、看不到內容的指令、`project.json` 讀不懂。
+不變（照舊不問、不叫模型）：暫存區、建置產物、git 追蹤又沒改過的。
 
 ### 多問
 
 | issue | 指令例子 | 之前 | 之後 |
 |---|---|---|---|
+| 14 | `rm .env`、`rm -rf conf`（裡面的 `.env.local` 都是 git 追蹤又沒改過） | 不問（救得回來） | 問（底線：看起來是金鑰的檔名） |
+| 14 | `rm "$TEMP/x/server.pem"`（暫存區的金鑰檔名） | 不問（暫存區） | 問（底線） |
+| 14 審查 5 | `rm -rf "$TEMP/.."`、`rm -rf /tmp/../..`、`Remove-Item -Recurse "$env:TEMP\.."`（字像暫存區、實際在外面） | 不問（13 就有的洞） | 交給 Claude 判斷 |
+| 14 審查 | `node -e "require('fs').rmSync('out', …)"`、import 進來的 `rmSync(…)` | 不問（不算刪東西） | 交給 Claude 判斷（字上有 `.git`、`.local`…就一定問） |
+
+13 本來就問、14 也不交給模型決定（底線）的：`cd x; rm -rf .git`、`cd ~; rm -rf .claude`、`cd x; rm -rf *`、`python -c "…rmtree('.git')"`、`bash -c "rm -rf .local"`、`git clean -fdx`、`git clean -fd`（現在沒追蹤的檔裡有金鑰檔名）、專案根目錄的 `rm -rf *`。
 | 15 a | `powershell -enc ZgBp…`、`pwsh -ec …`、`powershell.exe -NoProfile -EncodedCommand …` | 不問 | 問「跑看不到內容的指令」（新的風險種類 `opaque`） |
 | 15 b | `gcloud config set project baobu-app && gcloud firestore import gs://b/x`、`CLOUDSDK_CORE_PROJECT=baobu-app gcloud firestore import …` | 不問 | 照 `neverWrite` 擋（寫絕對不能寫的地方） |
 | 15 b | `gcloud firestore import gs://b/x`（同一串沒有 `--project`、也沒有 config set） | 不問 | 問「看不出打哪一個專案」 |
