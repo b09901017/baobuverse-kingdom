@@ -1,6 +1,6 @@
 # 03 儀表板帳號頁：同一個帳號一張卡、另一個帳號能在 VS Code 一鍵切
 
-Status: todo
+Status: done
 Type: task
 Blocked by: —
 
@@ -43,7 +43,7 @@ Blocked by: —
 判準 1、2、4 照 `tests/desktop.test.tsx`、`tests/switch.test.tsx` 的做法 mock 自動測；判準 3 靠截圖。這一支會改到 VS Code 的畫面（上一個專案也看得到）：只有「合成一張卡」與「多一個可以切的帳號」兩處。
 畫面改了要截圖：電腦操作不能控制 Claude 自己的視窗，截圖請使用者點（主控安排，見主控記憶 `desktop-ui-check-needs-user-clicks`）。
 
-## 做完時留下的（2026-10-29，段 2；**截圖還沒看，03 還不算 done**）
+## 做完時留下的（2026-10-29，段 2；截圖過了）
 
 改 `~/.claude/mods/dash`，複製進客廳（客廳 `06369c8`，已推；客廳 `mods/` 跟 `~/.claude/mods` 逐檔相同）。`~/.claude/mods-data/accounts.json` 照第 4 題改（備份在段 2 的 scratchpad，不進 repo）。
 
@@ -62,7 +62,7 @@ Blocked by: —
 |---|---|
 | 兩個資料夾登入同一個 email：會出現兩張卡嗎 | 不會：VS Code、桌面 app 各測一次，那個 email 只出現一次、一個帳號一顆按鈕（`tests/merge-email.test.tsx`） |
 | 合成之後按「用 X 開新對話」：會切到沒登入、或跟 VS Code 現在用的不同的資料夾嗎 | 不會：VS Code 新對話用 account2 → 切 account2（設定不變）；用預設資料夾 → 切預設資料夾；用另一個帳號 → 切第一個（預設資料夾）；桌面 app 也測了 |
-| 桌面 app 與 VS Code：現在的帳號、「VS Code 新對話」標籤、「已重置」跟改之前一樣嗎 | 自動測試：既有 `desktop.test.tsx`、`stale-limits.test.tsx`、`switch.test.tsx` 一條沒改全過（各資料夾不同 email 時畫面跟改之前一樣）。**截圖待看** |
+| 桌面 app 與 VS Code：現在的帳號、「VS Code 新對話」標籤、「已重置」跟改之前一樣嗎 | 自動測試：既有 `desktop.test.tsx`、`stale-limits.test.tsx`、`switch.test.tsx` 一條沒改全過（各資料夾不同 email 時畫面跟改之前一樣）。截圖過了（見下面） |
 | `switchable: true` 之後，切換會把 `CLAUDE_CONFIG_DIR` 寫成 account1 的資料夾嗎（路徑格式跟另外兩個一樣） | 會：寫進去的字＝`accounts.json` 的 `configDir` 原字（測試用 Windows 反斜線，跟 account2 同格式）；實際的 `accounts.json` 裡 account1、account2 都是反斜線 |
 
 驗證：`claude plugin test dash` 34 過（基準 27 一條沒改＋新 7）、`tsc` 0 錯、`claude plugin validate` 過（警告只有原本的「沒有 author」）。新的 7 條裡跟合併有關的 5 條在舊程式上會紅（確認過），另外 2 條（另一個帳號的按鈕寫進的路徑、沒登入的資料夾）是改之前就成立、要守住的。
@@ -76,3 +76,13 @@ Blocked by: —
 | 3 | 1、2 都看 | — | 另一個帳號過了 5 小時重置時間的，寫「HH:MM 已重置」、0% |
 
 **按鈕不用按**（按了會改 VS Code 設定、開一個 VS Code 新對話；切換的路徑有自動測試）。
+
+### 截圖結果（2026-10-29，使用者在兩個新對話截的；主控與段 2 都看過，三項都過）
+
+| # | 結果 |
+|---|---|
+| 1 VS Code | 兩張卡。現在的帳號那張標「這個對話 · 新對話」；另一張有「用「帳號 X」開新對話」、「12:00 重置 · 3 分鐘前的數字」；沒超出框 |
+| 2 桌面 app | 兩張卡。桌面 app 登入的那張標「這個對話」、另一張標「VS Code 新對話」；按鈕都寫「在 VS Code 用「X」開新對話」；底下兩行換帳號的說明在；沒超出框 |
+| 3 已重置 | 桌面 app 那張：另一個帳號 5 小時 0%、「03:00 已重置」，7 天寫「8 小時前的數字」。VS Code 那張剛好兩個帳號都還沒過重置時間，沒出現 |
+
+多出來、但照設計的：桌面 app 上「這個對話」那張卡也有按鈕（在 VS Code 用它開新對話）——account1 改成可以切之後，跟 VS Code 那張「這個對話」也有按鈕是同一回事。
