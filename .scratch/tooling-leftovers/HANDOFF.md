@@ -377,20 +377,23 @@ CLAUDE.md（「合併」：CI 綠了直接合；還沒有 CI 時以這一輪驗�
 
 （段 9 寫；這一輪都只記、沒做的。細節在各自那一條）
 
+PR #7 合併之後，主控（`local_d2eb6981-…`）10/29 順手修了打 ✅ 的幾條（使用者：「有你順手就可以完成的嗎…反正我今天還有額度」）：客廳 `b296209`，guard 69 → 73（新的 `tests/leftovers.test.ts`，紅 → 綠）、dash 56 → 59（`tests/vm-usage.test.tsx`），既有測試不改，改完都是多問或防呆；兩份 mods 逐檔相同。
+spec「行為會變的」沒有補：這幾條都是 13、02 之前就問、或之前就有的洞，改完回到要問。
+
 | 來源 | 什麼 | 建議 |
 |---|---|---|
-| 段 8 審查第 5 條 | guard：`git commit -m "<危險指令>" && eval "$(git log -1 --format=%s)"` 現在不問（02 的遮罩） | 同一串有 `eval`／`source`／`.`／`bash -c "$(…)"` 時整串不遮。多問 |
+| ✅ 段 8 審查第 5 條 | guard：`git commit -m "<危險指令>" && eval "$(git log -1 --format=%s)"` 現在不問（02 的遮罩） | 做了：同一串有 `eval`／`source`／`.`／`sh -c`（bash、zsh…）整串不遮 |
 | 段 8 審查第 6 條 | guard 的 Bash／PowerShell 剖析分在 `classify.ts`、`removals.ts` 兩處，指令名取兩份、`envOf` 同名；`devbox.mjs`、dash 幾處重複 | 整理時把兩種 shell 的剖析搬進一個 `shell.ts`、指令名只留一份。不影響行為 |
 | 段 1 第 2、3、4、5、7 條 | guard：`gcloud firestore export` 要不要問；python 串列叫 `subprocess`、`powershell -enc`；不讀 `bash x.sh` 的內容；`node --check` 當成跑腳本；`gcloud config set project` 之後沒寫 `--project` | 都是多問（第 5 條是少問一點）；第 2 條要先問使用者 |
-| 段 3b 第 1 條 | guard `rm` 的 regex：`bash -c "rm -rf x"`、`xargs rm` 尾巴沒東西都不問 | 前面也認引號、後面認結尾。多問 |
-| 段 4 第 3 條 | guard 刪東西的框：python／node heredoc 裡每一處 `rm` 一行一樣的字 | 同樣的理由合併成一行、寫出是哪個程式 |
-| 段 4 第 2 條 | dash `vmView` 拿 `month` 沒檢查是字串 | 動 `vmUsage` 時順手 |
+| ✅ 段 3b 第 1 條 | guard `rm` 的 regex：`bash -c "rm -rf x"`、`xargs rm` 尾巴沒東西都不問 | 做了：前面也認引號、後面認結尾 |
+| ✅ 段 4 第 3 條 | guard 刪東西的框：python／node heredoc 裡每一處 `rm` 一行一樣的字 | 做了：框上寫「rm 寫在交給 python 的 heredoc 裡」；一樣的理由合成一行、寫「（N 處）」 |
+| ✅ 段 4 第 2 條 | dash `vmView` 拿 `month` 沒檢查是字串 | 做了：`vmUsage` 的 `month` 不是字串就不存 |
 | 段 2 第 2 條、段 3 | 客廳 tools：兩支 devbox 測試各一份 `BASH`、`git`／`write`；`--no-home` 舊名字 | 下一輪拿掉 `--no-home`（`devbox.mjs` `vmState`、`autosync.mjs` `backupMods`） |
 | 段 6 第 1～4 條 | `legacy-parity` 的 `OLD_JSON` 少了 `skills`（改既有測試，先問）；`sync-skills` 是手動的（客廳更新不會自己跟到專案）；上一個專案兩支 skill 留舊版；上一個專案沒選 `pr` | 第 2 條最值得：對話開始用 `--dry-run` 比一次、不同就提醒（不要自動 commit） |
 | 段 5 第 2、4 條 | 這台沒有全域 git 身分；上一個專案 E2E 斷網整批紅（SDK／字型快取還沒做） | E2E 平行之前先做快取；全量在 clone 量一次（`C:/w/e2e-exp` 留著） |
-| 段 7 第 1、2 條 | VM 看 presync 要 `sudo journalctl`；`claude-home-presync.service` 註解舊了 | 下次動那個 unit 一起改、在 VM 重裝 |
-| 段 8 中途發現第 1 條 | 本機 `main` 停在舊的 | 合併後 `git fetch`、`git branch -f main origin/main`（不在這個 checkout 切分支） |
-| 段 9 中途發現 | 見「中途發現」段 9 | |
+| 段 7 第 2 條（第 1 條 ✅） | ~~VM 看 presync 要 `sudo journalctl`~~（做了：`vm/README.md`「要知道的」）；`claude-home-presync.service` 註解舊了 | 下次動那個 unit 一起改、在 VM 重裝 |
+| ✅ 段 8 中途發現第 1 條 | 本機 `main` 停在舊的 | 做了：`git branch -f main origin/main`（`8f574b5`） |
+| 段 9 中途發現（第 1 條 ✅） | 第 1 條做了：程式裡刪檔案（`shutil.rmtree`、`fs.rmSync`…）的暫存區，`/tmp` 要是路徑開頭才算（`'./tmp/x'`、`'C:/proj/tmp/x'` 要問）。其他見「中途發現」段 9 | |
 
 ## 段 8 審查結果
 
