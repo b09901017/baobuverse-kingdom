@@ -71,3 +71,14 @@ E2E 加速（第 3 階段開始前說的，主控交接記的原話）：
 ## 行為會變的
 
 （段裡寫：哪個指令、以前怎樣、現在怎樣。）
+
+### 01 guard 補少問洞（客廳 `d3bc4a0`；只會多問）
+
+| 寫法 | 以前 | 現在 |
+|---|---|---|
+| `project.json` 是合法 JSON、`neverWrite` 壞掉：`{}`、`null`、字串、`true`、`[{}]`、`[null]`、`["baobu-app"]`、`[{"firebaseProject": 1}]`、`[{"firebaseProject": ""}]`、`[{"gitRepo": ""}]`、`database`／`gitRepo` 不是不空的字串、`why` 不是字串 | 不是陣列當 `[]`、不合格的項目濾掉，**不標讀不懂**：國王日記那道保護默默消失（`gcloud firestore import … --project=baobu-app`、推國王日記的 repo 都不問） | ＝讀不懂：碰 Firebase／`gcloud`（模擬器除外）、`git push`、`gh` 寫入一律要問，框上寫「`.claude/project.json` 讀不懂，先修好（neverWrite 那一欄格式不對…）」；特例換成最嚴預設＋這份檔自己的 `writeScripts`／`npmScripts`；合格的項目照樣擋 |
+| `npx -y firebase-tools@latest deploy …`、`npx firebase-tools firestore:delete …`、`npm exec firebase-tools -- deploy`、`npm x`、`pnpm dlx`／`exec`、`yarn dlx`／`exec`、`bunx`、`bun x` 跑的 `firebase-tools` | 完全認不出：不問、不記 | 跟 `firebase <子指令> …` 同一種判斷（要問的問、碰了什麼照記） |
+| `firebase.cmd …`、`firebase.exe …`、`firebase.ps1 …`、`firebase.js …` | 認不出 | 跟 `firebase …` 同一種判斷 |
+| firebase 全域旗標寫在子指令前面：`firebase --project prod deploy`、`firebase -P baobu-app firestore:delete …`、`firebase --debug deploy …` | 子指令被當成旗標（`--project`），只記一筆讀、不問 | 子指令認成 `deploy`／`firestore:delete`，跟旗標寫在後面同一種判斷 |
+| `gcloud` 全域旗標寫在 `firestore` 前面：`gcloud --project=baobu-app firestore import …`、`gcloud --quiet --project=… beta firestore import …` | 認不出，不擋 | 照 `neverWrite` 擋（跟寫在後面同一種判斷；`export` 照舊不問） |
+| `firebase -P prod`（只有旗標、沒有子指令） | 記一筆讀「firebase -P」 | 記一筆讀「firebase prod」（都不問，只是記的字不同） |

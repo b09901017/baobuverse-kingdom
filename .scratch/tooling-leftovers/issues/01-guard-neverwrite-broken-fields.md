@@ -1,6 +1,6 @@
 # 01 guard：補現在就有的「少問」洞（`neverWrite` 欄位壞掉、認不出的 firebase 寫法）
 
-Status: todo
+Status: done
 Blocked by: 無
 動工前先讀：`.scratch/legacy-to-home/HANDOFF.md`「中途發現」段 8 第 3、4 條、「段 7 審查結果」第 7 條；這份 HANDOFF「過目抓到的」01；
 客廳 `mods/guard/hooks/classify.ts`（`rulesFrom` `:90-106`、`otherDatabase` `:148-152`、`badConfig` `:160-162`、firebase CLI `:243-251`、`gcloud firestore` `:285`、REST `:328-338`）、`mods/guard/tests/strict-default.test.ts`（`:137-203` 的寫法、`:139` 的 `BAD`）、客廳 `docs/project-config.md:29`
@@ -29,3 +29,19 @@ Blocked by: 無
 - `gcloud --project=baobu-app firestore import …`、`gcloud --project baobu-app firestore export …`：會不會不問？（要：照 `neverWrite` 擋）
 - 既有 guard 38 條一條都不改就全過；客廳 `docs/project-config.md:29`「型別不對當成沒寫」補一句「`neverWrite` 例外：型別不對＝讀不懂」。
 - 這支只會多問；在 spec「行為會變的」列出新增會問的寫法。
+
+## 做完時留下的（段 1，客廳 `d3bc4a0`）
+
+- **`neverWrite` 壞掉＝讀不懂**：`neverWrite` 在、但不是陣列（`{}`、`null`、字串、`true`），或有一項不合格（不是物件、沒寫 `firebaseProject`／`gitRepo`、這兩個或 `database` 不是不空的字串、`why` 不是字串）。
+  `Rules.broken` 從 `true` 變成 `true | 'neverWrite'`（整個檔讀不懂照舊是 `true`，既有測試不用改）。框上寫「`.claude/project.json` 讀不懂，先修好（neverWrite 那一欄格式不對，要是陣列、每一項寫 firebaseProject 或 gitRepo；…）」，開頭對得上 `strict-default.test.ts` 的 `BAD`。
+- **firebase CLI 的寫法**：`FIREBASE_CLI` 一個 regex 認 `firebase`、`firebase.cmd／.exe／.ps1／.js`、套件執行器（`npx`、`npm exec`／`npm x`、`pnpm dlx`／`exec`、`yarn dlx`／`exec`、`bunx`、`bun x`）後面的 `firebase-tools[@版本]`；全域旗標可以寫在子指令前面。
+  `firebase-tools` 只在套件執行器後面才算（`npm install firebase-tools typescript` 不記）；`-p`／`--package` 後面的是套件名（`npx -p firebase-tools@latest -y firebase deploy` 認後面那個 `firebase deploy`）。
+- **`gcloud` 全域旗標在前**：`gcloud --project=… --quiet beta firestore import …` 照 `neverWrite` 擋。
+- 新測試：`tests/cli-forms.test.ts` 5 條、`tests/neverwrite-config.test.ts` 6 條（含一條 register 接起來的）；guard 38 → 49，既有 38 條一字不改。客廳 `docs/project-config.md` 補「`neverWrite` 例外：型別不對＝讀不懂」與「讀不到設定時」一句。
+
+跟 issue 寫的不同：
+
+1. **讀不懂時的特例不是純最嚴預設**：最嚴預設，再加上這份檔自己寫的 `writeScripts`（聯集）與 `npmScripts`（同名以最嚴預設為準）。純換成最嚴預設會讓「`writeScripts` 寫了 `my-writer.mjs`、讀不到內容」的 `node my-writer.mjs` 從要問變成不問，違反「只會多問」。issue 列的壞法都沒寫腳本特例，所以規則跟最嚴預設逐欄相同（測試照 issue 判準比）。
+2. **合格的項目照樣擋**：`neverWrite` 有一項壞掉時，其他合格的照樣出 `neverWrite`（框上兩個理由都有）。
+3. **多認了幾種**：firebase 全域旗標寫在前面（`firebase --project prod deploy`，以前子指令被當成 `--project`、只記一筆讀）、`npm x`、`yarn dlx`、`bunx`、`firebase.exe／.ps1／.js`。都只會多問。
+4. **`gcloud --project baobu-app firestore export …`**：issue 寫「照 `neverWrite` 擋」。做成「跟寫在後面的 `gcloud firestore export … --project baobu-app` 同一種判斷」——`export` 本來就不在寫入清單（它讀 database、寫到 GCS），所以照舊不問。要不要把 `export` 算進去記在 HANDOFF 中途發現。

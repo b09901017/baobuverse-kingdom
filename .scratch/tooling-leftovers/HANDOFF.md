@@ -86,6 +86,15 @@
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
 
+### 段 1
+
+進度：01 ✅（客廳 `d3bc4a0`、這個 repo 的 01 commit）；02 進行中。
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | 這個環境的 Bash：`printf "%s" $(grep -c $'\r' $f)` | 印出來的是**行數**，不是 CR 的數（`$'\r'` 在 `$(…)` 裡沒變成 CR，`grep -c` 什麼都比對得到）。段 1 因此以為 guard 的檔全是 CRLF，把 `classify.ts` 換成 CRLF、整份變成改過，發現後換回 LF（commit 前，沒有進 repo）。實際上客廳 guard 只有 `tests/guard.test.ts` 是 CRLF，其他是 LF | 查換行用 python 讀 bytes 數 `\r\n`。給 11（lessons）：跟上一輪段 8 第 1、6 條同一類 |
+| 2 | 01 判準「`gcloud --project baobu-app firestore export …`（要：照 `neverWrite` 擋）」 | `export` 本來就不在 guard 的 `gcloud firestore` 寫入清單（`import`、`delete`、`bulk-delete`、`create`、`update`、`restore`、`clone`）：它讀 database、寫到 GCS bucket，不寫國王日記的 database。段 1 做成跟寫在後面的同一種判斷（不問）。要「匯出國王日記也要問」就是把 `export` 加進清單（多問） | 不急；審查時主控看要不要問使用者 |
+
 ## 要使用者決定的
 
 （段寫；一次一題、附建議）
