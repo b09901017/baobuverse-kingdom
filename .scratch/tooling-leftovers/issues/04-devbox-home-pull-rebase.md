@@ -1,0 +1,40 @@
+# 04 devbox 回家：家裡那一半的 `.local` 改用 03 的嚴格模式接起來
+
+Status: done
+Blocked by: 03
+動工前先讀：`.scratch/legacy-to-home/HANDOFF.md`「中途發現」段 9 第 1 條；這份 HANDOFF「過目抓到的」04；客廳 `tools/devbox.mjs` 的 `pullLocal`（`:158-167`，`pull --ff-only` 之後 `--restore`）與 `out` 的 VM 那一半（`:284`）
+
+## 使用者要的
+
+> 下一輪，候選清單就一起做吧，全部完成
+
+## 為什麼會這樣
+
+段 9 只改了「出門」VM 那一半的 `.local`。回家的家裡那一半 `pullLocal` 還是 `pull --ff-only`：家裡有沒推的 commit、VM 也推了新的時，回家停在「家裡電腦的 X/.local 拉不下來」。
+`pullLocal` 也沒拿 autosync 的鎖，跟同時在跑的對話結束同步會撞 `index.lock`。
+
+## 做法
+
+回家的家裡那一半**直接叫 03 的 autosync 嚴格模式**（在鎖裡 commit → `pull --rebase` → 推；接不起來就 abort、exit 1），成功才 `--restore`。devbox 不另寫一份 rebase，也不用 `--autostash`
+（autostash 套回時衝突，新版 git 會把改動存進 stash、exit 0，接著 `--restore` 的 `mirror` 會把剛寫的記憶從記憶資料夾刪掉）。
+
+## 判準
+
+- 家裡 `.local` 一個沒推的 commit、遠端另一個 commit（不同檔）→ 回家會不會停？（要：接起來、照常回家）
+- 兩邊改了同一個檔 → 會不會留下 rebase 做一半、或照樣跑 `--restore`？（要：abort、停、**不跑 `--restore`**，訊息說是哪個專案）
+- 家裡 `.local` 有沒 commit 的檔、遠端也改了同一個檔 → 會不會弄丟？（要：停、不跑 `--restore`、檔還在）
+- 紅燈：暫存 bare repo 兩個 clone；既有測試一條都不改
+
+## 做完時留下的（段 2，客廳 `0ef32ab`）
+
+- `pullLocal` 改成叫 `autosync --project <專案> --strict --no-home`（03 的嚴格模式：在鎖裡把家裡的記憶與開場複製進 `.local`、整個 commit、`pull --rebase`、推），exit 0 才 `--restore`。
+  沒有要推的也會拉，是 03 就放進嚴格模式的（見 03「做完時留下的」）。不另寫 rebase、不用 `--autostash`。
+- 停下來的訊息：「家裡電腦的 X/.local 沒接好，記憶與開場還沒接回來：X/.local：<哪一步>：<原因>」＋「叫 Claude 看 .local 的 git status，處理完再按一次「回家」」。停在 `home` 的第一個迴圈（每個專案的 `.local`），家裡的程式碼一個都還沒動。
+- 判準：
+  1. 家裡沒推的 commit＋VM 推了別的檔 → 接起來、兩台的都推上 GitHub、接回記憶、印 ✅（以前停在「拉不下來」，**紅 → 綠**）。
+  2. 兩邊改了同一個檔 → abort、停、不跑 `--restore`、不停在 rebase 到一半、訊息說是哪個專案哪個檔。**誠實說**：以前的 `pull --ff-only` 也會停、也不跑 `--restore`，紅的只有「說是哪個檔」那一句；其他幾句是守門（防 `--autostash` 那種寫法）。
+  3. 沒 commit 的檔＋VM 改了同一個檔 → 停、不跑 `--restore`、家裡改的還在（被 commit 進 `.local`、沒推）。同 2：以前也會停，紅的是「說是哪個檔」。
+  4. 多一條（issue 寫的「`pullLocal` 也沒拿鎖」）：別的同步一直拿著 `.local` 的鎖 → 等、等不到就停、不接記憶（以前不理鎖照拉，**紅 → 綠**）。
+  兩台同時寫 git 的其他情況（推被拒、拿不到鎖、commit 出錯、兩邊改同一個檔、沒 commit 的檔＋遠端改同一個檔）在 03 的 autosync 測試各有一條，先紅。
+- 測試：devbox-mods 新 4 條（25 → 29），既有一字不改；devbox 14 照過。
+- 「出門」VM 那一半（段 2 之後是 `devbox.mjs:281` 的 `pull --rebase --autostash`）沒動（issue 只管家裡那一半），但重現了 issue 寫的那個坑：見 HANDOFF「中途發現」段 2 第 1 條。
