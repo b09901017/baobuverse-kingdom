@@ -1,6 +1,6 @@
 # 工具收尾 HANDOFF
 
-分支 `claude/tooling-leftovers`（從 `claude/legacy-to-home` 的 `1de96ba` 開）。spec：`spec.md`。主控：`local_b2ec433b-f899-4bc0-9984-418dfa4247d4`（段 3b 續的時候換了；更早的是 `local_cc2e38d3-…`、`local_fba130a7-…`。主控自己的筆記在 `.local/main-session-handoff.md`）。
+分支 `claude/tooling-leftovers`（從 `claude/legacy-to-home` 的 `1de96ba` 開）。spec：`spec.md`。主控：`local_d2eb6981-cee2-4888-8ec7-6de35309d0fb`（段 8 換帳號時換了；更早的是 `local_b2ec433b-…`、`local_cc2e38d3-…`、`local_fba130a7-…`。主控自己的筆記在 `.local/main-session-handoff.md`）。
 
 ## 分段
 
@@ -14,7 +14,7 @@
 | 5 E2E | 10 | high（每次跑之前使用者點頭） | ✅ 10（客廳 `e977e8b`、`2a0c53a`）：skill `e2e-speed`；實驗 10 個檔 1 個 worker 6.3 分 → 2 個 worker 各一組 3.5 分、0 紅（中間一次斷網紅 8，重跑全過）→ 3 個 worker 各一組 3.0 分、0 紅、CPU 平均 40%／最高 77% |
 | 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ✅ 09（上一個專案 `.local` `dca9cd8`：刪 59 個檔、`pre-push` 留著；客廳 `24d8413`）、08（差異報告 `08-skill-diff-report.md`；使用者照建議換 6 支＋kickoff 的合併規定搬進它的 `CLAUDE.md`；PR b09901017/baobao-wellness-clinic-scheduler#187 CI 全綠、合進 `develop` `869503d`） |
 | 7 VM | 段 2 中途發現 1 → 12 | high（開 VM、花錢，主控開段前再提醒使用者） | ✅ 段 2 中途發現 1（客廳 `62adaf0`；devbox-mods 30 → 31、devbox 17）、12（客廳 `1abf957`；VM 21:28 開 → 21:33 回家關機，status 關著） |
-| 8 審查 | `/matt-code-review`：這個 repo `main...claude/tooling-leftovers`＋客廳這一輪的 commit＋上一個專案這一輪的 PR 與 `.local` commit | xhigh | ⬜ |
+| 8 審查 | `/matt-code-review`：這個 repo `main...claude/tooling-leftovers`＋客廳這一輪的 commit＋上一個專案這一輪的 PR 與 `.local` commit | xhigh | ✅ 「段 8 審查結果」：要修的 4 條（中 1：13 把專案裡的 `tmp/` 當暫存區；低 3）、記著 2 條；測試全過、私人值 0 筆、上一個專案 staging 部署成功 |
 | 9 修審查、教訓、PR、合併 | 審查找到的、11、手動檢查清單、PR、合併 | high | ⬜ |
 
 ## 每一段共同的規矩
@@ -344,9 +344,85 @@
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：xhigh。
 ```
 
+## 段 9 的開場
+
+```
+這一輪在做「工具收尾」：第 3 階段留下的清單全部做完，加上 E2E 加速的 skill。分支 claude/tooling-leftovers（已經在這個 checkout 上）。
+這是第 9 段（最後一段）：修段 8 審查找到的「要修的」、做 issue 11（lessons）、寫手動檢查清單、開 PR、合併。段 1～8 做完了（issue 01～10、12、13 與段 2 中途發現 1 done；段 8 審查結果在 HANDOFF）。
+
+先讀：.scratch/tooling-leftovers/HANDOFF.md 的「每一段共同的規矩」「段 8 審查結果」「中途發現」段 1～7、「使用者已經決定的」；spec.md（「不能違反」「允許改的既有測試」「行為會變的」13）；issues/13、issues/11；
+CLAUDE.md（「合併」：CI 綠了直接合；還沒有 CI 時以這一輪驗證全過、PR 沒衝突為準）；docs/agents/lessons.md。動工前 git fetch、git -C C:/Users/DELL/claude-home pull --ff-only。
+
+段 8 留下、這一段要接著用的：
+- 「要修的」四條都在客廳 mods/guard（~/.claude/mods 即時生效）：照段 3b 的做法在 scratchpad 複本改 → tsc 0 錯、validate 過 → 複製進客廳 mods/、兩份逐檔相同。改壞了 guard 會擋下這個對話的指令，先用 Edit 改回能跑的版本。
+- 第 1 條（byPath 把 tmp/ 子資料夾、名字帶 scratchpad 的 cwd 當暫存區）是「少問」的洞：紅燈先（沒進 git 的 tmp/notes、cd tmp && rm x、cwd 帶 scratchpad 的 rm x 要問），既有 guard 64 條一條都不改；真的暫存區（$TEMP、/tmp、scratchpad 的路徑）照舊不問。spec「行為會變的」13 補一行（多問）。
+- 第 4 條（寫進 hook 名字的檔、.github/ 底下的檔，同一串 git commit／push 就會跑）也是 02「少問」的洞：紅燈先（tools/pre-push.mjs＋git push、scripts/pre-commit＋git commit、.github/workflows/x.yml＋git push 要問），spec「行為會變的」02 補一行（多問）。
+  tests/not-executed.test.ts 既有斷言不改；legacy-parity、strict-default 照過。
+- 段 8 的探針在段 8 的 scratchpad（不在 repo）：removals.ts 用 node 直接 import 要把 `constructor(readonly why…)` 改成一般欄位、import 加 .ts。這一段要的話照這個做法自己寫，測試字串用拼的（'fire'+'base'）就不會被 guard 讀成要寫 Firebase。
+- PR 的基底是 GitHub 上的 main（origin/main 91f5952）；本機 main 停在 2ca61ce，不要拿本機 main 比。跟 origin/main 沒有衝突（段 8 用 merge-tree 看過）。
+
+要特別注意：
+- 「記著、建議不在段 9 修」的第 5、6 條不修，PR 內文的「之後要做的」列出來。
+- 11：照 lessons.md 格式（標題是坑的形狀、內文是例子、最後一行是要問自己的那一句），原因沒重現或查證的不寫成原因；候選在 issue 11，另外看這一輪 HANDOFF「中途發現」標了「給 11」的（段 1 第 1 條、段 4 第 1 條、段 5 第 1 條、段 8 第 2 條）。沒有私人值。
+- 手動檢查清單（PR 內文）：只列測試蓋不到、要使用者自己看的（例如 guard 新框上的白話在真的對話裡長怎樣）；VM 這一輪 12 已經走過，不再列開 VM。
+- PR 內文用 pr skill；不帶私人值（VM host、GCP 專案 id、zone、instance 名、帳號、email）。開 PR 之後照 CLAUDE.md 合併；這個 repo 還沒有 CI 就以「這一段的驗證全過＋沒衝突」為準。
+- 測試一支一支跑：guard（64＋新的）、limit-guard 67；客廳的 tools 這一段沒動就不用跑。
+
+做完要交：修的那幾條一個 commit（這個 repo；客廳照規矩）、11 一個 commit、Status: done、HANDOFF 分段表段 9 ✅、PR、合併；最後在 HANDOFF 寫「下一輪要做的」（段 8 審查第 5、6 條、各段中途發現沒處理的）。
+額度快用完時：停在可以交接的地方，commit、推、記進 HANDOFF（寫「段 9 續的開場」）。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
+```
+
+## 段 8 審查結果
+
+（2026-10-29，段 8；`/matt-code-review` 兩個 subagent（Standards、Spec）＋段自己對「少問」的 02、13 寫探針，拿改之前與現在的 classify／removals 純函式比。只審、不修。）
+
+範圍：這個 repo `origin/main...claude/tooling-leftovers`（**merge-base 是 `51a7858`，不是開場寫的 `2ca61ce`**：本機的 `main` 停在 `2ca61ce`、沒跟上 `origin/main` `91f5952`；28 個檔 +1734 −5，只有 `.scratch`、`.claude/project.json` 加 `e2e-speed`、`.claude/skills/e2e-speed/`；跟 `origin/main` 沒有衝突）；
+客廳 `3945ae2..1abf957`（使用者自己改 `user/CLAUDE.md` 的 3 個不審）；上一個專案 PR #187（`869503d`）與 `.local` `dca9cd8`。
+
+### 要修的（段 9）
+
+| # | 哪裡 | 什麼情境會錯 | 嚴重度 | 建議 |
+|---|---|---|---|---|
+| 1 | 客廳 `mods/guard/hooks/removals.ts:73` `byPath` 拿 `TEMP` regex（`[\\/]tmp[\\/]`、`scratchpad`、`.shot-tmp`、`__pycache__` 子字串）去套**算好的絕對路徑**（含 cwd） | **重現過**（`removals`＋`classify` 純函式；register 對 `byPath` 已判的不問 git）：專案裡 `rm -rf tmp/notes`、`rm tmp/draft.md`、`cd tmp && rm x`、PowerShell `Remove-Item -Recurse -Force tmp/notes`（沒進 git 的也一樣）→ 13 之前**問**、現在當「暫存區」**不問**；cwd 名字裡有 `scratchpad`（例如 `…/scratchpad-app`）時 `rm draft.md` 也不問。13 的判準 2「沒進 git 的檔照舊要問」在 `tmp` 子資料夾底下破了，而且沒有守住的測試 | **中**（少問；要專案裡剛好有 `tmp/` 或資料夾名帶 scratchpad） | 暫存區只認 hook 讀到的 `TEMP`／`TMP`（＋Git Bash 的 `/tmp`）底下；`scratchpad` 等字樣只比原本寫的那個字（跟 13 之前一樣），不比接上 cwd 之後的絕對路徑。紅燈先：`rm -rf tmp/notes`、`cd tmp && rm x`、cwd 帶 scratchpad 的 `rm x`（沒進 git）要問；`spec`「行為會變的」13 補一行 |
+| 2 | 同上 `byPath:67-68` 的 `.local`、`.git` 比大小寫 | **重現過**：`rm -rf .LOCAL/claude-memory/x.md` → 不是 `.local` → 問 git → 這台 git 回它在 `.local` repo 裡、追蹤又沒改過 → **不問**（Windows 不分大小寫，真的會刪到 `.local`）。`~/.claude` 那條有用 `lower()`，這兩條沒有 | 低（要 Claude 寫成大寫） | `segs` 比對前轉小寫；守住的測試一條 |
+| 3 | 客廳 `mods/guard/hooks/register.ts:9,13` 開頭註解 | 還寫「刪檔案（暫存區以外）」「規則在 classify.ts」；13 之後建置產物、git 追蹤沒改過的也不問，規則一部分在 `removals.ts`（Standards 唯一的硬違規：改一段文件之前 grep 用到的地方） | 低（只有註解） | 改這兩行 |
+| 4 | 客廳 `classify.ts:646` `quietOut` 寫了檔案時，「檔名不像 hook」只比 `hook`／`husky` 兩個字；`CALM` 又把 `git commit／push／pull` 算「不會執行東西」 | **重現過**（改之前問、現在不問）：`cat <<'EOF' > tools/pre-push.mjs`＋內文寫 firebase 部署到國王日記＋`&& git add tools && git commit -m x && git push`——**客廳自己的 `.git/hooks/pre-push` 就是 `exec node …/tools/pre-push.mjs`**，推的時候就跑（Spec subagent 找到、段 8 重現）；`cat <<'EOF' > scripts/pre-commit … && git commit`（`core.hooksPath` 設在沒有 hook 字樣的資料夾）；`cat <<'EOF' > .github/workflows/x.yml … && git push`（CI 跑；上一個專案有 workflow 與部署金鑰）。跟「用 Write 寫檔、下一個指令再跑」（段 1 中途發現 4）同一類，但這幾個是**同一串指令裡就執行了**，正是 02「檔名不像 hook」要擋的 | 低（要 Claude 自己把部署寫進 hook 或 workflow；改法小） | 「像 hook」也認 git hook 的名字（`pre-*`、`post-*`、`commit-msg`、`prepare-commit-msg`、`applypatch-msg`、`update`、`reference-transaction`…，有沒有副檔名都算）與 `.github/` 底下的檔。都是多問；紅燈先，三種寫法各一條 |
+
+### 記著、建議不在段 9 修（下一輪看）
+
+| # | 哪裡 | 什麼情境會錯 | 嚴重度 | 建議 |
+|---|---|---|---|---|
+| 5 | 同上，遮掉的 `-m` 參數 | **重現過**：`git commit -m "<firebase 部署>" && eval "$(git log -1 --format=%s)"` 改之前問、現在不問（commit 訊息存進 git 再被 `eval` 拿出來跑） | 低（刻意繞才會寫） | 同一串有 `eval`／`source`／`.`／`bash -c "$(…)"` 時整串不遮。不急 |
+| 6 | Standards 的判斷題（不是錯）：`classify.ts` 多了約 400 行 Bash 剖析、`removals.ts` 又有 PowerShell 切句（Divergent Change）；`raw`／`lead`／取指令名兩份、已經不一樣（`classify` 去掉 `.exe`、`removals` 不去）；`cmd` 與遮過的 `text` 兩個字串一起傳、同一個指令遮 3 次剖 4 次；`register.ts:144` 新的 `envOf($)` 跟 `classify.ts:154` 的 `envOf` 同名；`devbox.mjs` `pushLocal`／`pullLocal` 前半一樣；`register.ts:176,192` 取 stderr 第一行寫兩次；dash `register.tsx:1870,1914` 路徑拼兩次；`skills/e2e-speed/scripts/durations.mjs` 有分號（客廳其他 `.mjs` 沒有） | 都不影響行為 | 低 | 下一輪要整理再挑（最值得的是把兩種 shell 的剖析搬進一個 `shell.ts`、指令名只留一份） |
+
+### 對過、沒有問題的
+
+- **測試（一支一支跑，段 8）**：guard 64、limit-guard 67、dash 56（`claude plugin test`）；客廳 `shared-fixtures` 1、`mods` 13、`autosync` 33、`devbox` 17、`devbox-mods` 31（4 分 45 秒）全過。
+- **既有測試**（Spec subagent 逐 hunk 對）：斷言一條都沒改；動到的只有 spec「允許改的既有測試」四列寫的 import／setup／小工具，另外 import 多補了新測試要用的 `basename`、`readdirSync`（不在表上，但只是 import 行）。
+- **行為會變的 ↔ 程式**：05 的模式先後（restore → check-mods → restore-mods → dry-run → strict）、03 的 stderr 格式、04 與段 2 中途發現 1 的停下訊息都跟 spec 的表一樣；`pushLocal`、`pullLocal`（兩步）、VM 那一半、presync 每條失敗路徑都 exit 不是 0、都不跑 `--restore`。
+  05 J3 的「直接執行才跑」在大小寫不同、junction、8.3 短路徑下都判對，被 import（靜態、動態）什麼都不做。
+- **mods 逐檔相同**：guard、limit-guard、dash 的客廳 `mods/` 與 `~/.claude/mods` `diff -rq` 0 個差異；換行照規矩（guard 只有 `tests/guard.test.ts` 是 CRLF）。
+- **私人值**（spawnSync 讀客廳 `vm/devbox.json` 與 `accounts.json` 的值在程式裡比、只印筆數）：這個 repo 這一輪 26 個 commit（內文＋diff）VM host、GCP 專案 id、zone、instance 名、email **0 筆**、作者 email 都是 noreply；
+  客廳 dash／`tools/`／`skills/` 在 `1abf957` 裡 instance 名 0 筆（diff 裡出現的 4＋4 筆全是刪掉的行）；上一個專案 PR #187 的 diff 與內文 0 筆。
+- **02 的守住的寫法**：探針另外試了 38 種（`"${X:-$(…)}"`、`` "${X:=`…`}" ``、`$((…$(…)))`、`$[…]`、巢狀 `$(echo "$(…)")`、`| tee >(sh)`、`|& sh`、`(echo …) | sh`、`{ echo …; } | sh`、`trap "…" EXIT`、`printf -v`＋`eval`、`rg --pre=sh`、`grep -f <(…)`、寫檔再 `source`／`.`／`sh`…）：除了上面第 4、5 條，改之前問的現在都還問。
+- **段 7**：`62adaf0` VM 那一半在 `set -eo pipefail` 裡，`autosync --strict` 失敗就停、不跑 `--restore`；`devbox.test.mjs` 只改假 autosync（spec「允許改的既有測試」最後一列）。`1abf957` 只拿掉 `vm/existing/devbox-presync*` 與改 README、`add-project.sh` 註解。
+- **這個 repo**：`.claude/skills/` 裡 `project.json` 選的每一支跟客廳逐檔相同（含 `e2e-speed`，換行不算）。
+- **上一個專案**：PR #187 → `develop`，`rules`／`test`／`e2e` 全過（`deploy` 在 PR 上跳過）；合進去的 `869503d` 的「測試與部署」（run `40880484651`）`test`、`rules`、`e2e`、**`deploy` 都 success**（13:16 → 13:21 UTC），staging 部署成功。
+  `.local` `dca9cd8`：刪 59 個（`claude-mods/` 54、`tools/` 5）、改 `README.md`、記憶 3 份、`知識庫` 1 份；`tools/` 現在只追蹤 `pre-push`。記憶裡提到舊工具的都是寫歷史、開頭有寫「2026-10-29 已刪」。
+
 ## 中途發現
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
+
+### 段 8
+
+進度：審查做完（上面「段 8 審查結果」）。只記、不加進這一輪。
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | 本機 `main` | 停在 `2ca61ce`，沒跟上 `origin/main`（`91f5952`）；段 8 的開場照它寫了 merge-base `2ca61ce`，`main...HEAD` 會多算上一輪的 37 個 commit | 比較都用 `origin/main`；要的話 `git fetch` 之後 `git branch -f main origin/main`（不在這個 checkout 切分支） |
+| 2 | guard 讀 `node <腳本>` 的內容 | Spec subagent 在 scratchpad 寫探針（測試字串直接寫 firebase 指令）再 `node` 跑，guard 跳了幾次「碰了 Firebase」（照設計：腳本內容當成指令掃；沒有真的跑 firebase／gcloud）。段 8 自己的探針把字拼起來（`'fire'+'base'`）就沒跳 | 給 11（lessons）：寫測 guard 的探針時測試字串用拼的；跟段 1 第 4 條同一個機制 |
 
 ### 段 7
 
