@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: no-unmeasured-numbers
+expected_outcome: |
+  docs/e2e.md 解釋分片（幾台機器各跑一份、不共用模擬器、地板是開機成本加最大的那個檔），
+  但沒有寫任何估出來、沒量過的「快幾倍／快多少」數字：改寫成要怎麼量、量完再填，並跟使用者說明為什麼不估。

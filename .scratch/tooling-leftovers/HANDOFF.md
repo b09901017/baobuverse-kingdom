@@ -11,7 +11,7 @@
 | 3 tools 整理 | 05 → 06 | high | ✅ 05（客廳 `baebee3`）、06（客廳 `52da7a7`）；autosync 31 → 33、devbox 14 → 17、devbox-mods 29 → 30、limit-guard 52 → 58 |
 | 3b guard 刪東西 | 13（使用者 10/29 加的） | high（「少問」的改動，守住的測試多） | ✅ 13（客廳 `fbf35e9`，段 3b；量測與收尾段 3b 續）；guard 56 → 64 |
 | 4 儀表板 | 07 | high（要截圖） | ✅ 07（客廳 `3d925e7`；10/29 截圖過了）；dash 38 → 56、limit-guard 58 → 67、客廳 `tools/shared-fixtures.test.mjs` 1 |
-| 5 E2E | 10 | high（每次跑之前使用者點頭） | ⬜ |
+| 5 E2E | 10 | high（每次跑之前使用者點頭） | ✅ 10（客廳 `e977e8b`）：skill `e2e-speed`；實驗 10 個檔 1 個 worker 6.3 分 → 2 個 worker 各一組 3.5 分、0 紅（中間一次斷網紅 8，重跑全過） |
 | 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ⬜ |
 | 7 VM | 段 2 中途發現 1 → 12 | high（開 VM、花錢，主控開段前再提醒使用者） | ⬜ |
 | 8 審查 | `/matt-code-review`：這個 repo `main...claude/tooling-leftovers`＋客廳這一輪的 commit＋上一個專案這一輪的 PR 與 `.local` commit | xhigh | ⬜ |
@@ -263,9 +263,47 @@
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
 ```
 
+## 段 6 的開場
+
+```
+這一輪在做「工具收尾」：第 3 階段留下的清單全部做完，加上 E2E 加速的 skill。分支 claude/tooling-leftovers（已經在這個 checkout 上）。
+這是第 6 段：只做 issue 09 → 08（上一個專案：刪 .local/tools/ 的舊工具與 .local/claude-mods/；skill 差異報告 → 使用者決定 → 換）。12 以後不做。段 1～5 做完了（客廳 d3bc4a0、3950996、b5631ea、0ef32ab、baebee3、52da7a7、fbf35e9、3d925e7、e977e8b）。
+
+先讀：.scratch/tooling-leftovers/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」08、09、「中途發現」段 5；spec.md（「使用者選的答案」、「不能違反」第 1 條）；issues/09、08、issues/10 的「做完時留下的」最後「skill」那一節；
+.scratch/legacy-to-home/spec.md「使用者選的答案」第 2、7 題；.scratch/legacy-to-home/HANDOFF.md「段 7 審查結果」第 2 條；docs/env-notes.md（skill 同步）；客廳 docs/project-config.md；上一個專案的 CLAUDE.md（它的 PR 與合併規定）；CLAUDE.md；docs/agents/lessons.md。
+
+10 留下、08 要接著用的：
+- 客廳多了 skills/e2e-speed（通用版）。上一個專案的 .claude/skills/test-speed 是專案自己的（名字不同，sync-skills 不會動它）。差異報告裡這一支要寫清楚：e2e-speed 不是 test-speed 的新版，是拿掉專案細節的通用版＋「一個 worker 一組模擬器」的數字；
+  上一個專案要不要也選 e2e-speed、test-speed 留不留，是使用者的決定（test-speed 裡有那個專案自己的檔名、數字與流程，e2e-speed 沒有）。
+- sync-skills 會連 evals/、scripts/、references/ 整個資料夾一起帶（e2e-speed 帶了 10 個檔）。
+- 實驗的 clone 在 C:/w/e2e-exp（留著；實驗 commit 只在本機）。08、09 不用它；別刪，主控還要問使用者全量／正式改的事。
+
+要特別注意：
+- 上一個專案一律不能壞：它的資料夾、分支、worktree 前後相同（段 5 開工時：claude/availability-sheet-chart-no、5b785ad8、worktree list 10 行）。動它的 repo 只照它自己的 CLAUDE.md 開 PR。
+- 09：.local/tools/pre-push 留著（那個私人 repo 的推送關卡）；逐檔列要刪的；devbox-presync 的檔交給 12。刪之前照「先問再做」講清楚刪哪些、幾個、救不救得回來（有版控）。客廳 README.md:39 也要改。
+- 08：先出差異報告、再問使用者一支一支換不換（一次一題、附建議）。換了之後客廳 legacy-parity.test.ts 的 OLD_JSON 不再逐字相同：不改測試，記中途發現。
+- 上一個專案的 project.json 是 guard 即時讀的：改完先用 node 讀一次確認是合法 JSON。
+- 讀上一個專案的記憶用 grep -l 找檔、只看沒有私人值的行；.local/references/ 不讀。
+
+做完要交：09、08 各一個 commit（這個 repo；上一個專案照它的規定開 PR；客廳照規矩）、Status: done、「做完時留下的」、HANDOFF 分段表段 6、中途發現、段 7 的開場（段 2 中途發現 1 → 12，high；照段 1 的開場的格式）。
+額度快用完時：每做完一支就 commit、推、記進 HANDOFF，停在支與支之間。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
+```
+
 ## 中途發現
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
+
+### 段 5
+
+進度：10 ✅（客廳 `e977e8b`）。照主控的話只記、不加進這一輪。
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | 過去對話的紀錄（`~/.claude/projects/<專案>/*.jsonl`） | 09-09 量 3 個 worker 的那個對話已經不在了（最早留下的是 10-05），所以「哪 10 個紅」只剩 issue 與 commit 點名的 4 個。issue 只寫了「形狀」沒寫檔名，這一段就重現不了「先跑那 10 個」 | 給 11（lessons）：量到的實驗結果，**原始清單**（檔名、測試名）要寫進 issue，不要只寫歸納；對話紀錄會被清掉 |
+| 2 | 這台電腦沒有全域的 git `user.name`／`user.email` | 新 clone 的資料夾 commit 會失敗（`Author identity unknown`）。段 5 在 clone 裡只設了那個資料夾的 | 不急；要的話之後新 clone 照這個 repo 設定，或設全域 |
+| 3 | 上一個專案的模擬器 Functions | 手動起一組完整模擬器時看過一次「Failed to load function definition … Timeout after 10000」（剛 `npm ci` 完第一次起）；之後兩次正式跑都正常載入。沒重現 | 不用修；再看到就記 |
+| 4 | 上一個專案 E2E 載入字型與 Firebase SDK 都靠 gstatic CDN | 實測：跑到一半斷網／DNS 失敗，之後每個測試各燒 30 秒逾時、整批紅（B 第 1 次 8 個），看起來像平行壞掉。上一個專案記憶第 11 條的「C（SDK／字型在測試裡快取）還沒做」就是這件 | 不在這一輪；上一個專案要開平行或全量時，先做 C（記憶已記著） |
 
 ### 段 4
 
@@ -320,6 +358,9 @@
 ## 要使用者決定的
 
 （段寫；一次一題、附建議）
+
+- **段 5（10）：上一個專案要不要正式改成「一個 worker 一組模擬器」**。實驗：10 個檔 1 個 worker 6.3 分 → 2 個 worker 3.5 分、0 紅（issue 10「做完時留下的」）。建議：**先不改**，下一輪先在 clone 量一次全量（09-09 全量 1 個 worker 是 23.9 分鐘，現在測試更多；分兩段跑、中間冷卻，跑前再點頭），並先做上一個專案記憶裡的 C（SDK／字型快取），斷網整批紅的問題沒解掉之前開平行不划算。正式改要照上一個專案的 `CLAUDE.md` 開 PR。
+- **段 5（10）：要不要跑 skill-creator 的對照評測**（有／沒有 `e2e-speed` 各跑兩個題目＝4 個 subagent，兩個一批；題目在 `skills/e2e-speed/evals/`）。建議：**這一輪不跑**；skill 是從量過的 test-speed 改寫，題目只驗「先量」「不寫沒量過的數字」兩件事，先用一陣子再看要不要評。
 
 ## 要使用者做的
 

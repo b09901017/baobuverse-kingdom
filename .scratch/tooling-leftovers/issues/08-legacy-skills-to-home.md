@@ -1,7 +1,7 @@
 # 08 上一個專案的 skill 換成客廳的版本：先出差異報告，使用者決定再換
 
 Status: todo
-Blocked by: 10（E2E 的通用 skill 做好，`test-speed` 才有得比）
+Blocked by: ~~10~~（10 done，客廳 `skills/e2e-speed`；`test-speed` 現在有得比）
 動工前先讀：`.scratch/legacy-to-home/spec.md`「使用者選的答案」第 2 題；`docs/env-notes.md`（skill 怎麼從客廳同步到專案、`project.json` 的 `skills`）；客廳 `docs/project-config.md`；上一個專案的 `CLAUDE.md`（它的 PR 與合併規定）
 
 ## 使用者要的

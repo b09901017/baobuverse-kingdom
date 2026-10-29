@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: plan-before-raising-workers
+expected_outcome: |
+  plan.md 不直接建議把 workers 改成 4：先量（每個檔幾秒、時間花在哪一桶），
+  指出共用一個 Firestore 模擬器時多個 worker 會互相清掉資料、要先做隔離（每個 worker 一個命名空間或一組模擬器）與「讀錯命名空間會大聲」的檢查，
+  提到這台筆電最多 2～3 個 worker、跑之前要先講時間與 CPU，並把分級（只跑相關的）與 CI 分片排在同機平行前面。

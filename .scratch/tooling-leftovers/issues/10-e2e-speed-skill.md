@@ -1,6 +1,6 @@
 # 10 E2E 加速的通用 skill＋「一個 worker 一顆模擬器」實驗
 
-Status: todo
+Status: done（2026-10-29，段 5；客廳 `e977e8b`）
 Blocked by: 無
 動工前先讀：這份 spec「使用者要的」E2E 那幾句與「使用者選的答案」第 2 題；上一個專案 `.claude/skills/test-speed/SKILL.md`（唯讀）、`.scratch/e2e-speed/issues/03-parallel-workers.md`（2026-09-09 量過的數字）、
 `playwright.config.js` 檔頭、`tests-e2e/start-emulators.sh`、`tests-e2e/fixtures/emulator.js`、`public/js/firebase-config.js` 模擬器那一段；上一個專案記憶 `no-sustained-cpu-load-on-her-machine`、`e2e-parallelism-is-blocked-by-the-shared-emulator`、`local-e2e-run-gotchas`（用 `grep -l` 找）；Skill 叫 `skill-creator`
@@ -45,3 +45,50 @@ Blocked by: 無
 - 實驗前後，上一個專案的資料夾、分支、worktree、它平常用的模擬器 port 有沒有被動到？（要：沒有）
 - 實驗跑的時候電腦有沒有長時間滿載又放著？（要：一次只跑一組，跑完關乾淨）
 - skill 的觸發描述放軟（不寫「一定要使用」），寫清楚什麼時候用（這個 repo `.scratch/claude-home-workflow/research/skill-checklist.md` 第三節衝突 1）
+
+## 做完時留下的
+
+### 實驗量到的（2026-10-29，同一台筆電，無頭，Playwright 1.62.1、firebase-tools 15.28.2、JDK 21）
+
+clone：`C:/w/e2e-exp`（從 GitHub 網址 clone、`origin/develop` 的 `3a39a17` 開 `exp/emulator-per-worker`；push url 設成 `no-push-experiment-only`，實驗 commit `07f73c7` 只在本機）。數字的原始輸出在 `C:/w/runs/<A|B|B2>/`（`pw.log`、`results.json`、`cpu.txt`）。
+
+| 跑的 | 過 | 紅 | 時間 | 整機 CPU（每 5 秒取樣） |
+|---|---|---|---|---|
+| 接線：2 組、2 個 worker、`21-pool-assignment` 1 個檔（`--fully-parallel`） | 3 | 0 | 33 秒 | 平均 16%、最高 48% |
+| A：1 組、1 個 worker、10 個檔 | 78 | 0 | 6.3 分鐘 | 平均 23%、最高 49% |
+| B：2 組、2 個 worker、10 個檔 | 70 | 8 | 7.4 分鐘 | 平均 19%、最高 56% |
+| B 重跑（網路恢復後，使用者同意） | 78 | 0 | 3.5 分鐘 | 平均 29%、最高 62% |
+
+- **B 的 8 個紅全是斷網**：12:14:48（UTC）起連 `fonts.gstatic.com` `ERR_CONNECTION_RESET`、接著 `ERR_NAME_NOT_RESOLVED`，之後每個測試等不到 `[data-signin]` 各燒 30 秒。斷網前兩個 worker 沒有一個紅；worker 1 那時已經跑完自己的 27 個。不是隔離、不是 CPU。
+- B 重跑每個檔的秒數跟 A 幾乎一樣（測試時間加總 6.3 vs 6.2 分鐘）：兩組模擬器之間沒有互搶。牆上時間由分到最多的 worker 決定：Playwright 照檔分，51 個測試（3.5 分鐘）對 27 個（2.9 分鐘）。
+- 接線驗證：跑完直接問兩組模擬器，`demo-scheduler-w1` 的 `allowedUsers` 只在第 1 組（port 28090）、`demo-scheduler` 只在第 0 組（28080）。
+- 一組模擬器約 10～11 秒起來。**兩組同時開兩組都卡住、log 一個字都沒有**（等了 3 分鐘）；一組起好再開下一組就好。
+- 只量了 10 個檔，**沒量全量**。全量要不要跑、要不要正式改上一個專案，照 spec 第 2 題「好的話再問」：交給主控問使用者。
+
+**10 個檔跟 issue 寫的不一樣**：09-09 那 10 個紅的完整檔名找不回來（當時的對話紀錄已經不在、commit 與 issue 只點名 `11-todo-drawer`、`16-record-task`、`19-untick-and-drawer-todos`、`21-pool-assignment`）。
+用這 4 個＋同時期、沒有寫死 port 的 6 個：`03-health-and-counts`、`04-journey-a-happy`、`05-journey-b-changes`、`12-ask-by-month`、`13-nth-followup`、`20-drawer-one-slot`（共 78 個測試）。`00-smoke` 自己寫死 port，沒選。
+
+### 實驗分支改了什麼（clone 的 `07f73c7`，9 個檔）
+
+- `public/js/firebase-config.js`：`EMULATOR_PORTS`、`emulatorPortsFor(slot)`（沒給組號 → 平常那一份；組號 k → 每個 port ＋20000＋10k，連 0 號組都避開平常的 port）、`emulatorPorts()` 讀 `window.__E2E_PORT_SLOT`。
+- 寫死 port 的地方是 **7 個檔、12 行**（過目清單少了 `tests-e2e/fixtures/ai/index.js:13` 的 `EXTRACT_URL`）：`data/firebase.js` 3 行、`data/treatmentSheets.js`、`data/ai.js` 2 行（Functions 網址的 0 號專案也改成跟著 worker）、`fixtures/emulator.js` 3 行（`AUTH_PROJECT_ID` 一個 worker 一組時跟著 `PROJECT_ID`）、`fixtures/app.js` 的 route regex、`fixtures/ai/index.js`、`playwright.config.js` 的 `baseURL`。
+- `fixtures/app.js` 的 `addInitScript` 多塞 `__E2E_PORT_SLOT`（只有 `E2E_EMULATOR_PER_WORKER=1` 才塞）。
+- 新的 `tests-e2e/start-emulator-sets.mjs N`：每組一份設定檔（根目錄 `firebase.e2e-set-k.json`，沒進 commit）、從 `.artifacts/emu-k/` 啟動、hosting 只開 0 號組、UI 關掉。
+- 單元測試：只有「`public/` 跟 shell 快照一樣」那條紅（改了 `public/` 就會紅，正式改要升 VERSION）。
+
+### 上一個專案沒有被動到
+
+開工前、做完各看一次：分支 `claude/availability-sheet-chart-no`、HEAD `5b785ad8`、`git worktree list` 10 行、工作目錄乾淨、push url 照舊。實驗的 port 全在 24400～29209，平常的 4000／4400／4500／5000／5001／8080／9099／9150／9199 沒碰。
+每次跑完收乾淨：沒有 java、沒有實驗的 node、24000～29999 沒有在聽的 port（A 那次外層啟動腳本活了下來，手動補收、收尾腳本改成用指令列再找一次）。
+
+**clone 留著**（`C:/w/e2e-exp`，含 `node_modules`）：要量全量或正式改的時候直接用。不要的話整個資料夾刪掉就好（實驗 commit 只在本機，刪了就沒了；改法都寫在上面）。`C:/w/runs/` 是原始輸出，也可以一起刪。
+
+### skill
+
+客廳 `skills/e2e-speed/`（`e977e8b`；名字跟上一個專案的 `test-speed` 不同）：`SKILL.md`、`scripts/durations.mjs`（讀 Playwright JSON 報表印每個檔幾秒）、`references/parallel-emulators.md`（兩種隔離、量到的數字、一個 worker 一組怎麼接）、`references/pitfalls.md`（test-speed 的坑＋上一個專案記憶的坑＋這次踩的 3 個）。客廳 `skills/README.md`「來源與版本」加一列。
+這個 repo：`.claude/project.json` 的 `skills` 加 `e2e-speed`（`node` 讀過是合法 JSON）、跑了 `sync-skills`（只新增 10 個檔，跟客廳逐檔相同）。
+
+- 每個數字都標了出處：上一個專案 2026-09-09（test-speed、issue 03）、上一個專案記憶（2026-10-02 CPU、2026-10-16 CI 開機與 `--related`）、這次實驗、客廳 `vm/README.md`（VM 機型）。沒有估的數字。
+- 觸發描述是「…時參考」，沒有「一定要使用」。
+- skill-creator 的流程只做到「寫草稿＋兩個測試題目」（`evals/plan-before-raising-workers`、`evals/no-unmeasured-numbers`）：**沒跑**有／沒有 skill 的對照評測與觸發描述最佳化。那要再開 4 個 subagent（兩個一批），是真的計費的模型呼叫，交給主控問使用者要不要。
+- 這次踩到、寫進 `pitfalls.md` 的：兩組模擬器同時開會卡住；命令列 `--reporter=list` 會換掉 config 的 json reporter（A 那一次的 JSON 因此是 `--list` 留下的「全部跳過」那份，A 的秒數改從 list 輸出算）；`taskkill /T` 之後外層啟動腳本還活著。
