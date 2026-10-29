@@ -426,7 +426,7 @@ CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/le
 | 5 | 段 7 自己 | 這個對話 | 查第 2 條時對上一個專案的記憶 `grep -n`，輸出帶出了 VM 名稱、GCP 專案、zone 等私人值（**只在這個對話**，沒寫進任何檔、repo）。違反「比對時不要把值印出來」的精神 | 之後查記憶或私人檔先 `grep -l`（只列檔名），要看內容再挑沒有私人值的那幾行 | 不用 |
 | 6 ✅ 段 8（客廳 `9529bce`） | Spec（**少問**） | 客廳 guard `classify.ts:282`（`stagingScripts` 的推定） | 沒有 `project.json`（＝`STRICT`）又讀不到 `.firebaserc`（或 `register.ts` 讀不到專案資料夾）時：`node scripts/reset-staging.mjs --project <正式站 id>`、`npm run staging:reset -- --project <正式站 id>`，`e8f9058` 靠寫死的 id 認出正式站、**要問**；現在 id 認不出 → 「看不出環境」→ 又被 `stagingScripts` 推定成 staging → **不問**（段 7 拿兩版 classify 跑過）。違反 issue 01 判準 1（只准多問）。`parity-cases.ts` 沒有這條所以沒抓到。實際上上一個專案每條分支都有 `.firebaserc`，要碰到不容易 | 段 8：指令自己寫了 `--project`／`-P` 卻認不出時，不套 `stagingScripts`／`prodReadScripts` 的推定（看不出環境→寫入要問）。先把這兩條加進 `parity-cases.ts`（`legacy-parity` 讀不到 `.firebaserc` 那條會紅），再修到綠 | 不用（照「只會多問」） |
 | 7 ✅ 段 8（客廳 `32923b0`） | Spec（**少問**，已知的段 1 中途發現 2，但範圍更大） | 客廳 guard `rulesFrom`（`classify.ts:88-91`） | `project.json` 壞掉不只「不是 JSON」：`[]`、`null` 也一樣。而且壞掉時 `neverWrite` 整個沒了：這個 repo 的 `gcloud firestore import … --project=<neverWrite 的專案>`，正常時擋（`neverWrite`），壞掉三種都**什麼都不記、不問**（段 7 跑過）。段 8 原訂的「壞掉＝最嚴預設」也救不回來：`STRICT` 沒有 `neverWrite`、也不認得 `gcloud firestore` 是寫入。等於 `CLAUDE.md`「絕對不寫入國王日記」的那道保護，在 `project.json` 打錯一個逗號時默默消失 | 壞掉（不是 JSON、不是物件）＝最嚴預設，**再加**：碰 Firebase／`gcloud`（模擬器除外）與 `git push` 的指令一律要問，框上寫「`.claude/project.json` 讀不懂，先修好」。紅燈測試：三種壞法 × 那條 `gcloud` 指令與推另一個 repo | **要**（擴大使用者 10/29 定的「壞掉＝最嚴預設」）：段 7 第 1 題 |
-| 8 | Spec（做錯） | 客廳 `autosync.mjs` 的 `checkModsNow`（`:382`）；`devbox.mjs` 的 `pushMods`（`:170`）、`vmMods`（`:210`）、`presyncMods`（`:384`）都靠它 | 「確認這台的 mods 推上去了」做成「這台＝GitHub 上的客廳」。VM 開著時家裡改了 mods 並推上客廳、VM 自己沒改：VM 照基準點不備份（對的），但 `--check-mods` 不一樣 → **回家（VM 開著）停在「VM 上的 mods 沒推上客廳」、VM 不關，重按一樣**（只能連進去手動 `--restore-mods`）；VM 關著時 presync 記 `mods: bad` → 回家不印 ✅、叫她 `--check-vm` → 又停在同一處。出門時家裡比客廳舊（VM 推過、家裡沒回家）也一樣停。測試沒有這個情境 | 段 8：改成「這台在基準點之後改過的檔都已經在 GitHub 上的客廳」——這台跟基準點一樣（沒改）或跟 `@{u}` 一樣都算過。紅燈先：VM 開著、家裡推了 mods、VM 沒改 → 回家照常關 VM、家裡接客廳那一份；VM 有改又沒推上去 → 照舊停 | 不用（照 issue 04 的意思：要確認的是「這台改的」推上去了） |
+| 8 ✅ 段 9（客廳 `360a313`；跟 GitHub 不一樣的檔裡只有這台在基準點之後改的才算沒推上去，比對點 `merge-base(基準點, @{u})`、沒有基準點每個都算；devbox 不用改。既有 `mods.test.mjs:128` 1 → 0（主控照 A，spec 已寫）；新測試 devbox-mods 4、mods 1） | Spec（做錯） | 客廳 `autosync.mjs` 的 `checkModsNow`（`:382`）；`devbox.mjs` 的 `pushMods`（`:170`）、`vmMods`（`:210`）、`presyncMods`（`:384`）都靠它 | 「確認這台的 mods 推上去了」做成「這台＝GitHub 上的客廳」。VM 開著時家裡改了 mods 並推上客廳、VM 自己沒改：VM 照基準點不備份（對的），但 `--check-mods` 不一樣 → **回家（VM 開著）停在「VM 上的 mods 沒推上客廳」、VM 不關，重按一樣**（只能連進去手動 `--restore-mods`）；VM 關著時 presync 記 `mods: bad` → 回家不印 ✅、叫她 `--check-vm` → 又停在同一處。出門時家裡比客廳舊（VM 推過、家裡沒回家）也一樣停。測試沒有這個情境 | 段 8：改成「這台在基準點之後改過的檔都已經在 GitHub 上的客廳」——這台跟基準點一樣（沒改）或跟 `@{u}` 一樣都算過。紅燈先：VM 開著、家裡推了 mods、VM 沒改 → 回家照常關 VM、家裡接客廳那一份；VM 有改又沒推上去 → 照舊停 | 不用（照 issue 04 的意思：要確認的是「這台改的」推上去了） |
 | 9 ✅ 段 8（客廳 `3d13dec`，只改文件） | Spec | 客廳 `autosync.mjs:328`（沒有基準點的 Windows 照舊備份）＋`README.md`「新電腦怎麼接」 | 新電腦第 6 步就裝全域 hook，第 8 步才 `--restore-mods`：中間開的任何對話（例如幫忙設定的那一個），如果這台已經有一份舊的或不完整的 `~/.claude/mods`，備份會把客廳有、這台沒有的檔刪掉推上去（`~/.claude/mods` 不存在就不會）。家裡現在已經有基準點，不受影響 | 段 8 只改文件：「新電腦怎麼接」把 `--restore-mods` 排到裝 hook 之前（拿掉 Windows 的例外要改既有測試「客廳：備份 mods…」，不在允許清單，不做） | 不用 |
 | 10 ✅ 段 8（客廳 `f264938`） | Spec（spec 沒要的，多問） | 客廳 guard：`firebase use <認不出的專案>` 每個專案都要問（issue 01「跟 issue 寫的不同」第 1 點） | 不在 spec「行為會變的（使用者點過頭的）」。而且 **`firebase use default`（`.firebaserc` 的別名）現在也要問**，`e8f9058` 不問（段 7 跑過；`firebase use staging` 照舊不問） | 段 8：`default` 照 `.firebaserc` 的別名認（跟 `staging`、`prod` 一樣）；`firebase use <真的認不出的>` 照 issue 01 留著要問，寫進 spec「行為會變的」 | **要**（使用者沒點過頭）：併進段 7 第 1 題 |
 | 11 ✅ 段 9（客廳 `1da2f16`，只改文件：`vm/README.md`「新專案上 VM」第 3 步加「一定要在 VM 上跑完第 2 步（含 `add-project.sh`）之後才加」；程式沒動，碰到時照舊停） | Spec | 客廳 `devbox.mjs:337`（VM 關著、沒有 `vm-state.json` 就停） | `devbox.json` 的 `projects` 有、VM 上卻還沒有的專案（例如新專案先加進設定、還沒在 VM 上跑 `add-project.sh`）：presync 跳過它、不寫 `vm-state.json` → 之後**每次** VM 關著回家都停在它。現在兩個專案 VM 上都有，碰不到 | 下一輪；或段 8 在 `vm/README.md` 加一句「加進 `devbox.json` 之前先在 VM 上跑 `add-project.sh`」 | 不用 |
@@ -542,6 +542,13 @@ CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/le
 
 ## 要使用者決定的
 
+### 段 9
+
+1. ~~**段 7 第 8 條（`--check-mods` 改成「這台改的推上去了」）一定會改到 `mods.test.mjs:128`，spec 沒列：要改嗎？**~~ → **主控 2026-10-29「照 A」**（主控的決定，不是使用者）：
+   那條最後的 `--check-mods` 1 → 0、同一條其他斷言不動，寫進 spec「允許改的既有測試」（已寫）；不開 B 的新旗標；比對點用 `merge-base(基準點, @{u})`、`:165` 照舊 exit 1；
+   另外補一條「家裡比客廳舊、而且自己改過 mods（沒推）→ 照舊 exit 1」（已補：`mods.test.mjs` 新的一條；把比對改成全放過時它會紅，確認過）。之後再碰到要改既有測試的，一樣先停、問主控。
+   B（`--check-mods` 一字不改、給 devbox 另開一個旗標）沒選。
+
 ### 段 7
 
 一次問一題，照這個順序（第 1、2 題的答案段 8 要用；第 3 題不擋）。
@@ -601,3 +608,4 @@ CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/le
 - 段 7 第 1 題（guard 兩處多問：`project.json` 壞掉＝最嚴預設＋碰 Firebase／`gcloud`／`git push` 一律要問；`firebase use <認不出的>` 要問、`firebase use default` 改回不問）：使用者 2026-10-29「照建議」（主控 session）。段 8 修。
 - 段 7 第 2 題（上一個專案的兩份記憶、`MEMORY.md` 那兩行、`.local/README.md` 三段加「舊工具不要再叫」）：使用者 2026-10-29「改（建議）」（主控 session）。段 8 改；`.local/tools/` 不動。
 - 段 7 第 3 題（force push 之前那個舊 commit 請 GitHub Support 清）：使用者 2026-10-29「要清（建議）」（主控 session）。內容在這個專案的 `.local/github-support-request.md`，使用者本人送；被拒（不算敏感資料）就算了。
+- 段 9 `mods.test.mjs:128`（`--check-mods` 的期待值 1 → 0）：主控 2026-10-29「照 A」（主控的決定，不是使用者）；spec「允許改的既有測試」已補。
