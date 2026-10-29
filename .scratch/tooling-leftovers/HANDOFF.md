@@ -6,7 +6,7 @@
 
 | 段 | issue | effort | 狀態 |
 |---|---|---|---|
-| 1 guard | 01 → 02 | xhigh（02 是這一輪唯一「少問」的改動，白名單與守住的測試很多） | ⬜ |
+| 1 guard | 01 → 02 | xhigh（02 是這一輪唯一「少問」的改動，白名單與守住的測試很多） | 🟡 01 ✅（客廳 `d3bc4a0`）；02 沒動（5 小時額度 93%，停在支與支之間）→「段 1 續的開場」 |
 | 2 同步的兩個 git 行為 | 03 → 04 | xhigh（兩台同時寫 git 的紅燈測試） | ⬜ |
 | 3 tools 整理 | 05 → 06 | high | ⬜ |
 | 4 儀表板 | 07 | high（要截圖） | ⬜ |
@@ -82,13 +82,41 @@
 最後回覆用繁體中文簡短說做了什麼、卡在哪。
 ```
 
+## 段 1 續的開場
+
+```
+這一輪在做「工具收尾」：第 3 階段留下的清單全部做完，加上 E2E 加速的 skill。分支 claude/tooling-leftovers（已經在這個 checkout 上）。
+這是第 1 段續：01 做完了（客廳 d3bc4a0；這個 repo 609c6d5 起），這一段只做 issue 02（guard 白名單）。03 以後不做。
+
+先讀：.scratch/tooling-leftovers/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」「中途發現」段 1；spec.md（「不能違反」guard 那一條、「行為會變的」01）；issues/01 的「做完時留下的」、issues/02；
+.scratch/legacy-to-home/HANDOFF.md「中途發現」段 1 第 1 條、段 8 第 2、5 條；CLAUDE.md；docs/agents/lessons.md。
+
+01 留下、02 要接著用的：
+- 客廳 classify.ts 新的 FIREBASE_CLI（套件執行器＋firebase-tools、firebase.cmd、全域旗標在前）；第 2 組是子指令後面的字，firebase use 的目標從那裡讀。gcloud firestore 的 regex 也認全域旗標在前。
+- Rules.broken 是 true | 'neverWrite'；badConfig(seg, rules)。
+- legacy-parity 的兩條「逐條一樣」比的是整個 Verdict（含 why 裡的 seg 文字）：切段之後 CASES 的每一條 seg 字串要跟以前一字不差（why 是 seg.trim().slice(0,160)）。
+- ~/.claude/mods 是即時生效的：改到一半的 classify.ts 會馬上管這個對話的指令。改壞了 guard 會擋下（「檢查這一行指令時出錯了」）——先用 Edit 改回能跑的版本。
+- 換行：客廳 guard 只有 tests/guard.test.ts 是 CRLF，其他（classify.ts、新測試）是 LF。查換行用 python 數 bytes，不要用 grep -c $'\r'（中途發現段 1 第 1 條）。
+
+要特別注意：
+- 02 是這一輪唯一「少問」的改動，用白名單（issue 02「做法」）：只拿掉確定不會執行的字；判準 3 的每一種「真的會執行」寫法都要有守住的測試（現在問、改完還問）。
+  判準 3 清單以外，你想到會被執行的寫法也加進測試；拿不準算不算「會執行」的，當成會執行（照舊掃），記進中途發現。環境只看同一段（判準 2 是少問洞，先紅）。
+- 02 改完在 spec「行為會變的」逐條列出不再問的寫法（01 的已經列好）。
+- 寫含 firebase／firestore 網址／git push 國王日記 repo 的測試字串前，先跟使用者說「等一下會跳框，是測試字串」；測試檔、筆記用 Write／Edit 寫可以避開（段 1 用 bash heredoc 寫 issue 筆記，guard 把裡面的字記成碰了 Firebase）。
+- 測試一支一支跑：guard（49＋新的）、最後 limit-guard 52 也跑一次。
+
+做完要交：02 一個 commit（這個 repo；客廳 mods 照規矩）、Status: done、「做完時留下的」、HANDOFF 分段表段 1 ✅、中途發現、段 2 的開場（03 → 04，xhigh；照段 1 的開場的格式）。
+額度快用完時：停在可以交接的地方，commit、推、記進 HANDOFF。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：xhigh。
+```
+
 ## 中途發現
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
 
 ### 段 1
 
-進度：01 ✅（客廳 `d3bc4a0`、這個 repo 的 01 commit）；02 進行中。
+進度：01 ✅（客廳 `d3bc4a0`、這個 repo `609c6d5`）；02 沒動：開 02 之前 5 小時額度 93%（18:50 重置），停在支與支之間，開場在上面「段 1 續的開場」。
 
 | # | 哪裡 | 什麼情境會錯 | 建議 |
 |---|---|---|---|
