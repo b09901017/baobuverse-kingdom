@@ -507,7 +507,7 @@ CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/le
 
 | # | 哪裡 | 什麼情境會錯 | 建議 |
 |---|---|---|---|
-| 1 | dash 總覽底下那行「新對話會用「X」」（`register.tsx` 的 `next.key !== cur.key`） | 比的是資料夾不是 email：這個對話用預設資料夾、VS Code 新對話用 account2（同一個帳號）時，會寫「新對話會用「帳號 A」」，但這個對話本來就是帳號 A。03 說只改兩處，沒動 | 改成比 email（同一個 email 就不寫）。一行，畫面上的字會變，要截圖；放段 8 或下一輪 |
+| 1 ✅ 段 9（客廳 `0a3c7cd`；新 `sameAccount`：兩邊都有 email 就比 email、讀不到照舊比資料夾；新測試 `tests/next-account.test.tsx` 4 條，dash 38 全過、tsc 0 錯、validate 過；**截圖待看**） | dash 總覽底下那行「新對話會用「X」」（`register.tsx` 的 `next.key !== cur.key`） | 比的是資料夾不是 email：這個對話用預設資料夾、VS Code 新對話用 account2（同一個帳號）時，會寫「新對話會用「帳號 A」」，但這個對話本來就是帳號 A。03 說只改兩處，沒動 | 改成比 email（同一個 email 就不寫）。一行，畫面上的字會變，要截圖；放段 8 或下一輪 |
 | 2 | 測試的寫法（給之後改 mods 的段） | 測試的 `$` 不能直接拿來呼叫模組裡的函式（`$.env` 是 undefined）；引擎也規定 `$.env.get` 要寫字面上的名字（傳變數整個模組載不進來）。02 因此把讀帳號抽成 `hooks/accounts.ts`，吃一個小的 `Io` | 不用修；要直接測模組裡的函式就照 02 的做法抽出來。可以考慮記進 `docs/agents/lessons.md` 或客廳 plugin-authoring skill |
 | 3 | `~/.claude/mods-data/accounts.json` 的 account1 `label` | 還寫著「終端機」。只有那個資料夾讀不到 email（沒登入）時畫面上才會看到 `label` | 使用者想改再改（私人資料，不在任何 repo）；不急 |
 
