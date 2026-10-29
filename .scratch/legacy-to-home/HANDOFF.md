@@ -14,7 +14,7 @@
 | 5 開 VM 走一次 | 08 | high | ✅（10/29 12:03～12:22 開一次、照「回家」關機；VM 那一半換完：`devbox-presync` drop-in＋disable、全域 hook 換成客廳的、平放的開場複製進子資料夾、客廳 pull、unit 重裝；出門後 VM 跟家裡一樣、回家後家裡分支沒變；trust 使用者本人答了。客廳只有判準 5 的兩個自動同步 `807bc91`、`7e375d5`）。**關機時這個專案的 `vm-state.json` 沒推上去**（中途發現段 5 第 1 條） |
 | 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ✅（客廳 `8139692`；上一個專案 PR #186 CI 全綠、合進 `develop` `3a39a17`；家裡平放的 8 份刪了，VM 上的留著；guard 32、limit-guard 52；上一個專案的工作目錄、分支、worktree 前後相同） |
 | 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ✅ 10/29：結果在「段 7 審查結果」（12 條＋9 條判斷題；照規矩沒修）；測試全過、mods 兩份相同、上一個專案 develop 的 CI 綠。**要使用者決定的段 7 三題，開段 8 之前先問第 1、2 題** |
-| 8 收尾（一）guard 與文件 | 段 7 第 6、7、10 條（guard；第 7 條含段 1 中途發現 2「`project.json` 壞掉」，照段 7 第 1 題的答案）、第 3、4、9、12 條（換行、文件、註解）、第 2 條（照段 7 第 2 題的答案改上一個專案的記憶與 `.local/README.md`） | high | 🔄 第 6、7、10 條 ✅（客廳 `9529bce`、`32923b0`、`f264938`；guard 33→38 全過、tsc 0 錯、validate 過、兩份 mods 相同）。**5 小時額度 86% 停下**，剩第 3、4、9、12、2 條 → 「段 8 續的開場」 |
+| 8 收尾（一）guard 與文件 | 段 7 第 6、7、10 條（guard；第 7 條含段 1 中途發現 2「`project.json` 壞掉」，照段 7 第 1 題的答案）、第 3、4、9、12 條（換行、文件、註解）、第 2 條（照段 7 第 2 題的答案改上一個專案的記憶與 `.local/README.md`） | high | ✅ 前半第 6、7、10 條（客廳 `9529bce`、`32923b0`、`f264938`；guard 33→38 全過、tsc 0 錯、validate 過、兩份 mods 相同；額度 86% 停下）；續：第 3 條（客廳 `4324caf`）、第 4、9、12 條（客廳 `3d13dec`）、第 2 條（上一個專案的記憶與 `.local/README.md`，它的 `.local` `2ca53a6` 已推）。guard 38、limit-guard 52 全過、limit-guard tsc 0 錯、validate 過、兩份 mods 逐檔相同 |
 | 9 收尾（二）同步、儀表板、PR | 段 5 中途發現 1（客廳 `.local` 推之前 `pull --rebase`，紅燈先）、段 7 第 8 條（`--check-mods` 改成「這台改的推上去了」，紅燈先；跟段 5 中途發現 1 同在 `autosync.mjs`／`devbox.mjs`）、第 11 條要不要順手（`vm/README.md` 一句）、段 2 中途發現 1（dash 總覽「新對話會用 X」改成比 email，要截圖）、手動檢查清單、PR、合併 | xhigh（兩台同時寫 git 的測試、devbox 流程） | ⬜ |
 
 段 7 建議把原本的段 8 拆成兩段（guard 與文件／同步與儀表板）：段 7 多找到 4 條要改程式的，跟原本 3 條加起來分在 guard、客廳 autosync／devbox、dash 三處，一段做完會很長。兩段改的檔不重疊。**主控開段 8 之前先跟使用者說這個拆法。**
@@ -344,6 +344,48 @@ CLAUDE.md；docs/agents/lessons.md。動工前 git -C C:/Users/DELL/claude-home 
 段 9 的開場與建議 effort（段 9 的範圍見分段表；建議 xhigh）。最後回覆用繁體中文簡短說做了什麼、卡在哪。
 ```
 
+## 段 9 的開場
+
+建議 effort：**xhigh**（兩台同時寫 git 的紅燈測試、devbox 流程、PR 與合併）。段 8 全部做完（分段表）。段 9 不開 VM、不按出門／回家（修好之前「出門」會停，見段 5 中途發現 1）。
+開段前主控看 5 小時額度；段 9 長，額度不夠就先做 1、2（同在客廳 `tools/`），dash 與 PR 留到「段 9 續」。
+
+```
+這一輪是「第 3 階段」：上一個專案改用客廳的工具，拿掉所有寫死它的特例。分支 claude/legacy-to-home（已經在這個 checkout 上）。
+段 1～6 做完 issue 01～08；段 7 審查；段 8 修完段 7 第 2、3、4、6、7、9、10、12 條（guard、文件、上一個專案的記憶）。
+這是第 9 段（收尾二，最後一段）：客廳 autosync／devbox 的兩條、dash 一行字、PR、合併。
+
+先讀：.scratch/legacy-to-home/HANDOFF.md 的「每一段共同的規矩」「段 7 審查結果」第 8、11 條與判斷題 J1、「中途發現」段 5 第 1 條、段 2 第 1 條、段 8（全部）、
+「要使用者決定的」段 5（含答案）、「使用者已經決定的」；spec.md「允許改的既有測試」「行為會變的」；issues/04、05 底下「做完時留下的」；
+CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/lessons.md；客廳 README「自動同步」、vm/README.md。
+動工前 git -C C:/Users/DELL/claude-home pull --ff-only。
+
+要修的（照這個順序；每條這個 repo 與客廳各 commit、推，HANDOFF 那一條標 ✅ 與 commit）：
+1. 段 5 中途發現 1（使用者 10/29「段 8 修（建議）」，拆段後在段 9）：客廳 autosync.mjs 的 commitAndPush 推之前 pull --rebase（.local 只有自動產生的檔），推失敗再 pull --rebase 重推一次；
+   devbox.mjs out 的 VM 那一半 .local 改 pull --rebase。紅燈先：兩個 clone 各一個 commit 推同一個遠端（測試用暫存的 bare repo，不碰真的 .local）。
+   判斷題 J1：不要順手加第三套「推完了沒」的檢查。
+2. 段 7 第 8 條：autosync.mjs 的 checkModsNow（devbox.mjs 的 pushMods、vmMods、presyncMods 都靠它）改成「這台在基準點之後改過的檔都已經在 GitHub 上的客廳」——
+   跟基準點一樣（沒改）或跟 @{u} 一樣都算過。紅燈先：VM 開著、家裡推了 mods、VM 沒改 → 回家照常關 VM、家裡接客廳那一份；VM 有改又沒推上去 → 照舊停。
+   既有測試一條都不改；要改的先停、問主控（spec「允許改的既有測試」沒列的）。
+3. 段 7 第 11 條（順手，只改文件）：客廳 vm/README.md 加一句「加進 devbox.json 的 projects 之前，先在 VM 上跑 add-project.sh」。
+4. 段 2 中途發現 1：dash 總覽那行「新對話會用「X」」改成比 email（同一個 email 就不寫）。紅燈先；dash 測試一支跑（34＋新的）、tsc、validate、複製進客廳。
+   畫面的字會變：改完停下來回報要截圖看哪一頁（總覽），主控請使用者在新對話點、截圖；截圖過了才開 PR。
+5. PR：這個 repo claude/legacy-to-home → main，PR 內文用 /pr skill，附手動檢查清單（下次開 VM 時要做的，見 HANDOFF「要使用者做的」）。
+   CI 綠了（或沒有 CI 時這一輪的驗證全過、沒有衝突）直接合進 main（CLAUDE.md）。客廳這一輪的 commit 已經在客廳 main 上，不另開 PR。
+
+要特別注意：
+- 測試一支一支跑（電腦曾過熱斷電），客廳寫檔名：node --test tools/autosync.test.mjs（16＋新的）、tools/devbox.test.mjs（14）、tools/mods.test.mjs（12）、tools/devbox-mods.test.mjs（15）；
+  mods：guard 38、limit-guard 52、dash 34、e2e-progress 5、notify 6（最後各跑一次）。**不要** node --test tools/。
+- 改 ~/.claude/mods 的規矩照 HANDOFF「每一段共同的規矩」。
+- 這個環境的 Bash：heredoc 會把 \\ 變成 \（段 8 中途發現 1）；$(…) 裡有 $'…' 會報錯但前半已經跑了、awk 會把 CRLF 變 LF（段 8 中途發現 6）。要寫反斜線或改 CRLF 的檔用 Write／Edit 或 python 讀寫 bytes。
+- guard 會把指令字串裡的 firebase CLI、firestore 網址、neverWrite 的 git push／gh／gcloud 當成指令，heredoc 內文也算（段 1 中途發現 1、段 8 中途發現 2、5，下一輪修）：
+  被跳框時照實說明，不要改寫法繞；要在指令裡寫這類測試字串之前，先跟使用者說「等一下會跳框，是測試字串」。
+- 公開 repo（commit、.scratch、PR）不帶真名、帳號、email、金鑰、VM host／GCP 專案 id／zone／VM 的 instance 名。
+- 推私人 repo、改 settings.json 被擋就停、寫進 HANDOFF。中途發現記進 HANDOFF，不岔出去修。subagent 一次最多兩個。不要自己開 session，也不要存 limit-guard 的開場 JSON。
+
+做完要交：分段表段 9 標 ✅（PR 連結、合併 commit）、修了的每一條標 ✅ 與 commit、HANDOFF 更新（狀態、中途發現、要使用者決定的、下一輪要做的：段 1 中途發現 1／段 8 中途發現 2、4、5、判斷題 J2～J8、段 4 中途發現 1、段 6 中途發現 1、上一個專案 .local/tools/ 的舊工具刪掉）。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。
+```
+
 ## 段 7 審查結果（2026-10-29）
 
 範圍：這個 repo `main...claude/legacy-to-home`（21 個 commit）、客廳 `881473b..8139692`（12 個）、上一個專案 PR #186 新增的 `.claude/project.json`。
@@ -378,7 +420,7 @@ CLAUDE.md；docs/agents/lessons.md。動工前 git -C C:/Users/DELL/claude-home 
 | # | 軸 | 哪裡 | 什麼情境會錯 | 建議 | 使用者決定？ |
 |---|---|---|---|---|---|
 | 1 | 私人值 | GitHub 上這個 repo（PUBLIC）：force push 前的那個 commit（SHA 不寫在這裡，免得多一個指路的；在主控的共用筆記資料夾 `segment7-review.md`） | 主控 amend 成 `eee6b6e`、force push 之後，舊的那個 **還拿得到**：GitHub 的 commit API 回得出來，repo 的 Activity 頁（公開 repo 誰都看得到）列著這次 force push 的前後 SHA，點進去就是舊的 diff。比對（不印值）：它含 **GCP 專案 id 與 VM 的 instance 名**（同一個字），沒有 host、zone。force push 只把它從分支上拿掉，GitHub 不會自己刪 | 要真的拿掉只能請 GitHub Support 清（GitHub 文件「Removing sensitive data from a repository」：force push 後聯絡 Support 移除快取的 view 與沒有分支指著的 commit）。送出是對外的、要使用者本人；Claude 可以先把要填的內容寫好（repo、SHA，不寫值本身）。另一個做法：接受（GCP 專案 id 本身不是金鑰，要有權限才進得去） | **要**：「要使用者決定的」段 7 第 1 題 |
-| 2 | 換手安全 | 上一個專案的記憶 `cloud-vm-devbox-2026-10-21.md`（「出門／回家：`.local/tools/devbox/devbox.mjs out\|home…`」）、`private-local-repo.md`（hook 跑 `.local/tools/autosync.mjs`）、它 `.local/README.md` 的 D 段、「自動更新」「手動更新」（`node tools/sync-claude.mjs`） | 在上一個專案的對話說「出門」「回家」或「手動同步一下」，Claude 照記憶跑**舊的** `devbox.mjs` 或 `sync-claude.mjs`：① `--restore` 把 `.local/claude-mods/`（10/29 11:10 之後不再更新）蓋到 `~/.claude/mods`，下一個對話開始時客廳的備份照基準點會把這份舊 mods 推進客廳（上游沒動過＝這台改的，照備份），兩台都接到、這一輪 guard／limit-guard／dash 的改動倒退；② 不帶 `--restore` 時把家裡 `handoffs/` 第一層（段 6 刪了，0 份）鏡像到 `.local/claude-handoffs/`，8 份被刪、推上去（下一次客廳的同步會補回）。現在沒有任何東西**自動**叫它們，只剩「照文件做」這條路 | 段 8：兩份記憶各加一行「2026-10-29 起換成客廳的工具（儀表板「雲端」分頁或 `<客廳>/tools/devbox.mjs`）；`.local/tools/` 的舊工具不要再叫，`--restore` 會把舊 mods 蓋回來」，`MEMORY.md` 那兩行的說明跟著改；`.local/README.md` 那三段加同一句（不是 `tools/`，spec 第 7 題只管 `tools/`）。舊工具本身照第 7 題下一輪才刪 | **要**（動的是上一個專案的記憶與它私人 repo 的 README，spec 沒列）：段 7 第 2 題 |
+| 2 ✅ 段 8（上一個專案 `.local` `2ca53a6`；兩份記憶在 frontmatter 後加一行、`MEMORY.md` 兩行說明、`.local/README.md` D 段／自動更新／手動更新各加一句；`tools/` 沒動、`references/` 沒讀） | 換手安全 | 上一個專案的記憶 `cloud-vm-devbox-2026-10-21.md`（「出門／回家：`.local/tools/devbox/devbox.mjs out\|home…`」）、`private-local-repo.md`（hook 跑 `.local/tools/autosync.mjs`）、它 `.local/README.md` 的 D 段、「自動更新」「手動更新」（`node tools/sync-claude.mjs`） | 在上一個專案的對話說「出門」「回家」或「手動同步一下」，Claude 照記憶跑**舊的** `devbox.mjs` 或 `sync-claude.mjs`：① `--restore` 把 `.local/claude-mods/`（10/29 11:10 之後不再更新）蓋到 `~/.claude/mods`，下一個對話開始時客廳的備份照基準點會把這份舊 mods 推進客廳（上游沒動過＝這台改的，照備份），兩台都接到、這一輪 guard／limit-guard／dash 的改動倒退；② 不帶 `--restore` 時把家裡 `handoffs/` 第一層（段 6 刪了，0 份）鏡像到 `.local/claude-handoffs/`，8 份被刪、推上去（下一次客廳的同步會補回）。現在沒有任何東西**自動**叫它們，只剩「照文件做」這條路 | 段 8：兩份記憶各加一行「2026-10-29 起換成客廳的工具（儀表板「雲端」分頁或 `<客廳>/tools/devbox.mjs`）；`.local/tools/` 的舊工具不要再叫，`--restore` 會把舊 mods 蓋回來」，`MEMORY.md` 那兩行的說明跟著改；`.local/README.md` 那三段加同一句（不是 `tools/`，spec 第 7 題只管 `tools/`）。舊工具本身照第 7 題下一輪才刪 | **要**（動的是上一個專案的記憶與它私人 repo 的 README，spec 沒列）：段 7 第 2 題 |
 | 3 ✅ 段 8（客廳 `4324caf`；`diff 881473b` 剩 1 行、guard 38 全過） | Standards（硬） | 客廳 `mods/guard/tests/guard.test.ts`（`30a7191`） | 整個檔從 CRLF 換成 LF：一般的 `git diff 881473b 8139692` 顯示 138 行全改；`-w` 看只改了 spec 允許的 `:30` 那一行。實質沒改，但「既有測試一條都不改」用 diff 驗不出來，之後的審查每次都要多查一次 | 段 8 換回 CRLF（只改換行，客廳與 `~/.claude/mods` 一起），之後 `git diff 881473b -- guard.test.ts` 只剩一行 | 不用 |
 | 4 ✅ 段 8（客廳 `3d13dec`） | Standards（硬） | 客廳 `docs/project-config.md` 的 `prodReadScripts` 那一列 vs `classify.ts:281` | 程式是「前後是字的邊界就算」（`dry-run.mjs` 也算 `run.mjs`），表上沒寫；同一張表的 `writeScripts`、`stagingScripts` 都寫「整個檔名相同才算」。別的專案照表寫，會以為 `dry-run.mjs` 不算。行為跟 `e8f9058` 那一版一樣（`/\b(history\|snapshot\|run)\.mjs\b/`），只是文件漏了 | 段 8 表上補一句（只改文件，不改比對方式：改成整個檔名相同會讓上一個專案的記錄變少） | 不用 |
 | 5 | 段 7 自己 | 這個對話 | 查第 2 條時對上一個專案的記憶 `grep -n`，輸出帶出了 VM 名稱、GCP 專案、zone 等私人值（**只在這個對話**，沒寫進任何檔、repo）。違反「比對時不要把值印出來」的精神 | 之後查記憶或私人檔先 `grep -l`（只列檔名），要看內容再挑沒有私人值的那幾行 | 不用 |
@@ -417,6 +459,7 @@ CLAUDE.md；docs/agents/lessons.md。動工前 git -C C:/Users/DELL/claude-home 
 | 3 | 第 7 條的範圍 | 使用者答的是「碰 Firebase／`gcloud`（模擬器除外）與 `git push`」。段 8 另外把 `gh` 的寫入（`gh pr create`、`gh api -X …` 等，`GH_WRITE`）也算進「讀不懂要問」：`neverWrite` 的 git repo 本來就也擋 `gh` 寫入，讀不懂時這一半保護也會消失。只會多問，寫進 spec「行為會變的」 | 不用決定；記著。要拿掉只要刪 `classify.ts` 裡 `rules.broken` 那一段的 `GH_WRITE` 一行 |
 | 4 | 第 7 條，`project.json` 合法但欄位壞掉 | 例如 `"neverWrite": {}`（不是陣列）照舊當成「沒有 neverWrite」、不標成讀不懂，國王日記那道保護一樣消失。段 7 第 1 題只講整個檔讀不懂 | 下一輪：`neverWrite` 在但不是陣列（或某一項沒有 `firebaseProject`／`gitRepo`）也當成讀不懂。只會多問 |
 | 5 | guard 的 `neverWrite`（`git push`、`gh` 寫入、`gcloud firestore` 都掃整串指令文字，heredoc 內文也算） | 段 8 13:43 用 python heredoc 改兩個測試檔時，heredoc 裡的**測試字串**（推國王日記的 repo、`gh` 開 PR 到它、`gcloud` 匯入到國王日記的專案）被當成真的指令，跳出「Claude 要寫絕對不能寫的地方」的框。使用者嚇了一跳去問主控；主控核對過整條指令（只改兩個本地測試檔再跑測試）、跟使用者說明、建議允許。跟段 1 中途發現 1 同一類，但範圍更大：不只 firebase CLI | 下一輪跟段 1 中途發現 1 一起修：每一種指令都只看「一段指令的開頭」，跳過 heredoc 內文與引號裡的字。修好之前，要寫這類測試字串時**先在對話裡跟使用者說「等一下會跳框，是測試字串」**；改測試檔用 Write／Edit（不經過 guard 的 Bash 檢查）也可以避開 |
+| 6 | 這個環境的 Bash 工具（段 8 續） | ① 指令裡 `"$(… grep -c $'\r' …)"` 這種「`$(…)` 裡有 `$'…'`」會報 `unexpected EOF while looking for matching )`，**但報錯之前的部分已經跑了**：段 8 續第一次改上一個專案的記憶時，報錯了、第一份記憶其實已經改了（馬上查到、沒有重複插入）。② Git Bash 的 `awk` 輸出把 CRLF 變成 LF（那份記憶整份變 LF，用 python 換回 CRLF、逐檔核對 LF＝CRLF 數）。③ 上一個專案 `.local/claude-memory/cloud-vm-devbox-2026-10-21.md` 本來就是 LF、`~/.claude` 那份是 CRLF：這次同步把 `.local` 那份整份換成 CRLF，`2ca53a6` 看起來改 60 行，`--strip-trailing-cr` 比只多 2 行 | 會報錯的指令不要當成「沒跑」，先查狀態再重來；改有 CRLF 的檔用 python（讀寫 bytes）或 Edit。可以跟段 8 第 1 條一起記進 `docs/agents/lessons.md` |
 
 ### 段 6
 
