@@ -33,6 +33,11 @@ kickoff 的「唯讀 subagent 過目」這一輪沒做：規劃的帳號額度�
 - 測試可以 `on('model.fork', …)`、`on('model.complete', …)` 模擬（型別的事件表裡有）。
 - Bash 工具輸入有 `description?: string`。
 - 客廳 guard 現在 73 條測試（`b296209` 之後）。
+- **實測**（scratchpad 的 guard 複本，在 `guardShell` 開頭加 `try { await $.model.fork({ prompt }) } catch {}`，跑完就刪了）：既有測試沒有 `model.fork` 的處理，`$.model.fork` 會**丟一個接得住的錯**，guard 不會壞；72 過 1 紅。
+  紅的是 `guard.test.ts`「讀正式站：不跳框…什麼都沒碰的一輪不講話」：它數 `ui.log`，探針多印了一行。所以：
+  ① 模型那一步一定包 `try/catch`，丟錯＝判斷失敗＝照現在的框問；
+  ② **判斷失敗的框要保留現在 `describe` 那一行原字**（`・刪 2 個：draft.txt（沒進 git，救不回來）；…`）再加「Claude 沒判斷成」那一行：`recoverable.test.ts:208,220` 用 `toMatch` 比這幾個字，保留就不用改既有測試；
+  ③ 只有真的有「判斷」項目才叫模型（判準 7、10），而且不要在每個指令都 `ui.log`。
 
 ## 中途發現
 
