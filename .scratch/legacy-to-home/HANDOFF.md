@@ -447,12 +447,12 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 9 的開
 
 一次問一題，照這個順序（第 1、2 題的答案段 8 要用；第 3 題不擋）。
 
-1. **guard 的兩處「多問」照建議做嗎？**（段 7 第 7、10 條）
+1. ~~**guard 的兩處「多問」照建議做嗎？**（段 7 第 7、10 條）~~ → **使用者 2026-10-29「照建議」**（主控 session）：(a)、(b) 都照建議做。原本的題目：
    - (a) `project.json` 壞掉（不是 JSON、`[]`、`null`）：最嚴預設，**再加**碰 Firebase／`gcloud`（模擬器除外）與 `git push` 的指令一律要問，框上寫「`.claude/project.json` 讀不懂，先修好」。
      理由：10/29 選的「壞掉＝最嚴預設」不夠——最嚴預設沒有 `neverWrite`，`project.json` 打錯一個逗號，國王日記那個 database 的保護就整個消失（段 7 跑過）。
    - (b) `firebase use <認不出的專案>` 照段 1 做的要問（寫進 spec「行為會變的」）；`firebase use default` 改回不問（它是 `.firebaserc` 的別名，原本就不問）。
    建議：**照建議**（兩項都只會多問）。另一個做法：(a) 只做原本的「壞掉＝最嚴預設」——國王日記保護消失的洞留著；(b) 回到 `firebase use` 都不問——上一個專案讀不到 `.firebaserc` 時 `firebase use <正式站 id>` 會少問（段 1 加這條的理由）。
-2. **段 8 要不要改上一個專案記憶裡、`.local/README.md` 裡舊工具的說明？**（段 7 第 2 條）
+2. ~~**段 8 要不要改上一個專案記憶裡、`.local/README.md` 裡舊工具的說明？**（段 7 第 2 條）~~ → **使用者 2026-10-29「改（建議）」**（主控 session）。原本的題目：
    要動的：記憶 `cloud-vm-devbox-2026-10-21.md`、`private-local-repo.md` 各加一行「2026-10-29 起換成客廳的工具，舊的不要叫」，`MEMORY.md` 那兩行的說明跟著改；它私人 repo 的 `.local/README.md` 三段各加一句。
    這些都會被自動同步推進它的私人 repo（有版控，改錯救得回來）；`.local/tools/` 不動（第 7 題）。
    建議：**改**。不改的話，在上一個專案說「出門」「回家」「同步一下」，Claude 照記憶跑舊工具，會把 10/29 之前的舊 mods 蓋回來、再被推進客廳。
@@ -496,3 +496,7 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 9 的開
 - 段 4 中途發現 4（`~/.claude-account1/settings.json` 沒有 `hooks`）：主控建議 A（加同一段），使用者 2026-10-29 選「補上」（主控 session 轉達）。段 4 改的時候被 auto mode 擋了，使用者同意後主控 2026-10-29 代改。
 - 段 4 dash `vm-projects.test.tsx:98-106`（客廳還沒 clone → 照舊叫上一個專案那一支）：主控 2026-10-29「照 A」（主控的決定，不是使用者）：拿掉退路、寫清楚要 clone 到哪；spec「允許改的既有測試」已補。
 - 段 5 中途發現 1（兩台同時寫 `.local`，VM 關機時這個專案的 `vm-state.json` 推不上去）：使用者 2026-10-29 選「段 8 修（建議）」（主控 session）。段 8 改客廳 `autosync.mjs` 的 `commitAndPush`（推之前 `pull --rebase`、失敗再試一次）與 `devbox.mjs out` 的 `.local`（`pull --rebase`），紅燈測試先。修好之前不按「出門」。
+  （段 7 把收尾拆成段 8、9 之後，這一項在**段 9**。拆段是段 7 的建議、主控跟使用者說過，使用者沒有另外點頭。）
+- 段 6 的公開 commit 帶了 VM 的 instance 名（＝GCP 專案 id）：使用者 2026-10-29 選「改寫歷史（建議）」（主控 session），主控 amend 成 `eee6b6e`、`push --force-with-lease`。
+- 段 7 第 1 題（guard 兩處多問：`project.json` 壞掉＝最嚴預設＋碰 Firebase／`gcloud`／`git push` 一律要問；`firebase use <認不出的>` 要問、`firebase use default` 改回不問）：使用者 2026-10-29「照建議」（主控 session）。段 8 修。
+- 段 7 第 2 題（上一個專案的兩份記憶、`MEMORY.md` 那兩行、`.local/README.md` 三段加「舊工具不要再叫」）：使用者 2026-10-29「改（建議）」（主控 session）。段 8 改；`.local/tools/` 不動。
