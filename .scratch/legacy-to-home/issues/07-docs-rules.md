@@ -1,6 +1,6 @@
 # 07 規則文件整理：路由規則只留一處、Status 字串統一、改 mod 的 commit 規矩
 
-Status: todo
+Status: done
 Type: task
 Blocked by: —
 
@@ -42,3 +42,25 @@ Blocked by: —
 
 改 skill 可能被 auto mode 當成改自己的設定而擋下（上一輪記下的：由別的 session 轉達的「改 skill」會被擋）。**被擋就停**，寫進 HANDOFF，主控在自己的 session 做。
 這個 repo 的 `CLAUDE.md` 不能違反的幾條一定留。
+
+## 做完時留下的（2026-10-29，段 1）
+
+客廳 `0aa707a`（kickoff，已推），`sync-skills.mjs` 同步回這個 repo。改 skill 沒有被 auto mode 擋。
+
+1. **路由規則**：刪 `CLAUDE.md` 的「用哪個流程」，留 kickoff 的「兩條路」。刪除測試：
+   - 會不會少了它就做錯？不會：路由真正要生效的時候（還沒叫任何 skill），靠的是每次都載入的 kickoff description，它已經寫了「決策還沒定走 /grill-with-docs（grilling＋domain-modeling）、bug／UI 微調／文案不用」。
+   - 留哪一處：kickoff 跨專案，別的專案的 `CLAUDE.md` 不一定有這段；「兩條路」還多一句「談到一半發現決策還沒定就換過去」。`CLAUDE.md` 每次對話都載入，少 6 行。
+   - 「不能違反」四條、「決定由使用者做」、「合併」都沒動。
+2. **Status 字串**：`docs/agents/issue-tracker.md` 定成一般 issue 用 `todo`／`done`／`wontfix`（kickoff、`/to-tickets` 寫的都是這種）；
+   `/triage` 收進來的原始 issue 在分流前可以是 `triage-labels.md` 的其他角色字串，分流完是 `todo`；`claimed`／`resolved` 只給 `/wayfinder` 用、只在有 `map.md` 的資料夾，不混用。
+   `triage-labels.md` 把 `ready-for-agent` 對應成 `todo`（`/to-tickets`、`/to-spec` 會照這張表寫），並註明 `done` 不是角色。kickoff 原本就寫 `todo`／`done`，沒改。
+3. **改 mod 的 commit 規矩**：kickoff「段裡每一支 issue」加一段：改的是 `~/.claude/mods` 時，客廳那邊不要求一支一個 commit，最後一個 commit 的狀態完整（測試全過、跟 `~/.claude/mods` 逐檔相同）就算數。
+
+**判準**
+
+| 判準 | 結果 |
+|---|---|
+| 路由規則還出現在幾處 | kickoff 的 description＋「兩條路」（grep「用哪個流程」「兩條路」：只剩 kickoff 的兩份複本） |
+| 新開的 issue 該寫什麼 `Status:`，兩份文件答案一樣嗎 | 一樣：`todo`（`issue-tracker.md`、kickoff；`triage-labels.md` 的 `ready-for-agent` 也對應到 `todo`） |
+| 多了「自動同步」commit 算違規嗎 | 不算（kickoff 新加的那段） |
+| `.claude/skills/kickoff/` 跟客廳正本逐檔相同嗎 | 相同；`sync-skills.mjs --dry-run` 新增、改動、刪除都是 0 |

@@ -20,12 +20,6 @@
 - 日記不是一張表，是當天所有事件的查詢結果（README）。
 - **絕對不寫入**國王日記：`b09901017/baobu_money_track` 的資料，以及 `baobu-app` 的預設 Firestore database。
 
-## 用哪個流程
-
-- 決策還沒定、在談東西該怎麼設計 → `/grill-with-docs`（自己判斷要用時，用 Skill 叫 `grilling` 與 `domain-modeling`）。
-- 地基打好之後一輪一輪加功能、改規則 → `kickoff` skill。
-- 一個 bug、UI 微調、文案 → 直接做。
-
 ## 合併
 
 - 一輪做完開 PR，CI 綠了就直接合進 `main`，不用等使用者說（使用者 2026-10-28：「綠了直接合」）。
