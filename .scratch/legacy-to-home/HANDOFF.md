@@ -13,8 +13,11 @@
 | 4 換手 | 05 | high | ✅（客廳 `859bf74`、`8d49a61`（mods，自動同步）、`fe4af86`；開關對話重測過了；05 的截圖 10/29 過了；`~/.claude-account1` 的 `hooks` 主控 10/29 代改好了）。主控查過：limit-guard 52、dash 34、autosync 16、mods 兩份相同 |
 | 5 開 VM 走一次 | 08 | high | ✅（10/29 12:03～12:22 開一次、照「回家」關機；VM 那一半換完：`devbox-presync` drop-in＋disable、全域 hook 換成客廳的、平放的開場複製進子資料夾、客廳 pull、unit 重裝；出門後 VM 跟家裡一樣、回家後家裡分支沒變；trust 使用者本人答了。客廳只有判準 5 的兩個自動同步 `807bc91`、`7e375d5`）。**關機時這個專案的 `vm-state.json` 沒推上去**（中途發現段 5 第 1 條） |
 | 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ✅（客廳 `8139692`；上一個專案 PR #186 CI 全綠、合進 `develop` `3a39a17`；家裡平放的 8 份刪了，VM 上的留著；guard 32、limit-guard 52；上一個專案的工作目錄、分支、worktree 前後相同） |
-| 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ⬜ |
-| 8 收尾 | 修審查找到的、guard：`project.json` 壞掉＝最嚴預設（段 1 中途發現 2）、dash 總覽「新對話會用 X」改成比 email（段 2 中途發現 1，要截圖）、客廳 `.local` 推之前先 `pull --rebase`（段 5 中途發現 1，使用者 10/29 選段 8；紅燈測試先）、手動檢查清單、PR、合併 | high（要改 mods 與客廳 autosync／devbox） | ⬜ |
+| 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ✅ 10/29：結果在「段 7 審查結果」（12 條＋9 條判斷題；照規矩沒修）；測試全過、mods 兩份相同、上一個專案 develop 的 CI 綠。**要使用者決定的段 7 三題，開段 8 之前先問第 1、2 題** |
+| 8 收尾（一）guard 與文件 | 段 7 第 6、7、10 條（guard；第 7 條含段 1 中途發現 2「`project.json` 壞掉」，照段 7 第 1 題的答案）、第 3、4、9、12 條（換行、文件、註解）、第 2 條（照段 7 第 2 題的答案改上一個專案的記憶與 `.local/README.md`） | high | ⬜ |
+| 9 收尾（二）同步、儀表板、PR | 段 5 中途發現 1（客廳 `.local` 推之前 `pull --rebase`，紅燈先）、段 7 第 8 條（`--check-mods` 改成「這台改的推上去了」，紅燈先；跟段 5 中途發現 1 同在 `autosync.mjs`／`devbox.mjs`）、第 11 條要不要順手（`vm/README.md` 一句）、段 2 中途發現 1（dash 總覽「新對話會用 X」改成比 email，要截圖）、手動檢查清單、PR、合併 | xhigh（兩台同時寫 git 的測試、devbox 流程） | ⬜ |
+
+段 7 建議把原本的段 8 拆成兩段（guard 與文件／同步與儀表板）：段 7 多找到 4 條要改程式的，跟原本 3 條加起來分在 guard、客廳 autosync／devbox、dash 三處，一段做完會很長。兩段改的檔不重疊。**主控開段 8 之前先跟使用者說這個拆法。**
 
 ## 每一段共同的規矩
 
@@ -240,6 +243,7 @@ HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段
 ## 段 7 的開場
 
 建議 effort：**xhigh**（審查單獨一段）。段 7 不開 VM、不按出門／回家（段 5 中途發現 1 段 8 才修）。
+主控開段時另外補了三項（2026-10-29）：VM 的四個私人值對這個分支每個 commit 與 `.scratch` 比一次（不印值）；客廳 `e5c6240` 不在範圍；看上一個專案 develop 合併後「測試與部署」的結果。結果都在「段 7 審查結果」。
 
 ```
 這一輪是「第 3 階段」：上一個專案改用客廳的工具，拿掉所有寫死它的特例。分支 claude/legacy-to-home（已經在這個 checkout 上）。
@@ -265,6 +269,105 @@ issues/ 八支全文與底下「做完時留下的」；CLAUDE.md；docs/agents/
 做完要交：HANDOFF「段 7 審查結果」（每一條：哪裡、什麼情境會錯、建議、要不要使用者決定）、分段表段 7 狀態、段 8 的開場與建議 effort（段 8 要修的已列在分段表：審查找到的＋段 1 中途發現 2、段 2 中途發現 1、段 5 中途發現 1）。
 這個 repo 一個 commit 推到 origin claude/legacy-to-home。要使用者決定的一次一題、附建議，寫進「要使用者決定的」段 7。最後回覆用繁體中文簡短說找到什麼、卡在哪。
 ```
+
+## 段 8 的開場
+
+建議 effort：**high**。開段前主控先：① 跟使用者說段 8 拆成兩段（分段表）；② 問「要使用者決定的」段 7 第 1、2 題，答案寫進開場的「主控補充」再開（第 3 題不擋段 8）。段 8 不開 VM、不按出門／回家。
+
+```
+這一輪是「第 3 階段」：上一個專案改用客廳的工具，拿掉所有寫死它的特例。分支 claude/legacy-to-home（已經在這個 checkout 上）。
+段 1～6 做完 issue 01～08；段 7 審查完（HANDOFF「段 7 審查結果」12 條＋判斷題 J1～J9）。原本的收尾拆成兩段：
+這是第 8 段（收尾一）：只修 guard 與文件，加上上一個專案記憶裡的舊說明。段 9 的（客廳 autosync／devbox、dash、PR、合併）不做。
+
+先讀：.scratch/legacy-to-home/HANDOFF.md 的「每一段共同的規矩」「段 7 審查結果」（全文）、「要使用者決定的」段 7（含答案）、「使用者已經決定的」、「中途發現」段 1；
+spec.md「允許改的既有測試」「行為會變的」；issues/01、06 底下「做完時留下的」；CLAUDE.md；docs/agents/lessons.md；客廳 docs/project-config.md。
+動工前 git -C C:/Users/DELL/claude-home pull --ff-only。
+
+要修的（照這個順序）：
+1. 段 7 第 6 條（guard 少問）：先把 node scripts/reset-staging.mjs --project <正式站 id>、npm run staging:reset -- --project <正式站 id>
+   加進 mods/guard/tests/fixtures/parity-cases.ts（legacy-parity 讀不到 .firebaserc 那條會紅），再改 classify.ts：指令自己寫了 --project／-P 卻認不出時，不套 stagingScripts／prodReadScripts 的推定。
+2. 段 7 第 7 條（project.json 壞掉，含段 1 中途發現 2）：照段 7 第 1 題的答案（主控補充）。紅燈先：不是 JSON、[]、null × 這個 repo neverWrite 那條 gcloud 指令、推別的 repo。
+   會改 project-config.test.ts:112 的意思：先寫進 spec「允許改的既有測試」（使用者 10/29 選段 8 修時就說好的）。
+3. 段 7 第 10 條：firebase use default 照 .firebaserc 的別名認（紅燈先）；照第 1 題的答案把「firebase use <認不出的專案> 要問」寫進 spec「行為會變的」。
+4. 段 7 第 3 條：客廳 mods/guard/tests/guard.test.ts 換回 CRLF（只改換行；改完 git -C <客廳> diff 881473b -- mods/guard/tests/guard.test.ts 只剩一行），~/.claude/mods 那份一起。
+5. 文件與註解：段 7 第 4 條（客廳 docs/project-config.md 的 prodReadScripts 補「前後是字的邊界就算」，不改比對方式）、第 9 條（客廳 README「新電腦怎麼接」把 --restore-mods 排到裝 hook 之前）、
+   第 12 條（limit-guard tests/handoff-dir.test.ts:8 那一行說明，不動斷言）。
+6. 段 7 第 2 條：照段 7 第 2 題的答案（主控補充）。上一個專案的記憶用 grep -l 找檔、不要 grep -n 印整行（裡面有 VM 的私人值，段 7 第 5 條）；
+   它的 .local/README.md 只改那三段的說明，.local/tools/ 一個都不改，.local/references/ 不讀。
+
+要特別注意：
+- 改 ~/.claude/mods 的規矩照 HANDOFF「每一段共同的規矩」（既有測試只改 spec 列的、紅燈先、tsc、validate、複製進客廳、推、客廳 mods/ 跟 ~/.claude/mods 逐檔相同）。
+  guard 的改動全部要是「多問」；哪一條會少問，停下來問主控。改任何函式或文件裡的字之前 grep 所有用到它的地方。
+- guard 會把指令字串裡的 firebase CLI 字樣當成指令（段 1 中途發現 1，下一輪修）：被跳框問時照實說明，不要改寫法繞。
+- 測試一支一支跑（電腦曾過熱斷電）：guard（32＋新的）、limit-guard 52。這段不改客廳 tools/，客廳的 node 測試不用跑。
+- 公開 repo 不帶真名、帳號、email、金鑰、VM host／GCP 專案 id／zone／VM 的 instance 名。
+- 中途發現記進 HANDOFF，不岔出去修。subagent 一次最多兩個。主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON。
+
+做完要交：這個 repo 一個 commit（推到 origin claude/legacy-to-home；客廳推它的 main）、HANDOFF「段 7 審查結果」修了的每一條標 ✅ 與 commit、spec 改了什麼寫清楚、
+HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 9 的開場與建議 effort（段 9 的範圍見分段表）。最後回覆用繁體中文簡短說做了什麼、卡在哪。
+```
+
+## 段 7 審查結果（2026-10-29）
+
+範圍：這個 repo `main...claude/legacy-to-home`（21 個 commit）、客廳 `881473b..8139692`（12 個）、上一個專案 PR #186 新增的 `.claude/project.json`。
+`/matt-code-review` 兩軸各一個唯讀 subagent；換手安全、私人值、測試、上一個專案的 CI 由段 7 自己查。只審查、沒改任何程式。
+
+### 驗證（一支一支跑）
+
+| 項目 | 結果 |
+|---|---|
+| mods 測試 | guard 32、limit-guard 52、dash 34、e2e-progress 5、notify 6，全過（跟基準一樣多） |
+| 客廳測試（寫檔名） | `autosync.test.mjs` 16、`mods.test.mjs` 12、`devbox.test.mjs` 14、`devbox-mods.test.mjs` 15，全過 |
+| tsc | guard、limit-guard、dash 0 錯 |
+| 客廳 `mods/` 跟 `~/.claude/mods` | 逐檔相同（不算 `node_modules`、`.claude-plugin/types`）；家裡的基準點＝客廳 `HEAD`＝`origin/main`（`e5c6240`） |
+| 上一個專案 PR #186 | 只動 `.claude/project.json` 一個檔（+8）；內容跟 `legacy-parity.test.ts` 的複本逐字相同、值＝`STRICT`、沒寫 `skills`。合併後 `develop` 的「測試與部署」（重新部署 staging）**成功**（4 分 39 秒），跟 `project.json` 無關的失敗也沒有 |
+| 私人值（主控補充） | VM 的 host、GCP 專案 id、zone、instance 四個值，對這個分支 21 個 commit（含訊息）與 `.scratch` 全部 30 個檔比：**0 筆**（比對時沒印值）。但 force push 前的舊 commit 還在 GitHub 上，見下面第 1 條 |
+| 既有測試的改動（881473b → 8139692） | 改到的 9 個既有測試檔，斷言都在 spec「允許改的既有測試」裡（兩軸都逐條對過）。另外：`project-config.test.ts:3` 的 import（拿掉 `LEGACY` 必須跟著改）、limit-guard 兩支開頭的說明註解（見第 12 條）；`autosync.test.mjs` 只有新增（+54/−0）；`guard.test.ts` 見第 3 條 |
+
+### 換手安全
+
+| 查的 | 結果 |
+|---|---|
+| 家裡三份 `settings.json`（`~/.claude`、`-account1`、`-account2`） | `hooks` 三份逐字相同、都叫客廳的 `autosync.mjs --project`，跟客廳 `settings/settings.json` 相同 |
+| 上一個專案的專案層 hook | 主資料夾與 10 個 worktree 都沒有 `.claude/settings*.json` 的 `hooks`；它 repo 裡追蹤的檔（`.local` 以外）沒有叫 `sync-claude`、`autosync.mjs`、`devbox.mjs` |
+| 儀表板、mods、客廳程式 | 沒有任何路徑叫舊的 `sync-claude` 或上一個專案的 `devbox.mjs`（只剩註解與測試假資料） |
+| VM 的說明 | `vm/README.md`「VM 壞了」第 3 步放回 `existing/` 的檔時**不含** `devbox-presync`；「第 3 階段換手」改成已做完、步驟留著 |
+| Windows 排程 | 沒有叫同步的排程 |
+| `.local` 整個同步 | 兩個 `.local` 的遠端都是 PRIVATE、都裝了 pre-push（推之前查 PRIVATE）；兩份 `.gitignore` 擋 `*.log` 與系統雜物；上一個專案 `references/` 會推（照她的規定）；這個專案 `.local` 只有記憶、開場、主控交接檔、`research/`、`vm-state.json`，沒有金鑰或登入備份 |
+| 剩下的一條路 | **上一個專案的記憶與 `.local/README.md` 還把舊工具寫成現行做法**，見第 2 條 |
+
+### 找到的
+
+| # | 軸 | 哪裡 | 什麼情境會錯 | 建議 | 使用者決定？ |
+|---|---|---|---|---|---|
+| 1 | 私人值 | GitHub 上這個 repo（PUBLIC）：force push 前的那個 commit（SHA 不寫在這裡，免得多一個指路的；在主控的共用筆記資料夾 `segment7-review.md`） | 主控 amend 成 `eee6b6e`、force push 之後，舊的那個 **還拿得到**：GitHub 的 commit API 回得出來，repo 的 Activity 頁（公開 repo 誰都看得到）列著這次 force push 的前後 SHA，點進去就是舊的 diff。比對（不印值）：它含 **GCP 專案 id 與 VM 的 instance 名**（同一個字），沒有 host、zone。force push 只把它從分支上拿掉，GitHub 不會自己刪 | 要真的拿掉只能請 GitHub Support 清（GitHub 文件「Removing sensitive data from a repository」：force push 後聯絡 Support 移除快取的 view 與沒有分支指著的 commit）。送出是對外的、要使用者本人；Claude 可以先把要填的內容寫好（repo、SHA，不寫值本身）。另一個做法：接受（GCP 專案 id 本身不是金鑰，要有權限才進得去） | **要**：「要使用者決定的」段 7 第 1 題 |
+| 2 | 換手安全 | 上一個專案的記憶 `cloud-vm-devbox-2026-10-21.md`（「出門／回家：`.local/tools/devbox/devbox.mjs out\|home…`」）、`private-local-repo.md`（hook 跑 `.local/tools/autosync.mjs`）、它 `.local/README.md` 的 D 段、「自動更新」「手動更新」（`node tools/sync-claude.mjs`） | 在上一個專案的對話說「出門」「回家」或「手動同步一下」，Claude 照記憶跑**舊的** `devbox.mjs` 或 `sync-claude.mjs`：① `--restore` 把 `.local/claude-mods/`（10/29 11:10 之後不再更新）蓋到 `~/.claude/mods`，下一個對話開始時客廳的備份照基準點會把這份舊 mods 推進客廳（上游沒動過＝這台改的，照備份），兩台都接到、這一輪 guard／limit-guard／dash 的改動倒退；② 不帶 `--restore` 時把家裡 `handoffs/` 第一層（段 6 刪了，0 份）鏡像到 `.local/claude-handoffs/`，8 份被刪、推上去（下一次客廳的同步會補回）。現在沒有任何東西**自動**叫它們，只剩「照文件做」這條路 | 段 8：兩份記憶各加一行「2026-10-29 起換成客廳的工具（儀表板「雲端」分頁或 `<客廳>/tools/devbox.mjs`）；`.local/tools/` 的舊工具不要再叫，`--restore` 會把舊 mods 蓋回來」，`MEMORY.md` 那兩行的說明跟著改；`.local/README.md` 那三段加同一句（不是 `tools/`，spec 第 7 題只管 `tools/`）。舊工具本身照第 7 題下一輪才刪 | **要**（動的是上一個專案的記憶與它私人 repo 的 README，spec 沒列）：段 7 第 2 題 |
+| 3 | Standards（硬） | 客廳 `mods/guard/tests/guard.test.ts`（`30a7191`） | 整個檔從 CRLF 換成 LF：一般的 `git diff 881473b 8139692` 顯示 138 行全改；`-w` 看只改了 spec 允許的 `:30` 那一行。實質沒改，但「既有測試一條都不改」用 diff 驗不出來，之後的審查每次都要多查一次 | 段 8 換回 CRLF（只改換行，客廳與 `~/.claude/mods` 一起），之後 `git diff 881473b -- guard.test.ts` 只剩一行 | 不用 |
+| 4 | Standards（硬） | 客廳 `docs/project-config.md` 的 `prodReadScripts` 那一列 vs `classify.ts:281` | 程式是「前後是字的邊界就算」（`dry-run.mjs` 也算 `run.mjs`），表上沒寫；同一張表的 `writeScripts`、`stagingScripts` 都寫「整個檔名相同才算」。別的專案照表寫，會以為 `dry-run.mjs` 不算。行為跟 `e8f9058` 那一版一樣（`/\b(history\|snapshot\|run)\.mjs\b/`），只是文件漏了 | 段 8 表上補一句（只改文件，不改比對方式：改成整個檔名相同會讓上一個專案的記錄變少） | 不用 |
+| 5 | 段 7 自己 | 這個對話 | 查第 2 條時對上一個專案的記憶 `grep -n`，輸出帶出了 VM 名稱、GCP 專案、zone 等私人值（**只在這個對話**，沒寫進任何檔、repo）。違反「比對時不要把值印出來」的精神 | 之後查記憶或私人檔先 `grep -l`（只列檔名），要看內容再挑沒有私人值的那幾行 | 不用 |
+| 6 | Spec（**少問**） | 客廳 guard `classify.ts:282`（`stagingScripts` 的推定） | 沒有 `project.json`（＝`STRICT`）又讀不到 `.firebaserc`（或 `register.ts` 讀不到專案資料夾）時：`node scripts/reset-staging.mjs --project <正式站 id>`、`npm run staging:reset -- --project <正式站 id>`，`e8f9058` 靠寫死的 id 認出正式站、**要問**；現在 id 認不出 → 「看不出環境」→ 又被 `stagingScripts` 推定成 staging → **不問**（段 7 拿兩版 classify 跑過）。違反 issue 01 判準 1（只准多問）。`parity-cases.ts` 沒有這條所以沒抓到。實際上上一個專案每條分支都有 `.firebaserc`，要碰到不容易 | 段 8：指令自己寫了 `--project`／`-P` 卻認不出時，不套 `stagingScripts`／`prodReadScripts` 的推定（看不出環境→寫入要問）。先把這兩條加進 `parity-cases.ts`（`legacy-parity` 讀不到 `.firebaserc` 那條會紅），再修到綠 | 不用（照「只會多問」） |
+| 7 | Spec（**少問**，已知的段 1 中途發現 2，但範圍更大） | 客廳 guard `rulesFrom`（`classify.ts:88-91`） | `project.json` 壞掉不只「不是 JSON」：`[]`、`null` 也一樣。而且壞掉時 `neverWrite` 整個沒了：這個 repo 的 `gcloud firestore import … --project=<neverWrite 的專案>`，正常時擋（`neverWrite`），壞掉三種都**什麼都不記、不問**（段 7 跑過）。段 8 原訂的「壞掉＝最嚴預設」也救不回來：`STRICT` 沒有 `neverWrite`、也不認得 `gcloud firestore` 是寫入。等於 `CLAUDE.md`「絕對不寫入國王日記」的那道保護，在 `project.json` 打錯一個逗號時默默消失 | 壞掉（不是 JSON、不是物件）＝最嚴預設，**再加**：碰 Firebase／`gcloud`（模擬器除外）與 `git push` 的指令一律要問，框上寫「`.claude/project.json` 讀不懂，先修好」。紅燈測試：三種壞法 × 那條 `gcloud` 指令與推另一個 repo | **要**（擴大使用者 10/29 定的「壞掉＝最嚴預設」）：段 7 第 1 題 |
+| 8 | Spec（做錯） | 客廳 `autosync.mjs` 的 `checkModsNow`（`:382`）；`devbox.mjs` 的 `pushMods`（`:170`）、`vmMods`（`:210`）、`presyncMods`（`:384`）都靠它 | 「確認這台的 mods 推上去了」做成「這台＝GitHub 上的客廳」。VM 開著時家裡改了 mods 並推上客廳、VM 自己沒改：VM 照基準點不備份（對的），但 `--check-mods` 不一樣 → **回家（VM 開著）停在「VM 上的 mods 沒推上客廳」、VM 不關，重按一樣**（只能連進去手動 `--restore-mods`）；VM 關著時 presync 記 `mods: bad` → 回家不印 ✅、叫她 `--check-vm` → 又停在同一處。出門時家裡比客廳舊（VM 推過、家裡沒回家）也一樣停。測試沒有這個情境 | 段 8：改成「這台在基準點之後改過的檔都已經在 GitHub 上的客廳」——這台跟基準點一樣（沒改）或跟 `@{u}` 一樣都算過。紅燈先：VM 開著、家裡推了 mods、VM 沒改 → 回家照常關 VM、家裡接客廳那一份；VM 有改又沒推上去 → 照舊停 | 不用（照 issue 04 的意思：要確認的是「這台改的」推上去了） |
+| 9 | Spec | 客廳 `autosync.mjs:328`（沒有基準點的 Windows 照舊備份）＋`README.md`「新電腦怎麼接」 | 新電腦第 6 步就裝全域 hook，第 8 步才 `--restore-mods`：中間開的任何對話（例如幫忙設定的那一個），如果這台已經有一份舊的或不完整的 `~/.claude/mods`，備份會把客廳有、這台沒有的檔刪掉推上去（`~/.claude/mods` 不存在就不會）。家裡現在已經有基準點，不受影響 | 段 8 只改文件：「新電腦怎麼接」把 `--restore-mods` 排到裝 hook 之前（拿掉 Windows 的例外要改既有測試「客廳：備份 mods…」，不在允許清單，不做） | 不用 |
+| 10 | Spec（spec 沒要的，多問） | 客廳 guard：`firebase use <認不出的專案>` 每個專案都要問（issue 01「跟 issue 寫的不同」第 1 點） | 不在 spec「行為會變的（使用者點過頭的）」。而且 **`firebase use default`（`.firebaserc` 的別名）現在也要問**，`e8f9058` 不問（段 7 跑過；`firebase use staging` 照舊不問） | 段 8：`default` 照 `.firebaserc` 的別名認（跟 `staging`、`prod` 一樣）；`firebase use <真的認不出的>` 照 issue 01 留著要問，寫進 spec「行為會變的」 | **要**（使用者沒點過頭）：併進段 7 第 1 題 |
+| 11 | Spec | 客廳 `devbox.mjs:337`（VM 關著、沒有 `vm-state.json` 就停） | `devbox.json` 的 `projects` 有、VM 上卻還沒有的專案（例如新專案先加進設定、還沒在 VM 上跑 `add-project.sh`）：presync 跳過它、不寫 `vm-state.json` → 之後**每次** VM 關著回家都停在它。現在兩個專案 VM 上都有，碰不到 | 下一輪；或段 8 在 `vm/README.md` 加一句「加進 `devbox.json` 之前先在 VM 上跑 `add-project.sh`」 | 不用 |
+| 12 | Spec（小） | limit-guard `tests/handoff-dir.test.ts:8` 的開頭說明 | 寫「只讀自己的子資料夾」，但程式照舊讀第一層（05 做法的「跟 issue 寫的不同」第 1 點）。另外 spec「允許改的既有測試」寫的行號已經移動（`guard.test.ts:30` 實際在 `:32`、`project-config.test.ts:51` 在 `:63`），改的內容對得上 | 段 8 改那一行說明（不動斷言）；spec 的行號不改（內容寫得清楚） | 不用 |
+
+### 判斷題（Standards 軸的異味；不擋合併）
+
+| # | 異味 | 哪裡 | 建議 |
+|---|---|---|---|
+| J1 | Duplicated Code、Shotgun Surgery | 客廳 `devbox.mjs`：叫 autosync 有三種寫法（`:145`、`:154`、`:423`）、「mods 備份＋比對」三份（`:170`、`:210`、`:384`）、「`.local` 推完了沒」兩份（`:155`、`:424`）——因為 autosync 推不上去也 exit 0（`commitAndPush` 只寫 log），呼叫端只好自己再查 git | 段 8 修段 5 中途發現 1 時會碰到 `commitAndPush`：**不要**順手加第三套檢查；之後（下一輪）考慮讓 autosync 有「推不上就 exit 1」的模式，devbox 只看 exit code |
+| J2 | Mysterious Name | 客廳 `--no-home`（`devbox.mjs:154,193,423`） | 意思是「不做 mods」，又撞到 devbox 的 `home`（回家）。下一輪改名 `--no-mods` |
+| J3 | Repeated Switches | `autosync.mjs:50,233,312,391,407` | 模式旗標散在 5 處；下一輪在開頭算一次 mode |
+| J4 | Duplicated Code | limit-guard `hooks/accounts.ts` 與 dash 各一套 `desktopEmail`、`emailOf`、以 email 去重 | 兩個 mod 不能互相 import；下一輪加一條測試釘住兩邊認法一致 |
+| J5 | Duplicated Code | 客廳 `autosync.mjs` 的 `mainDir`（`:201`）與 limit-guard `worktreeOf`（`:133`）；開場資料夾名兩邊各算一次 | 改開場命名時兩處一起改；下一輪 |
+| J6 | Primitive Obsession | `devbox.mjs:339,391,401` 的 `'ok'`／`'none'`／`'bad'` 字串寫進 `vm-state.json` | 下一輪 |
+| J7 | Mysterious Name | dash `:1849,1880`（`devboxScript` 回 `{script, project}` 放進叫 `script` 的變數；`Devbox.project` 是路徑、`DashVm.project` 是資料夾名）；`:1976` 寫死退路路徑跟 `devboxPath`（`:1858`）重複 | 下一輪 |
+| J8 | Duplicated Code | 客廳 `tools/mods.test.mjs`、`tools/devbox-mods.test.mjs` 又各抄一份測試小工具 | 下一輪抽 `tools/test-helpers.mjs` |
+| J9 | 小的 | guard `classify.ts:91`（`STRICT as unknown as Record` 送進清洗設定的函式）、`:246`（拼假指令字串重用 `envOf`） | 不修 |
+
+上一輪段 6 審查的硬違規（路由寫三處、Status 三套、hook 腳本正本在這個 repo、寫死專案名字）與 `rules.legacy` 的 Repeated Switches 都修好了（Standards 軸確認）。
 
 ## 中途發現
 
@@ -339,6 +442,25 @@ issues/ 八支全文與底下「做完時留下的」；CLAUDE.md；docs/agents/
   主控查過 JSON 合法、其他三個 key 沒動；段 4 也對過一次：`hooks` 跟 `~/.claude-account2` 的一樣。11:20 那個 account1 的對話在補上之前，沒同步是預期的。
 
 ## 要使用者決定的
+
+### 段 7
+
+一次問一題，照這個順序（第 1、2 題的答案段 8 要用；第 3 題不擋）。
+
+1. **guard 的兩處「多問」照建議做嗎？**（段 7 第 7、10 條）
+   - (a) `project.json` 壞掉（不是 JSON、`[]`、`null`）：最嚴預設，**再加**碰 Firebase／`gcloud`（模擬器除外）與 `git push` 的指令一律要問，框上寫「`.claude/project.json` 讀不懂，先修好」。
+     理由：10/29 選的「壞掉＝最嚴預設」不夠——最嚴預設沒有 `neverWrite`，`project.json` 打錯一個逗號，國王日記那個 database 的保護就整個消失（段 7 跑過）。
+   - (b) `firebase use <認不出的專案>` 照段 1 做的要問（寫進 spec「行為會變的」）；`firebase use default` 改回不問（它是 `.firebaserc` 的別名，原本就不問）。
+   建議：**照建議**（兩項都只會多問）。另一個做法：(a) 只做原本的「壞掉＝最嚴預設」——國王日記保護消失的洞留著；(b) 回到 `firebase use` 都不問——上一個專案讀不到 `.firebaserc` 時 `firebase use <正式站 id>` 會少問（段 1 加這條的理由）。
+2. **段 8 要不要改上一個專案記憶裡、`.local/README.md` 裡舊工具的說明？**（段 7 第 2 條）
+   要動的：記憶 `cloud-vm-devbox-2026-10-21.md`、`private-local-repo.md` 各加一行「2026-10-29 起換成客廳的工具，舊的不要叫」，`MEMORY.md` 那兩行的說明跟著改；它私人 repo 的 `.local/README.md` 三段各加一句。
+   這些都會被自動同步推進它的私人 repo（有版控，改錯救得回來）；`.local/tools/` 不動（第 7 題）。
+   建議：**改**。不改的話，在上一個專案說「出門」「回家」「同步一下」，Claude 照記憶跑舊工具，會把 10/29 之前的舊 mods 蓋回來、再被推進客廳。
+   另一個做法：不改，下一輪刪舊工具時一起改；這段時間在上一個專案出門／回家只用儀表板，不叫 Claude 做。
+3. **force push 之前那個 commit（含 GCP 專案 id、VM 的 instance 名）要不要請 GitHub Support 清掉？**（段 7 第 1 條）
+   現在：分支上已經沒有，但 GitHub 上用 SHA 還拿得到，repo 的 Activity 頁（公開 repo 誰都看得到）列著那次 force push。要清只能**本人**送 GitHub Support 的表單（對外送出，Claude 不能代送）；
+   Claude 可以先把要填的字寫好（repo、那個 commit 的 SHA、「force push 移除了敏感資料，請清掉快取的 view 與沒有分支指著的 commit」，不寫值本身）。
+   建議：**請 Support 清**（10/29 選了改寫歷史，就是要它不在公開的地方；force push 只做到一半）。另一個做法：接受（GCP 專案 id 不是金鑰，沒有權限進不去）。
 
 ### 段 5
 
