@@ -36,6 +36,7 @@
 - guard（02 之後，客廳 `3950996`）：`echo`、`grep`、`git commit -m`、`gh pr create --body` 的引號參數、餵給 `cat`／`tee`／`git commit -F -` 的帶引號 heredoc（`<<'EOF'`）裡的字不再當成指令；
   `python - <<'EOF'`、`node -e`、`bash -c`、不帶引號的 heredoc、`| bash`、寫檔之後同一串又跑別的程式（`cat > x <<'EOF' … && node …`）照舊掃。在這些裡寫 firebase CLI、firestore 網址、`git push` 國王日記 repo 的測試字串之前，
   先跟使用者說「等一下會跳框，是測試字串」；改測試檔用 Write／Edit 可以避開。被跳框照實說明，不要改寫法繞。
+  改筆記、issue、spec、HANDOFF 一律用 Edit／Write，不要用 `python - <<'EOF'`、`node -e` 改：guard 會把程式裡寫到的 `rm`、firebase 這類字當成指令掃，跳「看不出要刪什麼」的框（段 3b 續改 issue 13 時跳了一次，框上同一句重複 6 行）。
 - 推到私人 repo、改 `settings.json`、改 skill 被 auto mode 擋下：**停**，寫進下面，請使用者做或交給主控，不要繞。
 - 中途發現的事不岔出去修，記進下面「中途發現」（哪裡、什麼情境會錯、建議）；使用者說要修的，修之前再 grep 一次牽連。
 - 改一個函式、一段文件或畫面上的字之前，grep／graphify 找出所有用到它的地方。
@@ -274,6 +275,7 @@
 |---|---|---|---|
 | 1 | 段 3 的開場寫「J4 的同一份假資料照 worktree-cases.ts 的做法，就不用另寫逐字相同的比對」 | **不成立**（段 4 實測）：mod 的測試不能 import 自己資料夾外的檔（`cannot import … it is outside the plugin's folder`），只有 tools 的 node 測試能 import mod 裡的 `.ts`。兩個 mod 要共用就得各放一份＋tools 測試比逐字相同（07 就這樣做） | 以後兩個 mod 共用假資料照 07：各一份＋`tools/shared-fixtures.test.mjs` 加一條。給 11（lessons）參考 |
 | 2 | dash `vmView` 畫「這個月到現在」：`vm.usage.month.slice(5)` | `devbox.mjs usage` exit 0 但最後一行是沒有 `month` 的 JSON 時，整個儀表板面板畫不出來（引擎：「dash's ui.render hook was skipped」）。段 4 寫測試時假資料給錯重現過；**現在的 devbox.mjs 一定印 `month`**，不是會發生的錯 | 不急；哪天動 `vmUsage` 時順手檢查 `month` 是字串才存 |
+| 3 | （主控 10/29 記的）guard 刪東西的框：客廳 `mods/guard/hooks/removals.ts:189` 一帶 | python／node heredoc 裡寫到 `rm` 字樣時，每一處都推一行「看不出要刪什麼」，框上是好幾行一模一樣的字，看不出是哪裡、為什麼（段 3b 續改 issue 13 時 6 行）。不會壞東西，只記 | 下一輪：同樣的理由合併成一行，寫出是在哪個程式裡（例如「python 程式裡寫到 rm，看不出要刪什麼」） |
 
 ### 段 3b
 
