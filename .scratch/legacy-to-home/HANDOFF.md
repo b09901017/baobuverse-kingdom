@@ -8,7 +8,7 @@
 | 段 | issue | 建議 effort | 狀態 |
 |---|---|---|---|
 | 1 guard、規則文件 | 01、07 | high | ✅ `701b8fa`、`927b43c`（客廳 `30a7191`、`2e1f9b5`、`0aa707a`） |
-| 2 limit-guard 與儀表板帳號頁（都以 email 為單位） | 02 → 03 | high | ⬜（03 改到畫面：停下來等截圖） |
+| 2 limit-guard 與儀表板帳號頁（都以 email 為單位） | 02 → 03 | high | 02 ✅ `01e946d`（客廳 `8419bac`）；03 🟡 `7179dc9`（客廳 `06369c8`），**等截圖**（issue 03 底下「要截圖看的」） |
 | 3 客廳的出門／回家、mods 改從客廳搬 | 04 | xhigh | ⬜（做完到段 5 做完之間，使用者不要按出門／回家） |
 | 4 換手 | 05 | high | ⬜（開段前主控問使用者：上一個專案有沒有開著的對話） |
 | 5 開 VM 走一次 | 08 | high | ⬜（緊接段 4；開 VM 花錢，使用者已同意一次） |
@@ -112,7 +112,49 @@ issues/02、03 全文；issues/01、07 底下「做完時留下的」；CLAUDE.m
 HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 3 的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪（03 要截圖的頁面列清楚）。
 ```
 
+## 段 3 的開場
+
+建議 effort：**xhigh**。開段前主控先跟使用者說：**段 3 做完到段 5 做完之間，不要按出門／回家**（客廳的工具存檔就生效）。
+03 的截圖：過了 → 主控把 issue 03 的 `Status:` 改 `done`、上面分段表的 03 改 ✅（一個小 commit）；沒過 → 先開一段修 03，不併進段 3。
+
+```
+這一輪是「第 3 階段」：上一個專案改用客廳的工具，拿掉所有寫死它的特例。分支 claude/legacy-to-home（已經在這個 checkout 上）。
+段 1 做完 issue 01（guard 的特例變成資料、沒有 project.json 用最嚴預設）、07（規則文件）。
+段 2 做完 issue 02（limit-guard：已用 < 20% 時速度要取樣夠長、「其他帳號」以 email 為單位；這個 repo 01e946d、客廳 8419bac）、
+03（儀表板帳號頁一個 email 一張卡、另一個帳號可以切；7179dc9、客廳 06369c8；截圖由主控另外處理，這一段不用管）。
+這是第 3 段：只做 issue 04（客廳的出門／回家：上一個專案走通用流程、.local 整個同步、mods 改從客廳搬、基準點、VM 的 unit 與步驟只改客廳的檔）。不做其他的，不開 VM。
+
+先讀：.scratch/legacy-to-home/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」（第 1、2、3、5、10 條是 04 的）、「中途發現」「要使用者做的」；
+spec.md（「之後的樣子」「換手的順序」「使用者選的答案」第 5、6、7 題、「上一個專案一律不能壞」「行為會變的」）；issues/04 全文（「動工前先讀」列的檔都要讀）；
+issues/01、02、03、07 底下「做完時留下的」；CLAUDE.md；docs/agents/lessons.md（第一條：「回家」把家裡切到 VM 的舊分支）；
+.scratch/claude-home-workflow/HANDOFF.md「段 6 審查結果」② ③ ⑦ 與「段 7 狀態」。動工前 git -C C:/Users/DELL/claude-home pull --ff-only。
+
+要特別注意：
+- 先做對照表（上一個專案 .local/tools/devbox/devbox.mjs 的出門、回家、VM 關著時的回家，每一步 vs 客廳通用流程），表寫進 04 的「做完時留下的」，再動程式。少的步驟照 project.json／devbox.json 的資料補，不寫死。
+- 基準點（過目抓到的第 2 條）：上游的 mods/ 在這台上次同步之後被改過、這台還沒還原 → 不備份、只寫 log。任何一步失敗整個停（set -eo pipefail），不印 ✅。
+- devbox-presync 停用要寫成「drop-in 把 ExecStop 換成 /bin/true、daemon-reload、再 disable」（過目抓到的第 5 條）；VM 上的實際改動在 issue 08，這一段只改客廳 vm/ 的檔與 README。
+- 測試用假的 ssh（devbox.test.mjs 現有做法）；客廳 node 測試寫檔名一支一支跑：node --test tools/devbox.test.mjs、node --test tools/autosync.test.mjs（不要 node --test tools/）。基準 autosync 12、devbox 18。
+- --dry-run 不是唯讀（會改 .local 與客廳 mods/ 的工作目錄）：對上一個專案要試就在暫存資料夾的複本上試。
+- 客廳 vm/devbox.json 是私人值：照實改，值不要印出來、不要抄進公開 repo。
+- 上一個專案 C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler 的檔案只讀不改（.local/tools/ 一個都不改）；它的 .local/references/ 不讀。公開 repo 不帶真名、帳號、email、金鑰、VM host／GCP id。
+- 改 ~/.claude/mods 或客廳的規矩照 HANDOFF「每一段共同的規矩」；客廳那邊最後一個 commit 狀態完整就算數，這個 repo 一支 issue 一個 commit。改任何函式或文件裡的字之前 grep 所有用到它的地方。
+- 推私人 repo、改 ~/.claude/settings.json 被 auto mode 擋下就停，寫進 HANDOFF，不要繞。會「少問」的停下來問主控。中途發現的事記進 HANDOFF，不岔出去修。subagent 一次最多兩個。
+- 主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON。
+
+做完要交：一個 commit（這個 repo 推到 origin claude/legacy-to-home；客廳推到它的 main）、Status: done、issue 04 底下「做完時留下的」（含對照表）、
+HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 4 的開場與建議 effort 寫進 HANDOFF（段 4 開段前主控要問使用者：上一個專案有沒有開著的對話）。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。
+```
+
 ## 中途發現
+
+### 段 2
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | dash 總覽底下那行「新對話會用「X」」（`register.tsx` 的 `next.key !== cur.key`） | 比的是資料夾不是 email：這個對話用預設資料夾、VS Code 新對話用 account2（同一個帳號）時，會寫「新對話會用「帳號 A」」，但這個對話本來就是帳號 A。03 說只改兩處，沒動 | 改成比 email（同一個 email 就不寫）。一行，畫面上的字會變，要截圖；放段 8 或下一輪 |
+| 2 | 測試的寫法（給之後改 mods 的段） | 測試的 `$` 不能直接拿來呼叫模組裡的函式（`$.env` 是 undefined）；引擎也規定 `$.env.get` 要寫字面上的名字（傳變數整個模組載不進來）。02 因此把讀帳號抽成 `hooks/accounts.ts`，吃一個小的 `Io` | 不用修；要直接測模組裡的函式就照 02 的做法抽出來。可以考慮記進 `docs/agents/lessons.md` 或客廳 plugin-authoring skill |
+| 3 | `~/.claude/mods-data/accounts.json` 的 account1 `label` | 還寫著「終端機」。只有那個資料夾讀不到 email（沒登入）時畫面上才會看到 `label` | 使用者想改再改（私人資料，不在任何 repo）；不急 |
 
 ### 段 1
 
@@ -125,6 +167,7 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 3 的開
 ## 要使用者做的
 
 - **段 3 做完到段 5 做完之間，不要按出門／回家**（客廳的工具存檔就生效；VM 那一半要在段 5 開 VM 時才換完）。主控在段 3 開始前跟使用者說。
+- **03 的截圖**（段 2）：VS Code 與桌面 app 各開一個新對話，打開儀表板「帳號」分頁截圖。看哪幾頁、要看到什麼在 issue 03 底下「要截圖看的」。按鈕不用按。
 
 ## 要使用者決定的
 
