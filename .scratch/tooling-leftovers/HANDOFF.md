@@ -10,7 +10,7 @@
 | 2 同步的兩個 git 行為 | 03 → 04 | xhigh（兩台同時寫 git 的紅燈測試） | ✅ 03（客廳 `b5631ea`）、04（客廳 `0ef32ab`）；autosync 19 → 31、devbox-mods 22 → 29 |
 | 3 tools 整理 | 05 → 06 | high | ✅ 05（客廳 `baebee3`）、06（客廳 `52da7a7`）；autosync 31 → 33、devbox 14 → 17、devbox-mods 29 → 30、limit-guard 52 → 58 |
 | 3b guard 刪東西 | 13（使用者 10/29 加的） | high（「少問」的改動，守住的測試多） | ✅ 13（客廳 `fbf35e9`，段 3b；量測與收尾段 3b 續）；guard 56 → 64 |
-| 4 儀表板 | 07 | high（要截圖） | ⬜ |
+| 4 儀表板 | 07 | high（要截圖） | 🟡 07 程式與測試做完（客廳 `3d925e7`）；dash 38 → 56、limit-guard 58 → 67、客廳 `tools/shared-fixtures.test.mjs` 1。**等截圖**（「要使用者做的」），過了 07 改 done |
 | 5 E2E | 10 | high（每次跑之前使用者點頭） | ⬜ |
 | 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ⬜ |
 | 7 VM | 段 2 中途發現 1 → 12 | high（開 VM、花錢，主控開段前再提醒使用者） | ⬜ |
@@ -240,9 +240,40 @@
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
 ```
 
+## 段 5 的開場
+
+```
+這一輪在做「工具收尾」：第 3 階段留下的清單全部做完，加上 E2E 加速的 skill。分支 claude/tooling-leftovers（已經在這個 checkout 上）。
+這是第 5 段：只做 issue 10（E2E 加速的通用 skill＋「一個 worker 一顆模擬器」實驗）。08、09 以後不做。段 1～4 做完了（客廳 d3bc4a0、3950996、b5631ea、0ef32ab、baebee3、52da7a7、fbf35e9、3d925e7；07 等截圖，不擋這一段）。
+
+先讀：.scratch/tooling-leftovers/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」10、「中途發現」段 4；spec.md（「使用者要的」E2E 那幾句、「使用者選的答案」第 2 題、「不能違反」第 1 條）；issues/10（「動工前先讀」列的上一個專案的檔與記憶）；CLAUDE.md；docs/agents/lessons.md。
+
+要特別注意：
+- 上一個專案一律不能壞：它的資料夾、分支、worktree、它平常用的模擬器 port 都不動。實驗在另一份 clone（從 GitHub 網址 clone、push url 設無效值、實驗分支不推不開 PR）。
+- 每次跑 E2E 之前，在這個對話跟使用者說大約多久、CPU 大約多少，**使用者點頭才跑**；一次只跑一組，跑完把模擬器與瀏覽器程序關乾淨。先只跑 09-09 那 10 支紅過的檔（1 個 worker 一次、2 個 worker 各一顆一次），值得再談全量。
+- port 寫死的地方不只三處（issue 10「做法」列了）：用 emulatorPortsFor(worker) 當唯一推導；對照組也避開上一個專案平常的 port。
+- skill：用 skill-creator，放客廳 skills/，名字不跟上一個專案的 test-speed 同名；沒量過的數字不寫進任何檔；觸發描述放軟。客廳 skills/README.md「來源與版本」加一列。
+- 同步回這個 repo：.claude/project.json 的 skills 加名字——guard 即時讀這個檔，JSON 打錯整個 guard 每條都問，改完先 node -e 讀一次確認合法；再跑 sync-skills。改 skill 被 auto mode 擋下就停、照規矩交給主控。
+- 讀上一個專案的記憶用 grep -l 找檔、只看沒有私人值的行；.local/references/ 不讀。
+- 兩個 mod 要共用假資料時：mod 測試不能 import 自己資料夾外的檔（段 4 中途發現 1）；這一段應該用不到。
+
+做完要交：10 一個 commit（這個 repo；客廳照規矩）、Status: done、「做完時留下的」（量到的數字與出處、clone 留著或刪了）、HANDOFF 分段表段 5、中途發現、段 6 的開場（09 → 08，high；照段 1 的開場的格式）。
+額度快用完時：停在可以交接的地方（例如量完一組、skill 還沒寫），commit、推、記進 HANDOFF。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
+```
+
 ## 中途發現
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
+
+### 段 4
+
+進度：07 程式與測試 ✅（客廳 `3d925e7`），等截圖。照主控的話只記、不加進這一輪。
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | 段 3 的開場寫「J4 的同一份假資料照 worktree-cases.ts 的做法，就不用另寫逐字相同的比對」 | **不成立**（段 4 實測）：mod 的測試不能 import 自己資料夾外的檔（`cannot import … it is outside the plugin's folder`），只有 tools 的 node 測試能 import mod 裡的 `.ts`。兩個 mod 要共用就得各放一份＋tools 測試比逐字相同（07 就這樣做） | 以後兩個 mod 共用假資料照 07：各一份＋`tools/shared-fixtures.test.mjs` 加一條。給 11（lessons）參考 |
+| 2 | dash `vmView` 畫「這個月到現在」：`vm.usage.month.slice(5)` | `devbox.mjs usage` exit 0 但最後一行是沒有 `month` 的 JSON 時，整個儀表板面板畫不出來（引擎：「dash's ui.render hook was skipped」）。段 4 寫測試時假資料給錯重現過；**現在的 devbox.mjs 一定印 `month`**，不是會發生的錯 | 不急；哪天動 `vmUsage` 時順手檢查 `month` 是字串才存 |
 
 ### 段 3b
 
@@ -289,6 +320,12 @@
 （段寫；一次一題、附建議）
 
 ## 要使用者做的
+
+- **段 4（07）截圖「雲端」分頁**：開一個新對話（這個專案；在 worktree 開的也可以，順便看第 3 點）→ 打開儀表板 → 點「雲端」分頁 → 截整頁。要看到：
+  1. 第一張卡的標題是 VM 的名字（跟以前一樣；名字現在是從客廳 `vm/devbox.json` 讀的），不是「雲端 VM」；
+  2. 狀態（開著／關著）、出門／回家／開機（或關機）按鈕、底下「這個月到現在」照常；
+  3. 按鈕底下那行「在 baobuverse-kingdom 按的：…」——在 worktree 開的對話也要是 `baobuverse-kingdom`，不是 worktree 的名字。
+  只截圖，**不要按出門／回家／開機**。截圖過了 07 改 done。
 
 ## 使用者已經決定的（2026-10-29，主控 session）
 
