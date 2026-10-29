@@ -7,7 +7,7 @@
 | 段 | issue | effort | 狀態 |
 |---|---|---|---|
 | 1 guard | 01 → 02 | xhigh（02 是這一輪唯一「少問」的改動，白名單與守住的測試很多） | ✅ 01（客廳 `d3bc4a0`）、02（客廳 `3950996`，段 1 續）；guard 38 → 56 |
-| 2 同步的兩個 git 行為 | 03 → 04 | xhigh（兩台同時寫 git 的紅燈測試） | 🟡 03（客廳 `b5631ea`；autosync 19 → 31、devbox-mods 22 → 25）；04 做中 |
+| 2 同步的兩個 git 行為 | 03 → 04 | xhigh（兩台同時寫 git 的紅燈測試） | ✅ 03（客廳 `b5631ea`）、04（客廳 `0ef32ab`）；autosync 19 → 31、devbox-mods 22 → 29 |
 | 3 tools 整理 | 05 → 06 | high | ⬜ |
 | 4 儀表板 | 07 | high（要截圖） | ⬜ |
 | 5 E2E | 10 | high（每次跑之前使用者點頭） | ⬜ |
@@ -26,7 +26,7 @@
   改完複製進客廳 `mods/`、客廳 commit、推；客廳 `mods/` 跟 `~/.claude/mods` 逐檔相同（不算 `node_modules`、`.claude-plugin/types`）。客廳的自動同步會先把改到一半的檔備份成「自動同步」commit：**最後一個 commit 的狀態完整就好**。
 - **測試一支一支跑**，不要平行全開（使用者的電腦曾經過熱斷電）。基準（2026-10-29 段 9 之後）：
   mods `claude plugin test <mod>`：guard 56（段 1 之後）、limit-guard 52、dash 38、e2e-progress 5、notify 6；
-  客廳寫檔名：`node --test tools/autosync.test.mjs` 19、`tools/mods.test.mjs` 13、`tools/devbox.test.mjs` 14、`tools/devbox-mods.test.mjs` 22（**不要** `node --test tools/`）。
+  客廳寫檔名：`node --test tools/autosync.test.mjs` 19（段 2 之後 31）、`tools/mods.test.mjs` 13、`tools/devbox.test.mjs` 14、`tools/devbox-mods.test.mjs` 22（段 2 之後 29，約 3 分鐘）（**不要** `node --test tools/`）。
 - **上一個專案**（`C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler`）：它的資料夾、分支、worktree、正在用的設定都不動；`.local/references/` 不讀；記憶用 `grep -l` 找檔、只看沒有私人值的行。
   動它的 repo 只有 08（照它自己的 `CLAUDE.md` 開 PR）；10 的實驗在另一份 clone。
 - 公開 repo（這個）：commit、`.scratch`、PR 不帶真名、帳號名字、email、金鑰、VM host／GCP 專案 id／zone／instance 名。`~/.claude/mods-data/accounts.json`、客廳 `vm/devbox.json` 的值不要印出來、不要抄過來；
@@ -136,9 +136,48 @@
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：xhigh。
 ```
 
+## 段 3 的開場
+
+```
+這一輪在做「工具收尾」：第 3 階段留下的清單全部做完，加上 E2E 加速的 skill。分支 claude/tooling-leftovers（已經在這個 checkout 上）。
+這是第 3 段：只做 issue 05 → 06（客廳 tools 異味整理、devbox --project 是 worktree 時看主資料夾）。07 以後不做。段 1（01、02 guard）、段 2（03、04 同步）做完了（客廳 d3bc4a0、3950996、b5631ea、0ef32ab）。
+
+先讀：.scratch/tooling-leftovers/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」05、06、「中途發現」段 1、段 2；spec.md（「不能違反」「允許改的既有測試」「行為會變的」03、04）；issues/03、04 的「做完時留下的」、issues/05、06；
+.scratch/legacy-to-home/HANDOFF.md「判斷題」J2、J3、J5、J6、J8、「中途發現」段 4 第 1 條；CLAUDE.md；docs/agents/lessons.md。
+
+03、04 留下、05 要接著用的：
+- autosync 多了 --strict（嚴格模式）：模式旗標現在是 --dry-run、--restore、--restore-mods、--check-mods、--strict 五個（autosync.mjs:37-41）＋ --now、--worker、--mods、--no-home。J3 開頭算一次 mode 時 --strict 也要算進去：一定在前景、只管專案那一半、最後 process.exit(code)（不是 0）。
+- 共用常數 LOCK_WAIT（:46，--strict 與 --restore-mods 等鎖；測試用 AUTOSYNC_LOCK_WAIT_MS 換短）；新的 step(what, fn)；errText 取 git 的 fatal:／error: 那行。
+- --no-home 的呼叫端多了：devbox.mjs:154（pushLocal）、:161（pullLocal）、:421（presync），都是 --strict --no-home；:190（vmState，經 ssh 在 VM 上的客廳跑）照舊 --now --no-home。客廳 README 的手動用法那行也有。段 2 新寫的 autosync 測試 strict() 也帶 --no-home（兩個名字都認就不用改）。
+- 測試基準：autosync 31、devbox 14、devbox-mods 29（約 3 分鐘）、mods 13、limit-guard 52。段 2 新加的測試在 autosync.test.mjs、devbox-mods.test.mjs 檔尾，各自定義了 releaseLater、midRebase（兩支各一份）、hook（autosync）：J8 抽 helpers-for-tests.mjs 時可以一起收，但只能改 import／setup 行、斷言不改（spec「允許改的既有測試」）。
+- 「讓 autosync 可以被 import」之後，嚴格模式的 exit code（失敗 1）、背景模式（hook 不帶旗標時馬上 exit 0）都要照舊：autosync 31 條守著。
+
+要特別注意：
+- 對話開始／結束的 hook 直接跑 C:/Users/DELL/claude-home/tools/autosync.mjs：改到一半的檔會被真的同步叫到（其他對話也是）。照段 2 的做法：把客廳 tools/ 複製到 scratchpad、在複本改、測過、cmp 一樣再放回客廳。
+- J2 改名 --no-mods：新的 autosync 兩個名字都認；devbox.mjs:190（VM 上的客廳可能還沒 pull）這一輪同時帶 --no-home --no-mods。寫進 spec「行為會變的」。
+- J5 改 limit-guard（~/.claude/mods 即時生效）：照 mods 規矩（tsc、validate、複製進客廳、逐檔相同）；相對 gitdir 的案例紅燈先。
+- J3、J6、J8 不改行為：既有測試的斷言一條都不改。測試一支一支跑（客廳寫檔名，不要 node --test tools/）。
+- 06 用 05 從 autosync export 的 mainDir，不另寫一份；紅燈先。
+- 中途發現段 2 第 1 條（出門的 VM 那一半 --autostash 套回衝突 exit 0）不在 05、06 的範圍：照主控的決定，不要順手改。
+- 不要按出門／回家、不要開 VM（12 才開）。
+
+做完要交：05、06 各一個 commit（這個 repo；客廳照規矩）、Status: done、「做完時留下的」、HANDOFF 分段表段 3 ✅、中途發現、段 4 的開場（07，high；照段 1 的開場的格式）。
+額度快用完時：每做完一支就 commit、推、記進 HANDOFF，停在支與支之間。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
+```
+
 ## 中途發現
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
+
+### 段 2
+
+進度：03 ✅（客廳 `b5631ea`、這個 repo `07ae890`）、04 ✅（客廳 `0ef32ab`）。照主控的話只記、不加進這一輪。
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | 客廳 `devbox.mjs:281`：「出門」VM 那一半 `git -C .local pull -q --rebase --autostash \|\| { abort; exit 3; }`，接著 `--restore` | **重現過**（git 2.55，暫存 repo）：沒 commit 的改動跟拉下來的改了同一個檔時，`--autostash` 套回衝突，**exit 0**、檔案裡留著衝突記號（`<<<<<<< Updated upstream`）、stash 留著。`\|\|` 那段不會跑，接著 `--restore` 把衝突記號的檔鏡像進 VM 的記憶，印「✅ 可以出門了」；VM 下一次對話結束的同步 `git add -A` 會把衝突記號 commit、推上去。要 VM 的 `.local` 有沒 commit 的改動（presync 寫完檔、commit 前被殺掉；既有測試「VM 上 .local 有沒 commit 的 vm-state.json」承認這種狀態），而且家裡也改了同一個檔推上去（`vm-state.json` 只有 VM 寫，會撞的是 `claude-memory/`、`claude-handoffs/` 裡的檔），很少見 | 出門的 ③ 在專案迴圈之前已經把 VM 的客廳 `pull --ff-only` 了，所以 VM 那一半可以跟回家的家裡那一半一樣改叫 `node ~/claude-home/tools/autosync.mjs --project "$PWD" --strict --no-home`，exit 不是 0 就停、不跑 `--restore`。12 會真的走一次出門，主控看要不要排在 12 之前（多一支小 issue，紅燈：VM `.local` 沒 commit 的檔＋家裡推了同一個檔） |
+| 2 | 客廳 `devbox.mjs` `pullLocal` 的 `--restore` 用 `sh()` 跑 | `--restore` 失敗時原因印在 stdout（「接回來的時候出錯了：…」），`sh()` 丟的錯只帶 stderr，最外層印成「出錯了：Command failed: <node 路徑> <autosync 路徑> --project … --restore」，看不到原因（Node 的 `execFileSync` 錯誤訊息不含 stdout）。少見（`mirror` 出錯才會），小 | 改用 `autosync('--project', p.home, '--restore')`＋`said(r)`（跟 pushLocal 一樣）。05 整理 devbox 時順手、或不修 |
 
 ### 段 1
 
