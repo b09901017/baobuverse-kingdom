@@ -1,6 +1,6 @@
 # 13 guard：刪東西時救得回來的不問、框上說清楚刪什麼
 
-Status: in-progress（程式與測試做完，客廳 `fbf35e9`；判準 5 的量測、limit-guard 跑一次留給段 3b 續）
+Status: done（客廳 `fbf35e9`；量測與收尾在段 3b 續）
 Blocked by: 02（同一個檔；02 已做完，客廳 `3950996`）
 動工前先讀：這份 HANDOFF「每一段共同的規矩」、spec「不能違反」guard 那一條與「行為會變的」01、02；issues/02 的「做完時留下的」；
 客廳 `mods/guard/hooks/classify.ts`（`TEMP` 與 `deletes` 約 `:243-269`、`KIND_WORD`、`shown`）、`mods/guard/hooks/register.ts`（框上的字「Claude 要刪東西，要讓它做嗎？」從哪裡組出來、hook 拿不拿得到 cwd）、`mods/guard/tests/`（`legacy-parity`、`strict-default`、`not-executed`）
@@ -83,5 +83,20 @@ Claude 要刪東西，要讓它做嗎？
 
 1. **會多問的**：以前整段看到暫存區的字就不問（`rm -rf important /tmp/x`、`rm -rf "$X/scratchpad/y"`），現在一個一個目標看，`important`、看不出的 `$X` 照問。
 2. `~/.claude` 只認家目錄底下那一份；專案的 `.claude/` 照 git 判斷。
-3. 還沒做：判準 5（拿過去真的跑過的刪除指令量少問／多問幾條）、limit-guard 58 跑一次——段 3b 續。
+3. 段 3b 刪探測資料夾（`.scratch` 底下沒追蹤的空資料夾）那兩下：使用者說「有跳」（框上的字沒說）＝照設計（沒追蹤 → 找不到 → 問），沒查 goneOf。
+
+（段 3b 續）
+
+- **判準 5，拿過去真的跑過的刪除指令量**（`~/.claude/projects/` 底下這個專案與上一個專案的 transcript，連 subagent；只印筆數與遮過的形狀）：
+  每條用改之前（`classify` 不傳 gone）與改之後（`removals`＋`judge`＋真的 git，唯讀，跟 `gitFacts` 同樣的三個呼叫、路徑照 transcript 那一行的 `cwd` 算）比「刪東西」問不問。
+
+  | | 有刪檔案的指令 | 少問 | 多問 | 兩邊都問 | 兩邊都不問 | 改之後要問裡「找不到」 | 「問不到 git」 | 最慢一條（含 git） |
+  |---|---|---|---|---|---|---|---|---|
+  | 這個專案（Bash／PowerShell 2725 條） | 58 | 19 | 1 | 30 | 8 | 2 | 0 | 74 ms |
+  | 上一個專案（18904 條） | 227 | 13 | 14 | 190 | 10 | 48 | 1 | 113 ms |
+
+  - 少問的幾乎都是使用者貼的那種：同一串前面 `S=<暫存區>`、後面 `rm -rf $S/…`；其餘是 `cd <資料夾> && rm <git 裡沒改過的檔>`。
+  - 多問 15 條都是照設計的類型：cd 後面不是一路 `&&` 接到 rm（`cd x && cp … && node …` 換行或 `;` 再 `rm`）11 條、`$TEMP` 前面有指令可能改了變數 2 條、萬用字元 1 條、一段同時刪暫存區與 cd 算不出的 1 條。以前是整段看到暫存區的字（`/tmp/`、`$TEMP`）就不問。
+  - 「找不到」50 條、「問不到 git」1 條（cwd 已經不在、檔案已經刪掉或當時在別的 worktree）全部落在「兩邊都問」，不影響少問／多問的筆數；但這表示「少問」是用**現在**的 git 狀態算的，當時救不救得回來可能不同。
+- limit-guard 58 跑一次全過；guard 64 再跑一次全過（一支一支跑）。`~/.claude/mods/guard` 與客廳 `mods/guard` 逐檔相同。
 

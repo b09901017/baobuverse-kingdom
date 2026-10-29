@@ -1,6 +1,6 @@
 # 工具收尾 HANDOFF
 
-分支 `claude/tooling-leftovers`（從 `claude/legacy-to-home` 的 `1de96ba` 開）。spec：`spec.md`。主控：`local_cc2e38d3-2974-40a4-ac57-e68e916de22b`（段 1 續的時候換了帳號；舊的是 `local_fba130a7-…`。主控自己的筆記在 `.local/main-session-handoff.md`）。
+分支 `claude/tooling-leftovers`（從 `claude/legacy-to-home` 的 `1de96ba` 開）。spec：`spec.md`。主控：`local_b2ec433b-f899-4bc0-9984-418dfa4247d4`（段 3b 續的時候換了；更早的是 `local_cc2e38d3-…`、`local_fba130a7-…`。主控自己的筆記在 `.local/main-session-handoff.md`）。
 
 ## 分段
 
@@ -9,7 +9,7 @@
 | 1 guard | 01 → 02 | xhigh（02 是這一輪唯一「少問」的改動，白名單與守住的測試很多） | ✅ 01（客廳 `d3bc4a0`）、02（客廳 `3950996`，段 1 續）；guard 38 → 56 |
 | 2 同步的兩個 git 行為 | 03 → 04 | xhigh（兩台同時寫 git 的紅燈測試） | ✅ 03（客廳 `b5631ea`）、04（客廳 `0ef32ab`）；autosync 19 → 31、devbox-mods 22 → 29 |
 | 3 tools 整理 | 05 → 06 | high | ✅ 05（客廳 `baebee3`）、06（客廳 `52da7a7`）；autosync 31 → 33、devbox 14 → 17、devbox-mods 29 → 30、limit-guard 52 → 58 |
-| 3b guard 刪東西 | 13（使用者 10/29 加的） | high（「少問」的改動，守住的測試多） | 🟡 程式與測試（客廳 `fbf35e9`；guard 56 → 64）；剩判準 5 量測、limit-guard、這個 repo 的 commit 收尾 → 段 3b 續 |
+| 3b guard 刪東西 | 13（使用者 10/29 加的） | high（「少問」的改動，守住的測試多） | ✅ 13（客廳 `fbf35e9`，段 3b；量測與收尾段 3b 續）；guard 56 → 64 |
 | 4 儀表板 | 07 | high（要截圖） | ⬜ |
 | 5 E2E | 10 | high（每次跑之前使用者點頭） | ⬜ |
 | 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ⬜ |
@@ -246,12 +246,13 @@
 
 ### 段 3b
 
-進度：13 的程式與測試 ✅（客廳 `fbf35e9`）；量測與收尾在段 3b 續。照主控的話只記、不加進這一輪。
+進度：13 ✅（客廳 `fbf35e9`；段 3b 續量了判準 5、跑了 limit-guard 58 與 guard 64）。照主控的話只記、不加進這一輪。
 
 | # | 哪裡 | 什麼情境會錯 | 建議 |
 |---|---|---|---|
 | 1 | guard `removeVerbs` 的 rm regex `(?:^\|[\s;&\|(`])(?:rm\|…)\s+` | **重現過**（測試裡用改之前的 classify）：`bash -c "rm -rf notes"`（rm 緊接在引號後）、`echo a \| xargs rm`（rm 後面沒東西）改之前、改之後都**不問**。前面要是空白或分隔字、後面要有空白 | 下一輪：前面也認 `"`、`'`，後面認結尾；都是多問 |
-| 2 | 13 的 cd 判斷 | `cd x; rm y`、PowerShell 的 `cd x; Remove-Item y` 一律問（cd 失敗會刪到原本的資料夾）。不是錯，多問一點 | 不用修；量測時看筆數 |
+| 2 | 13 的 cd 判斷 | `cd x; rm y`、PowerShell 的 `cd x; Remove-Item y` 一律問（cd 失敗會刪到原本的資料夾）。不是錯，多問一點 | 不用修。段 3b 續量過：上一個專案多問 14 條裡 11 條是這種（這個專案 1 條） |
+| 3 | 13 的變數 `tainted`（段 3b 續量測時看到） | `$TEMP` 這種環境變數，前面有某些指令（例如 `X=$(node …)`、子 shell）就當成「可能被改了」→ 看不出 → 問。上一個專案量到 2 條。不是錯，多問一點；沒查是哪個字觸發的 | 不用修；嫌吵再看 `MAYSET` |
 
 ### 段 3
 
