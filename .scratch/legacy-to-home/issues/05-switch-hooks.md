@@ -100,7 +100,7 @@ Blocked by: 04
 |---|---|---|---|
 | `~/.claude` | 桌面 app、沒設 `CLAUDE_CONFIG_DIR` 的終端機 | 舊的同步 | 客廳的（做法 3） |
 | `~/.claude-account2` | VS Code（`CLAUDE_CONFIG_DIR`） | **舊的同步**（issue 沒列到） | 客廳的（判準 1 第一次沒過才發現；同一種寫法，改前備份在段 4 scratchpad，沒被擋） |
-| `~/.claude-account1` | VS Code 切到另一個帳號時（03 讓它出現在切換清單） | **沒有 `hooks`** | 使用者 2026-10-29 選「補上」；段 4 改的時候被 auto mode 擋了（Self-Modification），**還沒改**，步驟在 HANDOFF「要使用者做的」（段 4 中途發現 4） |
+| `~/.claude-account1` | VS Code 切到另一個帳號時（03 讓它出現在切換清單） | **沒有 `hooks`** | 使用者 2026-10-29 選「補上」；段 4 改的時候被 auto mode 擋了（Self-Modification），**主控 2026-10-29 代改（使用者同意）**：`hooks` 跟 `~/.claude-account2` 的一樣（段 4 中途發現 4） |
 
 11:06 與 11:10 舊的同步在上一個專案 `.local` 留下兩個 commit（`claude-mods/` 6 個與 3 個檔，都是「改」，**沒有刪檔、沒有動 `claude-handoffs/` 或其他檔**，`references/` 0；`claude-handoffs/` 還是 8 份）。
 11:10 那個是同一個 VS Code 對話結束時跑的（`~/.claude-account2` 改好之前）。上一個專案的 `tools/autosync.log` 現在 128 行（重測的基準）。

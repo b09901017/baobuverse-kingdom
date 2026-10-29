@@ -10,7 +10,7 @@
 | 1 guard、規則文件 | 01、07 | high | ✅ `701b8fa`、`927b43c`（客廳 `30a7191`、`2e1f9b5`、`0aa707a`） |
 | 2 limit-guard 與儀表板帳號頁（都以 email 為單位） | 02 → 03 | high | 02 ✅ `01e946d`（客廳 `8419bac`）；03 ✅ `7179dc9`（客廳 `06369c8`；截圖 10/29 過了） |
 | 3 客廳的出門／回家、mods 改從客廳搬 | 04 | xhigh | ✅ `985c485`（客廳 `d7f980c`；主控查過：四支測試一支一支跑全綠、照 A 的三個條件都在、客廳 `mods/` 跟 `~/.claude/mods` 相同）。**從現在到段 5 做完，使用者不要按出門／回家**（客廳的工具已經生效，VM 那一半還沒換） |
-| 4 換手 | 05 | high | ✅（客廳 `859bf74`、`8d49a61`（mods，自動同步）、`fe4af86`；開關對話重測過了）。還差：05 的截圖、`~/.claude-account1/settings.json` 使用者自己貼 `hooks`（被擋，見「要使用者做的」） |
+| 4 換手 | 05 | high | ✅（客廳 `859bf74`、`8d49a61`（mods，自動同步）、`fe4af86`；開關對話重測過了）。還差：05 的截圖（`~/.claude-account1` 的 `hooks` 主控 10/29 代改好了） |
 | 5 開 VM 走一次 | 08 | high | ⬜（緊接段 4；開 VM 花錢，使用者已同意一次） |
 | 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ⬜ |
 | 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ⬜ |
@@ -254,17 +254,9 @@ HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段
 - **05 的截圖**（段 4，儀表板「雲端」分頁的字變了）：在**上一個專案的資料夾**開新對話（桌面 app 或 VS Code），打開儀表板 → 點「雲端」分頁，**不要按出門／回家**。
   要看到：狀態（開著／關著）照常、按鈕底下多一行「在 baobao-wellness-clinic-scheduler 按的：VM 上的每一個專案都會一起處理（客廳的 devbox.mjs）」。
   對照：在這個專案的資料夾看同一頁，那一行寫「在 baobuverse-kingdom 按的：…」（之前就有）。
-- **`~/.claude-account1/settings.json` 加 `hooks`**（段 4 中途發現 4，使用者 2026-10-29 選「補上」；段 4 改的時候被 auto mode 擋了 Self-Modification，所以要使用者自己改）。
-  改前的備份在段 4 的 scratchpad（`account1-settings.before-05.json`）。步驟：
-  1. 用記事本打開 `C:\Users\DELL\.claude-account1\settings.json`。
-  2. 第一行 `{` 的下一行，貼上下面這一段（最後有逗號），存檔：
-     ```
-       "hooks": {
-         "SessionStart": [ { "hooks": [ { "type": "command", "command": "node", "args": ["C:/Users/DELL/claude-home/tools/autosync.mjs", "--project", "${CLAUDE_PROJECT_DIR}"], "timeout": 30 } ] } ],
-         "SessionEnd": [ { "hooks": [ { "type": "command", "command": "node", "args": ["C:/Users/DELL/claude-home/tools/autosync.mjs", "--project", "${CLAUDE_PROJECT_DIR}"], "timeout": 30 } ] } ]
-       },
-     ```
-  3. 跟主控說改好了；主控（或下一段）跑 `node -e "JSON.parse(require('fs').readFileSync(process.env.USERPROFILE+'/.claude-account1/settings.json','utf8'))"` 確認沒寫壞，再跟 `~/.claude-account2/settings.json` 的 `hooks` 比一次。
+- ~~**`~/.claude-account1/settings.json` 加 `hooks`**（段 4 中途發現 4，使用者 2026-10-29 選「補上」；段 4 改的時候被 auto mode 擋了 Self-Modification）~~
+  → **主控 2026-10-29 代改（使用者同意）**：使用者在主控 session 說「我同意你幫我」，主控用 Edit 改的，沒被擋；改前備份在主控 scratchpad。
+  主控查過 JSON 合法、其他三個 key 沒動；段 4 也對過一次：`hooks` 跟 `~/.claude-account2` 的一樣。11:20 那個 account1 的對話在補上之前，沒同步是預期的。
 
 ## 要使用者決定的
 
@@ -293,5 +285,5 @@ HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段
   - 1（dash 總覽「新對話會用 X」比資料夾不比 email）：**段 8 修**，畫面的字會變，要截圖。
   - 3（`accounts.json` 的 account1 `label` 還寫「終端機」）：主控改成跟另外兩個同一個寫法（「account1 資料夾」）；私人資料，不在任何 repo，改前備份在主控 scratchpad。
 - 主控換帳號（2026-10-29，使用者：「你先休息換另一個帳號做，等到12:00之後或他也到limit之後我再請她換回來給妳接手主控台」）：另一個帳號的新對話讀 `.local/main-session-handoff.md` 接手主控，照這份開段 3。之後可能再換回來，兩邊都照這份與主控交接檔接續。
-- 段 4 中途發現 4（`~/.claude-account1/settings.json` 沒有 `hooks`）：主控建議 A（加同一段），使用者 2026-10-29 選「補上」（主控 session 轉達）。段 4 改的時候被 auto mode 擋了，改由使用者照「要使用者做的」自己改。
+- 段 4 中途發現 4（`~/.claude-account1/settings.json` 沒有 `hooks`）：主控建議 A（加同一段），使用者 2026-10-29 選「補上」（主控 session 轉達）。段 4 改的時候被 auto mode 擋了，使用者同意後主控 2026-10-29 代改。
 - 段 4 dash `vm-projects.test.tsx:98-106`（客廳還沒 clone → 照舊叫上一個專案那一支）：主控 2026-10-29「照 A」（主控的決定，不是使用者）：拿掉退路、寫清楚要 clone 到哪；spec「允許改的既有測試」已補。
