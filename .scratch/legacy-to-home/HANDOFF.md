@@ -14,7 +14,7 @@
 | 5 開 VM 走一次 | 08 | high | ⬜（緊接段 4；開 VM 花錢，使用者已同意一次） |
 | 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ⬜ |
 | 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ⬜ |
-| 8 收尾 | 修審查找到的、手動檢查清單、PR、合併 | medium（要修 mods 就 high） | ⬜ |
+| 8 收尾 | 修審查找到的、guard：`project.json` 壞掉＝最嚴預設（段 1 中途發現 2）、手動檢查清單、PR、合併 | medium（要修 mods 就 high） | ⬜ |
 
 ## 每一段共同的規矩
 
@@ -177,9 +177,12 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 4 的開
    `guard.test.ts` 的 `touched('firebase deploy --only hosting')`（`staging:write` → `unknown:write`）、`project-config.test.ts` 的「讀設定那條路跟 `classify()` 一樣」（改成跟 `e8f9058` 比）。
    兩行都靠 `classify()` 預設參數裡寫死的上一個專案 id；01 要拿掉寫死的 id，預設參數變成最嚴預設之後，這兩行就是判準允許的第 2 類（讀不到 `.firebaserc` → 看不出環境 → 要問）。
    另一個做法是預設參數留著寫死的 id（違反 01 判準 4）。
-2. （不擋）中途發現 1、2 要不要這一輪修：建議 1 放下一輪（只是多問）、2 不改（09 的決定）。
+2. ~~（不擋）中途發現 1、2 要不要這一輪修~~ → **使用者 2026-10-29「照建議」**（主控 session 轉達，見下面「使用者已經決定的」）。原本的題目：建議 1 放下一輪（只是多問）、2 不改（09 的決定）。
 
 ## 使用者已經決定的（2026-10-29）
 
 - spec「使用者選的答案」7 題：「都照建議」。
 - 範圍：儀表板那輪中途發現 ①～③ 併進來（「好，併進去」）；E2E 放下一輪（「好，開始」）。
+- 段 1 中途發現 1、2（「照建議」，主控 session 轉達、主控的解讀）：
+  - 1（guard 把指令**文字裡**的 `firebase deploy` 當成指令，多問）：放下一輪。
+  - 2（`project.json` 壞掉時比最嚴預設少問）：改成「壞掉＝最嚴預設」，**段 8 修**；會改 `project-config.test.ts:112` 的意思，修時把它加進 spec「允許改的既有測試」。
