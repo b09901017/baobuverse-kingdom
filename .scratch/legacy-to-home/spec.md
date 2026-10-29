@@ -108,6 +108,7 @@ hook 換手、「mods 改由客廳搬」、VM 那一半**一定要接著做完**
 - mods 的備份：家裡與 VM 都會推進客廳；上游在這台上次同步之後被改過、這台還沒還原時，不備份、只寫 log（不准默默蓋掉另一台改的）。
 - guard：沒有 `.claude/project.json` 的資料夾用「最嚴的一份」（＝今天上一個專案的規則）；寫死的上一個專案 Firebase 專案 id 拿掉（讀不到 `.firebaserc` 就要問）。
 - guard：`.claude/project.json` 在、但讀不懂（不是 JSON、`[]`、`null`）＝最嚴預設，**再加**碰 Firebase／`gcloud`（模擬器除外）與 `git push`、`gh` 的寫入一律要問，框上寫「`.claude/project.json` 讀不懂，先修好」（段 7 審查第 7 條；使用者 2026-10-29 選段 8 修「壞掉＝最嚴預設」，段 7 第 1 題「照建議」）。`gh` 的寫入是段 8 加的（`neverWrite` 的 repo 本來也擋 `gh` 寫入，只會多問）
+- guard：`firebase use <認不出的專案>`（不是 `.firebaserc` 的正式站或 staging）每個專案都要問（issue 01「跟 issue 寫的不同」第 1 點：不加的話讀不到 `.firebaserc` 時 `firebase use <正式站 id>` 會少問）；`firebase use default` 照 `.firebaserc` 的 `default` 指的專案認（staging 不問、正式站或認不出的要問），沒有 `default` 別名不問（段 7 審查第 10 條；使用者 2026-10-29 段 7 第 1 題「照建議」）
 
 ## 不做（這一輪）
 
