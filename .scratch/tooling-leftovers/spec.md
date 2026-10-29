@@ -69,6 +69,7 @@ E2E 加速（第 3 階段開始前說的，主控交接記的原話）：
 | 客廳 `tools/mods.test.mjs`、`tools/devbox-mods.test.mjs`（05 J8） | 只改 import 與 setup 行（把 `git`／`write`／`read` 小工具改成從 `tools/helpers-for-tests.mjs` import），**斷言不改** | J8 把兩份抄的小工具抽出去 | 主控 2026-10-29（過目抓到的 05） |
 | 客廳 `tools/*.test.mjs` 四支（05 J3） | 「讓 autosync 可以被 import」需要的話，只改複製腳本進假客廳的 setup 行，**斷言不改** | 05 讓 `autosync.mjs` 可以被 import、export `mainDir` | 主控 2026-10-29 |
 | 客廳 `tools/autosync.test.mjs`、`tools/devbox-mods.test.mjs` 段 2 加在檔尾的 `releaseLater`、`midRebase`、`hook`（05 J8） | 拿掉自己那一份、改成從 `tools/helpers-for-tests.mjs` import，**斷言不改** | 段 2 又各抄了一份 | 主控 2026-10-29（段 3 的開場） |
+| 客廳 `tools/devbox.test.mjs` 的 `vmSetup`（段 7，段 2 中途發現 1） | 只改放進假 VM 的那支假 `autosync.mjs` 的內容：帶 `--strict` 時跑 `git -C <--project>/.local pull -q --rebase`、照它的 exit code 結束、不印「記憶與開場接回來了（假的）」；其他參數照舊。**斷言不改** | 出門的 VM 那一半 `.local` 的 pull 搬進 autosync，以前什麼都 exit 0 的假程式讓「VM 上 .local 拉不下來 → 停下來，不接記憶」變紅；真 autosync 的情境由 `devbox-mods.test.mjs` 新加的一條＋既有「兩台改了同一個檔」守 | 主控 2026-10-29（段 7） |
 
 段 3 實際改的：J3 不用改 setup 行（四支照舊只複製 `autosync.mjs`／`devbox.mjs`，`devbox.mjs` 06 才 import `autosync.mjs`，兩支本來就一起複製）；J8 只動了上面兩列寫的 import 與小工具定義。
 
@@ -165,6 +166,15 @@ J3（算一次 mode、可以被 import）、J6（`vm-state.json` 的字收成常
 | 剛打開分頁、還在問 devbox.mjs status 的那一下 | 標題是寫死的名字 | 標題先是「雲端 VM」，讀到 `devbox.json` 換成名字（同一次重整裡，幾乎看不到） |
 
 J7 其他的改名、J4 的測試不改行為。
+
+### 段 2 中途發現 1：出門的 VM 那一半 `.local` 用嚴格模式接（客廳 `62adaf0`，段 7）
+
+| 情況（出門、VM 那一半） | 以前 | 現在 |
+|---|---|---|
+| VM `.local` 有沒 commit 的檔、家裡推了同一個檔 | `pull --rebase --autostash` 套回衝突也 exit 0：檔裡留衝突記號、stash 留著，接著 `--restore`、印 ✅ | 停：「VM 上 X 沒接好，停在這裡：…（autosync 說的原因，含檔名）」；不跑 `--restore`、VM 改的被 commit 進 VM 的 `.local`（沒推）、不停在 rebase 到一半、VM 開著 |
+| VM `.local` 有沒推的 commit（或沒 commit 的檔）、家裡推了別的檔 | 接在家裡的後面，**留在 VM 上沒推**（之後的自動同步推） | 接在家裡的後面、**出門當下就推上去** |
+| 兩台改了同一個檔（都是 commit） | `rebase --abort`、停 | 一樣停（autosync abort），原因多帶檔名 |
+| VM 開機時對話開始的同步正拿著 `.local` 的鎖 | 不理鎖，照拉（可能撞 `index.lock`） | 等它做完（最多 30 秒）再接；等不到就停、不跑 `--restore` |
 
 ### 13 guard 刪東西時救得回來的不問（客廳 `fbf35e9`；少問，少數多問）
 
