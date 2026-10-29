@@ -79,7 +79,7 @@ node <這支 skill 的資料夾>/scripts/durations.mjs .artifacts/results.json -
 先決條件是**隔離**：每個測試開頭通常會清空資料庫，兩個 worker 共用一份就是互相洗掉。隔離有兩種，數字與做法在 [`references/parallel-emulators.md`](references/parallel-emulators.md)：
 
 1. **同一組模擬器、每個 worker 一個命名空間**（Firebase：每個 worker 一個 `projectId`）。資料分開了，但 CPU 與那一個 Java 行程還是共用。上一個專案 3 個 worker：193 個測試紅 10 個，沒開（2026-09-09）。
-2. **每個 worker 一整組模擬器**（不同 port）。連行程都分開。2026-10-29 在同一台筆電試 2 個 worker、10 個檔：78 個全過，6.3 → 3.5 分鐘，CPU 平均 29%（中間有一次斷網紅了 8 個，重跑全過）。全量沒量過。
+2. **每個 worker 一整組模擬器**（不同 port）。連行程都分開。2026-10-29 在同一台筆電試 2 個 worker、10 個檔：78 個全過，6.3 → 3.5 分鐘，CPU 平均 29%（中間有一次斷網紅了 8 個，重跑全過）；3 個 worker 也全過、3.0 分鐘，CPU 平均 40%、最高 77%——比 2 個只再快半分鐘，每個測試開始變慢。全量沒量過。
 
 不管哪一種，**CDN 還是共用的**：前端 SDK、字型每個測試從網路抓一次，斷網或被重置時整批紅，看起來像平行壞掉。紅了先看錯誤裡的網址。
 

@@ -11,7 +11,7 @@
 | 3 tools 整理 | 05 → 06 | high | ✅ 05（客廳 `baebee3`）、06（客廳 `52da7a7`）；autosync 31 → 33、devbox 14 → 17、devbox-mods 29 → 30、limit-guard 52 → 58 |
 | 3b guard 刪東西 | 13（使用者 10/29 加的） | high（「少問」的改動，守住的測試多） | ✅ 13（客廳 `fbf35e9`，段 3b；量測與收尾段 3b 續）；guard 56 → 64 |
 | 4 儀表板 | 07 | high（要截圖） | ✅ 07（客廳 `3d925e7`；10/29 截圖過了）；dash 38 → 56、limit-guard 58 → 67、客廳 `tools/shared-fixtures.test.mjs` 1 |
-| 5 E2E | 10 | high（每次跑之前使用者點頭） | ✅ 10（客廳 `e977e8b`）：skill `e2e-speed`；實驗 10 個檔 1 個 worker 6.3 分 → 2 個 worker 各一組 3.5 分、0 紅（中間一次斷網紅 8，重跑全過） |
+| 5 E2E | 10 | high（每次跑之前使用者點頭） | ✅ 10（客廳 `e977e8b`、`2a0c53a`）：skill `e2e-speed`；實驗 10 個檔 1 個 worker 6.3 分 → 2 個 worker 各一組 3.5 分、0 紅（中間一次斷網紅 8，重跑全過）→ 3 個 worker 各一組 3.0 分、0 紅、CPU 平均 40%／最高 77% |
 | 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ⬜ |
 | 7 VM | 段 2 中途發現 1 → 12 | high（開 VM、花錢，主控開段前再提醒使用者） | ⬜ |
 | 8 審查 | `/matt-code-review`：這個 repo `main...claude/tooling-leftovers`＋客廳這一輪的 commit＋上一個專案這一輪的 PR 與 `.local` commit | xhigh | ⬜ |
