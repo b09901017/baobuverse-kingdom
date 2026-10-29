@@ -65,6 +65,9 @@ E2E 加速（第 3 階段開始前說的，主控交接記的原話）：
 |---|---|---|---|
 | 客廳 `tools/mods.test.mjs`、`tools/devbox-mods.test.mjs`（05 J8） | 只改 import 與 setup 行（把 `git`／`write`／`read` 小工具改成從 `tools/helpers-for-tests.mjs` import），**斷言不改** | J8 把兩份抄的小工具抽出去 | 主控 2026-10-29（過目抓到的 05） |
 | 客廳 `tools/*.test.mjs` 四支（05 J3） | 「讓 autosync 可以被 import」需要的話，只改複製腳本進假客廳的 setup 行，**斷言不改** | 05 讓 `autosync.mjs` 可以被 import、export `mainDir` | 主控 2026-10-29 |
+| 客廳 `tools/autosync.test.mjs`、`tools/devbox-mods.test.mjs` 段 2 加在檔尾的 `releaseLater`、`midRebase`、`hook`（05 J8） | 拿掉自己那一份、改成從 `tools/helpers-for-tests.mjs` import，**斷言不改** | 段 2 又各抄了一份 | 主控 2026-10-29（段 3 的開場） |
+
+段 3 實際改的：J3 不用改 setup 行（四支照舊只複製 `autosync.mjs`／`devbox.mjs`，`devbox.mjs` 06 才 import `autosync.mjs`，兩支本來就一起複製）；J8 只動了上面兩列寫的 import 與小工具定義。
 
 （段裡要再加的，寫明哪一條、為什麼，先問主控。）
 
@@ -127,3 +130,17 @@ E2E 加速（第 3 階段開始前說的，主控交接記的原話）：
 | 兩台改了同一個檔 | 停（同上），不跑 `--restore` | 停：「家裡電腦的 X/.local 沒接好，記憶與開場還沒接回來：X/.local：沒推成：pull --rebase 沒成功：兩台改了同一個檔（檔名），回到拉之前」，不跑 `--restore`；沒 commit 的檔會被 commit 進 `.local`（沒推） |
 | 對話結束的同步正拿著 `.local` 的鎖 | 不理鎖，照拉（可能撞 `index.lock`） | 等它做完（最多 30 秒）再接；等不到就停、不跑 `--restore` |
 | 家裡 `.local` 什麼都沒變、VM 推了新的 | `pull --ff-only` | 一樣拉下來（嚴格模式），多跑一次記憶與開場的複製（沒變就不 commit） |
+
+### 05 客廳 tools 異味整理（客廳 `baebee3`）
+
+J3（算一次 mode、可以被 import）、J6（`vm-state.json` 的字收成常數）、J8（測試小工具）不改行為；下面是會變的：
+
+| 哪裡 | 以前 | 現在 |
+|---|---|---|
+| `autosync.mjs --no-mods`（J2 新名字） | 不認得：照樣做 mods 那一半 | 只做專案那一半；舊名字 `--no-home` 這一輪照樣認（下一輪拿掉） |
+| devbox 叫家裡的 autosync（`pushLocal`、`pullLocal`）、VM 上 presync 叫的 | `--strict --no-home` | `--strict --no-mods`（家裡與 presync 用的是同一台的新版 autosync） |
+| 回家（VM 開著）`vmState` 經 ssh 叫 **VM 上的** autosync | `--now --no-home` | `--now --no-home --no-mods`：VM 的客廳可能還沒 pull，舊版只認 `--no-home`、新版兩個都認，**都不會多做一次 mods 備份** |
+| 回家的家裡那一半：`.local` 接好了、`--restore` 出錯（段 2 中途發現第 2 條，主控決定 05 修） | 停：「出錯了：Command failed: <node 路徑> <autosync 路徑> --project … --restore」，看不到原因 | 停：「家裡電腦的 X/.local 接好了，記憶與開場沒接回來：接回來的時候出錯了：<原因>」＋「叫 Claude 看一下，處理完再按一次「回家」」；跟以前一樣停在家裡的程式碼動之前 |
+| autosync 同時帶好幾個模式旗標（J3） | 每個旗標各自是開關（例如 `--dry-run --strict` 兩個都算） | 照 `--restore`、`--check-mods`、`--restore-mods`、`--dry-run`、`--strict` 的順序取第一個。以前就是這個先後的，只有 `--dry-run --strict` 一起帶時不同（現在只當試跑）；devbox 與 hook 都只帶一個 |
+| `import` `autosync.mjs`（J3） | 一 import 就跑、最後 `process.exit` | 什麼都不做；export `mainDir`（06 用）。直接執行（hook、devbox、手動）照舊 |
+| limit-guard：worktree 的 `.git` 寫相對路徑（`gitdir: ../../../.git/worktrees/x`，git 2.48 起的 `--relative-paths`／`worktree.useRelativePaths`）（J5） | 開場寫到 `handoffs/../`（主資料夾名算成 `..`） | 寫到 `handoffs/<主資料夾名>/`，跟 `mainDir` 同一份案例（`mods/limit-guard/tests/fixtures/worktree-cases.ts`） |
