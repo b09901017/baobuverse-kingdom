@@ -15,7 +15,7 @@
 | 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ✅（客廳 `8139692`；上一個專案 PR #186 CI 全綠、合進 `develop` `3a39a17`；家裡平放的 8 份刪了，VM 上的留著；guard 32、limit-guard 52；上一個專案的工作目錄、分支、worktree 前後相同） |
 | 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ✅ 10/29：結果在「段 7 審查結果」（12 條＋9 條判斷題；照規矩沒修）；測試全過、mods 兩份相同、上一個專案 develop 的 CI 綠。**要使用者決定的段 7 三題，開段 8 之前先問第 1、2 題** |
 | 8 收尾（一）guard 與文件 | 段 7 第 6、7、10 條（guard；第 7 條含段 1 中途發現 2「`project.json` 壞掉」，照段 7 第 1 題的答案）、第 3、4、9、12 條（換行、文件、註解）、第 2 條（照段 7 第 2 題的答案改上一個專案的記憶與 `.local/README.md`） | high | ✅ 前半第 6、7、10 條（客廳 `9529bce`、`32923b0`、`f264938`；guard 33→38 全過、tsc 0 錯、validate 過、兩份 mods 相同；額度 86% 停下）；續：第 3 條（客廳 `4324caf`）、第 4、9、12 條（客廳 `3d13dec`）、第 2 條（上一個專案的記憶與 `.local/README.md`，它的 `.local` `2ca53a6` 已推）。guard 38、limit-guard 52 全過、limit-guard tsc 0 錯、validate 過、兩份 mods 逐檔相同 |
-| 9 收尾（二）同步、儀表板、PR | 段 5 中途發現 1（客廳 `.local` 推之前 `pull --rebase`，紅燈先）、段 7 第 8 條（`--check-mods` 改成「這台改的推上去了」，紅燈先；跟段 5 中途發現 1 同在 `autosync.mjs`／`devbox.mjs`）、第 11 條要不要順手（`vm/README.md` 一句）、段 2 中途發現 1（dash 總覽「新對話會用 X」改成比 email，要截圖）、手動檢查清單、PR、合併 | xhigh（兩台同時寫 git 的測試、devbox 流程） | ⏳ 四條做完：段 5 中途發現 1（客廳 `7345fbf`）、段 7 第 8 條（客廳 `360a313`；`mods.test.mjs:128` 主控照 A）、第 11 條（客廳 `1da2f16`）、段 2 中途發現 1（客廳 `0a3c7cd`）。這個 repo `81d14f5`、`e7b1901`、`6f269b5`、`a5a6319`。最後一支一支跑：guard 38、limit-guard 52、dash 38、e2e-progress 5、notify 6；客廳 autosync 19、mods 13、devbox 14、devbox-mods 22，全過。**等總覽截圖 → PR、合併** |
+| 9 收尾（二）同步、儀表板、PR | 段 5 中途發現 1（客廳 `.local` 推之前 `pull --rebase`，紅燈先）、段 7 第 8 條（`--check-mods` 改成「這台改的推上去了」，紅燈先；跟段 5 中途發現 1 同在 `autosync.mjs`／`devbox.mjs`）、第 11 條要不要順手（`vm/README.md` 一句）、段 2 中途發現 1（dash 總覽「新對話會用 X」改成比 email，要截圖）、手動檢查清單、PR、合併 | xhigh（兩台同時寫 git 的測試、devbox 流程） | ⏳ 四條做完：段 5 中途發現 1（客廳 `7345fbf`）、段 7 第 8 條（客廳 `360a313`；`mods.test.mjs:128` 主控照 A）、第 11 條（客廳 `1da2f16`）、段 2 中途發現 1（客廳 `0a3c7cd`）。這個 repo `81d14f5`、`e7b1901`、`6f269b5`、`a5a6319`。最後一支一支跑：guard 38、limit-guard 52、dash 38、e2e-progress 5、notify 6；客廳 autosync 19、mods 13、devbox 14、devbox-mods 22，全過。總覽截圖 10/29 過了（不同 email 那一種；同 email 靠測試）。**PR、合併中** |
 
 段 7 建議把原本的段 8 拆成兩段（guard 與文件／同步與儀表板）：段 7 多找到 4 條要改程式的，跟原本 3 條加起來分在 guard、客廳 autosync／devbox、dash 三處，一段做完會很長。兩段改的檔不重疊。**主控開段 8 之前先跟使用者說這個拆法。**
 
@@ -522,7 +522,7 @@ CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/le
 
 | # | 哪裡 | 什麼情境會錯 | 建議 |
 |---|---|---|---|
-| 1 ✅ 段 9（客廳 `0a3c7cd`；新 `sameAccount`：兩邊都有 email 就比 email、讀不到照舊比資料夾；新測試 `tests/next-account.test.tsx` 4 條，dash 38 全過、tsc 0 錯、validate 過；**截圖待看**） | dash 總覽底下那行「新對話會用「X」」（`register.tsx` 的 `next.key !== cur.key`） | 比的是資料夾不是 email：這個對話用預設資料夾、VS Code 新對話用 account2（同一個帳號）時，會寫「新對話會用「帳號 A」」，但這個對話本來就是帳號 A。03 說只改兩處，沒動 | 改成比 email（同一個 email 就不寫）。一行，畫面上的字會變，要截圖；放段 8 或下一輪 |
+| 1 ✅ 段 9（客廳 `0a3c7cd`；新 `sameAccount`：兩邊都有 email 就比 email、讀不到照舊比資料夾；新測試 `tests/next-account.test.tsx` 4 條，dash 38 全過、tsc 0 錯、validate 過；**截圖 10/29 過了**（不同 email 那一種：照常顯示「VS Code 新對話會用「另一個帳號」」、排版正常；同一個 email 不顯示那一種沒截到，靠 `next-account.test.tsx` 的兩條紅燈測試）） | dash 總覽底下那行「新對話會用「X」」（`register.tsx` 的 `next.key !== cur.key`） | 比的是資料夾不是 email：這個對話用預設資料夾、VS Code 新對話用 account2（同一個帳號）時，會寫「新對話會用「帳號 A」」，但這個對話本來就是帳號 A。03 說只改兩處，沒動 | 改成比 email（同一個 email 就不寫）。一行，畫面上的字會變，要截圖；放段 8 或下一輪 |
 | 2 | 測試的寫法（給之後改 mods 的段） | 測試的 `$` 不能直接拿來呼叫模組裡的函式（`$.env` 是 undefined）；引擎也規定 `$.env.get` 要寫字面上的名字（傳變數整個模組載不進來）。02 因此把讀帳號抽成 `hooks/accounts.ts`，吃一個小的 `Io` | 不用修；要直接測模組裡的函式就照 02 的做法抽出來。可以考慮記進 `docs/agents/lessons.md` 或客廳 plugin-authoring skill |
 | 3 | `~/.claude/mods-data/accounts.json` 的 account1 `label` | 還寫著「終端機」。只有那個資料夾讀不到 email（沒登入）時畫面上才會看到 `label` | 使用者想改再改（私人資料，不在任何 repo）；不急 |
 
