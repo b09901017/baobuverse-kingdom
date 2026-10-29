@@ -208,6 +208,7 @@
 2. limit-guard 58 跑一次（claude plugin test ~/.claude/mods/limit-guard）。guard 64 再跑一次。
 3. issue 13 Status: done；HANDOFF 分段表段 3b ✅；commit 這個 repo（一支 issue 一個 commit：這一段的 issue 13、spec、HANDOFF 一起）、推。
 4. 段 3b 留下要確認的：段 3b 刪探測資料夾（.scratch 底下沒追蹤的空資料夾）那兩下，照設計要跳框（「找不到…」）；段 3b 看不到框。問使用者那時有沒有跳框、框上寫什麼——沒跳就是 bug，先查 goneOf（`$.env.get`、`$.session.cwd()` 在真的 hook 裡的值）。
+   → 主控 10/29 問了，**使用者：「有跳」**（框上的字沒說）＝照設計，不用查 goneOf。issue 13「做完時留下的」記一行即可。
 注意：改 ~/.claude/mods 即時生效，照規矩在 scratchpad 複本改；寫含 firebase／firestore 網址的測試字串前先跟使用者說會跳框。
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：medium。
 ```
