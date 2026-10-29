@@ -84,6 +84,9 @@ hook 換手、「mods 改由客廳搬」、VM 那一半**一定要接著做完**
   `tests/project-config.test.ts:51`（「讀設定那條路」改成跟「最嚴預設＋那份 `.firebaserc` 的 id」比）。後兩行都靠 `classify()` 預設參數裡寫死的上一個專案 id，
   拿掉之後是 01 判準允許的第 2 類「多問」（段 1 發現，主控 2026-10-29 照建議補進來）
 - **同一類之後不用再問**（主控 2026-10-29）：因為拿掉寫死的 id 而變成「多問」的既有測試期待值，照上面的做法改，記進這裡與那支 issue 的「做完時留下的」；會「少問」的停下來問
+- guard（**段 8**，段 7 審查第 7 條；使用者 2026-10-29 選段 8 修「`project.json` 壞掉＝最嚴預設」時就說好，段 7 第 1 題「照建議」再加「一律要問」）：
+  - `tests/project-config.test.ts:112`「`project.json` 壞掉：當成有設定（認不出就問）」→ 改成「壞掉＝最嚴預設」：`mainDeploysProd` 的期待值從 `false` 變 `true`，另外斷言它被標成讀不懂
+  - `tests/strict-default.test.ts` 的 `CONFIGS`「`project.json` 壞掉」那一列（段 1 加的，跟 `881473b` 逐條比、要求判斷不變）拿掉；換成新的一條：三種壞法（不是 JSON、`[]`、`null`）的判斷＝最嚴預設的判斷，再多一個「`.claude/project.json` 讀不懂」要問
 - limit-guard：`tests/handoff-dir.test.ts:58-64,86-98`、`tests/worktree-handoff.test.ts:64-95`（`FLAT_PROJECTS` 拿掉、worktree 一律用主資料夾名）
 - 客廳 `tools/devbox.test.mjs`（**主控 2026-10-29 照 A**；段 3 發現，issue 04 做法 3 拿掉 `devbox.mjs` 的 `legacy` 分支，測 legacy 的跟著改）：
   - 刪 4 條（只在測「叫上一個專案自己的 devbox.mjs」）：「回家（VM 關著）：上一個專案在 VM 上有沒推的 → 它的 devbox.mjs 停下來…」「回家（VM 開著）：上一個專案停下來就不關 VM」「出門：上一個專案的出門停下來…」「上一個專案的 devbox.mjs 不見了…」。
@@ -104,6 +107,7 @@ hook 換手、「mods 改由客廳搬」、VM 那一半**一定要接著做完**
 - 客廳的自動同步對每個專案的 `.local` 整個 commit（`git add -A`，照 `.local/.gitignore`），不只記憶與開場：這個專案的 `.local` 其他檔（例如主控交接檔）也會自動推。
 - mods 的備份：家裡與 VM 都會推進客廳；上游在這台上次同步之後被改過、這台還沒還原時，不備份、只寫 log（不准默默蓋掉另一台改的）。
 - guard：沒有 `.claude/project.json` 的資料夾用「最嚴的一份」（＝今天上一個專案的規則）；寫死的上一個專案 Firebase 專案 id 拿掉（讀不到 `.firebaserc` 就要問）。
+- guard：`.claude/project.json` 在、但讀不懂（不是 JSON、`[]`、`null`）＝最嚴預設，**再加**碰 Firebase／`gcloud`（模擬器除外）與 `git push`、`gh` 的寫入一律要問，框上寫「`.claude/project.json` 讀不懂，先修好」（段 7 審查第 7 條；使用者 2026-10-29 選段 8 修「壞掉＝最嚴預設」，段 7 第 1 題「照建議」）。`gh` 的寫入是段 8 加的（`neverWrite` 的 repo 本來也擋 `gh` 寫入，只會多問）
 
 ## 不做（這一輪）
 
