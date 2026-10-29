@@ -1,6 +1,6 @@
 # 08 上一個專案的 skill 換成客廳的版本：先出差異報告，使用者決定再換
 
-Status: todo
+Status: done
 Blocked by: ~~10~~（10 done，客廳 `skills/e2e-speed`；`test-speed` 現在有得比）
 動工前先讀：`.scratch/legacy-to-home/spec.md`「使用者選的答案」第 2 題；`docs/env-notes.md`（skill 怎麼從客廳同步到專案、`project.json` 的 `skills`）；客廳 `docs/project-config.md`；上一個專案的 `CLAUDE.md`（它的 PR 與合併規定）
 
@@ -38,3 +38,13 @@ Blocked by: ~~10~~（10 done，客廳 `skills/e2e-speed`；`test-speed` 現在�
   （使用者第一輪的原話「我只要更新客廳的東西，我的所有專案都可以更上」；要自動化另開一支，記進中途發現）
 - 上一個專案的工作目錄、分支、worktree list 前後相同；它的 CI（PR 上的）綠
 - 它的 `project.json` 加 `skills` 之後，客廳 `legacy-parity.test.ts:84-92` 的 `OLD_JSON`（註解寫「develop 上那一份的複本」）就不再逐字相同：規則結果不變、測試照樣過，**不改測試**，記進中途發現
+
+## 做完時留下的（段 6，2026-10-29）
+
+- 差異報告：`.scratch/tooling-leftovers/08-skill-diff-report.md`（比上一個專案 `develop` `3a39a17` 與客廳 `24d8413`，換行不算差）。
+  issue 寫「8 支裡只有 `grill-with-docs` 逐檔相同」對；另外查到：上一個專案的 `CONTEXT.md` 除了根目錄、`calendar-sheet-merge`，還在 `CLAUDE.md:12`、`:172`、`docs/agents/domain.md`（8 處）與幾十支舊 issue；這台的 `graphifyy` 0.9.51 有新版 `graphify` skill 要用的函式（python 確認過）。
+- 使用者答案（spec「使用者選的答案」09、08-1、08-2）：換 6 支（`claude-md`、`graphify`、`grill-with-docs`、`grilling`、`kickoff`、`matt-code-review`）；`domain-modeling`、`setup-matt-pocock-skills` 不換；`test-speed` 留、不加 `e2e-speed`；kickoff 的合併規定搬進它的 `CLAUDE.md`。
+- 做法：從 GitHub 網址 clone（`--filter=blob:none`，在這個 session 的 scratchpad，不動它的工作資料夾）、從 `develop` 開 `claude/skills-from-home`；`project.json` 加 `skills`（改完 node 讀過，合法）；跑客廳 `sync-skills`：改 10 個檔、新增 `docs/licenses/` 2 個、刪 0（選了的 6 支沒有客廳沒有的檔）；`CLAUDE.md`「上線」那節 PR 基底後面加一段「合併」。
+  14 個檔 +574 −239，一個 commit `b05e3a7`。
+- PR [b09901017/baobao-wellness-clinic-scheduler#187](https://github.com/b09901017/baobao-wellness-clinic-scheduler/pull/187)（→ `develop`）。commit 訊息與 PR 內文看過：沒有真名、帳號、email。
+- 上一個專案的工作資料夾前後相同：`claude/availability-sheet-chart-no`、`5b785ad8`、worktree list 10 行。

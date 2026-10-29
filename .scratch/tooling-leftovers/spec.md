@@ -35,6 +35,9 @@ E2E 加速（第 3 階段開始前說的，主控交接記的原話）：
 | 2 | E2E 加速這一輪做到哪 | **照建議**：客廳寫通用版 skill（用 skill-creator，從上一個專案的 `test-speed` 改寫）；在上一個專案**另一份 clone 的實驗分支**試「2 個 worker、各一顆模擬器」，跟 1 個 worker 比時間與紅幾支。實驗分支不推、不開 PR，它的資料夾與分支都不動；數字寫進 skill，好的話再問要不要正式改 |
 | — | 上一個專案的 skill 換成客廳的版本（上一輪 spec 第 2 題） | 上一輪答「這一輪不換，下一輪看過差異再換」→ 這一輪**先出差異報告、再問使用者**一支一支換不換（issue 08） |
 | — | 刪上一個專案 `.local/tools/` 的舊工具、`.local/claude-mods/`（上一輪 spec 第 7 題） | 上一輪答「下一輪」→ 這一輪刪（有版控，救得回來） |
+| 09 | 刪那 59 個檔（`pre-push` 與沒追蹤的舊 log 留著）（段 6，10/29） | **照建議刪** |
+| 08-1 | kickoff 以外照差異報告（`08-skill-diff-report.md`）的建議：換 `grill-with-docs`、`grilling`、`matt-code-review`、`graphify`、`claude-md`；`domain-modeling`、`setup-matt-pocock-skills` 留舊版（`CONTEXT.md`）；`test-speed` 留著、不加 `e2e-speed`（段 6，10/29） | **照建議** |
+| 08-2 | 上一個專案的 `kickoff` 換成客廳的通用版嗎（段 6，10/29） | **換＋補 CLAUDE.md**：舊 kickoff 裡的合併規定（CI 綠了合進 `develop`、合完 staging 自動部署、Function 照 `docs/STAGING.md`、進 `main` 要另外說）搬進它的 `CLAUDE.md`，同一個 PR |
 
 ## 範圍
 

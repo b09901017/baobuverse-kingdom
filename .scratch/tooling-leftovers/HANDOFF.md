@@ -12,7 +12,7 @@
 | 3b guard 刪東西 | 13（使用者 10/29 加的） | high（「少問」的改動，守住的測試多） | ✅ 13（客廳 `fbf35e9`，段 3b；量測與收尾段 3b 續）；guard 56 → 64 |
 | 4 儀表板 | 07 | high（要截圖） | ✅ 07（客廳 `3d925e7`；10/29 截圖過了）；dash 38 → 56、limit-guard 58 → 67、客廳 `tools/shared-fixtures.test.mjs` 1 |
 | 5 E2E | 10 | high（每次跑之前使用者點頭） | ✅ 10（客廳 `e977e8b`、`2a0c53a`）：skill `e2e-speed`；實驗 10 個檔 1 個 worker 6.3 分 → 2 個 worker 各一組 3.5 分、0 紅（中間一次斷網紅 8，重跑全過）→ 3 個 worker 各一組 3.0 分、0 紅、CPU 平均 40%／最高 77% |
-| 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ⬜ |
+| 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ✅ 09（上一個專案 `.local` `dca9cd8`：刪 59 個檔、`pre-push` 留著；客廳 `24d8413`）、08（差異報告 `08-skill-diff-report.md`；使用者照建議換 6 支＋kickoff 的合併規定搬進它的 `CLAUDE.md`；PR b09901017/baobao-wellness-clinic-scheduler#187 → `develop`） |
 | 7 VM | 段 2 中途發現 1 → 12 | high（開 VM、花錢，主控開段前再提醒使用者） | ⬜ |
 | 8 審查 | `/matt-code-review`：這個 repo `main...claude/tooling-leftovers`＋客廳這一輪的 commit＋上一個專案這一輪的 PR 與 `.local` commit | xhigh | ⬜ |
 | 9 修審查、教訓、PR、合併 | 審查找到的、11、手動檢查清單、PR、合併 | high | ⬜ |
@@ -290,9 +290,47 @@
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
 ```
 
+## 段 7 的開場
+
+```
+這一輪在做「工具收尾」：第 3 階段留下的清單全部做完，加上 E2E 加速的 skill。分支 claude/tooling-leftovers（已經在這個 checkout 上）。
+這是第 7 段：先修段 2 中途發現 1（出門的 VM 那一半 --autostash 套回衝突 exit 0），再做 issue 12（開一次 VM）。11 與審查不做。段 1～6 做完了（客廳 d3bc4a0、3950996、b5631ea、0ef32ab、baebee3、52da7a7、fbf35e9、3d925e7、e977e8b、2a0c53a、24d8413）。
+
+先讀：.scratch/tooling-leftovers/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」12、「中途發現」段 2 第 1 條、段 3～6、「使用者已經決定的」；spec.md（「使用者選的答案」第 1 題、「不能違反」、「行為會變的」03～06）；issues/12、issues/09 與 04 的「做完時留下的」；
+.scratch/legacy-to-home/issues/08-*.md（上次開 VM 的做法）；客廳 vm/README.md、vm/existing/、README「自動同步」；CLAUDE.md；docs/agents/lessons.md。動工前 git fetch、git -C C:/Users/DELL/claude-home pull --ff-only。
+
+09、08 留下、這一段要接著用的：
+- 上一個專案的 .local（dca9cd8）沒有 tools/autosync.mjs、sync-claude.mjs、tools/devbox/、claude-mods/ 了：VM 出門時 .local 拉下來，VM 上停用的 devbox-presync（ExecStop 是 /bin/true）指的舊工具就不在了，12 第 4 步把它收掉。tools/pre-push 還在。
+- 上一個專案 develop 多了 PR #187（skill 換成客廳版、CLAUDE.md 加合併規定），合進去會重新部署 staging。回家對上一個專案 checkout＋pull --ff-only 是既有流程。
+- 上一個專案家裡的工作資料夾：claude/availability-sheet-chart-no、5b785ad8、worktree list 10 行、乾淨（段 6 前後相同）。出門前確認它也推了（git status -sb 沒有 ahead）。
+
+要特別注意：
+- 先修段 2 中途發現 1（使用者：「段 7 開頭修（建議）」）：出門的 VM 那一半改成跟回家一樣叫 node ~/claude-home/tools/autosync.mjs --project "$PWD" --strict --no-mods，exit 不是 0 就停、不跑 --restore。紅燈先（暫存 bare repo：VM .local 沒 commit 的檔＋家裡推了同一個檔），既有測試一條都不改（devbox-mods 約 3.5 分鐘，一支一支跑）。客廳 commit、推之後 VM 出門的 ③ 才 pull 得到。
+- 開 VM 會花錢：開機前在段的對話跟使用者說「要開 VM、會花錢、用完關機」，使用者點頭才開。VM 只開這一次；任何一步停住先回家關機再回報。
+- VM 一開機 Remote Control 的對話會跑對話開始的 autosync：先等它跑完再讓出門動 .local（issue 12 第 2 步）。
+- VM 的 host、GCP 專案 id、zone、instance 名不寫進這個 repo 的任何檔、commit、PR；vm/existing/devbox-rc:11 的名字要不要改在對話裡問使用者（建議不改）。
+- 這個 repo 出門前要乾淨、已推（.scratch 的改動也算）。
+
+做完要交：段 2 中途發現 1 與 12 各一個 commit（這個 repo；客廳照規矩）、Status: done、「做完時留下的」、HANDOFF 分段表段 7、中途發現、段 8 的開場（審查，xhigh；範圍見分段表，上一個專案這一輪的是 PR #187 與 .local dca9cd8；照段 1 的開場的格式）。
+額度快用完時：停在可以交接的地方（VM 一定先關機），commit、推、記進 HANDOFF。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
+```
+
 ## 中途發現
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
+
+### 段 6
+
+進度：09 ✅、08 ✅（PR #187）。照主控的話只記、不加進這一輪。
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | 客廳 `mods/guard/tests/legacy-parity.test.ts:84-92` 的 `OLD_JSON`（註解「develop 上那一份的複本，一個字都不改」） | PR #187 之後上一個專案的 `project.json` 多一行 `skills`，複本不再逐字相同。guard 不看 `skills`，規則結果不變、測試照樣過（issue 08 判準就預期這樣，**沒改測試**） | 下一輪要的話把複本補上 `skills` 那一行、註解寫日期（改既有測試，先問主控） |
+| 2 | 客廳 `tools/sync-skills.mjs` 是手動的 | 客廳 skill 更新之後，上一個專案（還有這個專案）要有人去那個資料夾跑一次、commit、開 PR，不然一直停在舊版；使用者第一輪的原話是「我只要更新客廳的東西，我的所有專案都可以更上」 | 另開一支：例如對話開始的 hook 用 `--dry-run` 比一次、不一樣就在儀表板或對話開頭提醒（不要自動 commit：上一個專案合進 `develop` 會部署 staging） |
+| 3 | 上一個專案的 `domain-modeling`、`setup-matt-pocock-skills` 留舊版（使用者 10/29 照建議） | 不會錯；只是兩個專案這兩支不同版，客廳更新不會跟到上一個專案。要統一得先把它的 `CONTEXT.md` 改名 `GLOSSARY.md`，並改 `CLAUDE.md:12`、`:172`、`docs/agents/domain.md`、`calendar-sheet-merge`（含 `scripts/merge.mjs`）的引用 | 上一個專案自己開一輪再說；不急 |
+| 4 | 客廳 `kickoff` 第四段寫「開 PR（內文用 `pr` skill）」 | 上一個專案沒有選 `pr`，叫不到就由 Claude 自己寫內文，不會壞 | 要一致的話把 `pr` 加進上一個專案的 `skills`（又是一個 PR）；不急 |
+| 5 | 上一個專案 `.local/tools/autosync.log` | 被 `*.log` 擋著、沒追蹤，照 issue 09 留著；舊工具的 log，不會再寫 | 不用處理；要清的話問使用者（刪了救不回來，但沒有用） |
 
 ### 段 5
 
@@ -381,3 +419,5 @@
 - 段 5 實驗加量 3 組 3 個 worker：「試一次（建議）」（10 個檔 78 全過、3.0 分、CPU 平均 40%／最高 77%；客廳 `2a0c53a`）。
 - 上一個專案正式改成「一個 worker 一組模擬器」：「先不改（建議）」——下一輪先在 clone 量全量、先解斷網整批紅（SDK／字型快取）；`C:/w/e2e-exp` 留給下一輪。
 - skill-creator 對照評測：「這一輪不跑（建議）」，先用一陣子再看。
+- 段 6（09）刪上一個專案 `.local` 那 59 個舊檔（`pre-push` 與沒追蹤的舊 log 留著）：「照建議刪」。
+- 段 6（08）kickoff 以外照差異報告：「照建議」（換 5 支、`domain-modeling`、`setup-matt-pocock-skills` 不換、`test-speed` 留、不加 `e2e-speed`）；kickoff：「換＋補 CLAUDE.md」。
