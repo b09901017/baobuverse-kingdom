@@ -9,7 +9,7 @@
 | 1 guard | 01 → 02 | xhigh（02 是這一輪唯一「少問」的改動，白名單與守住的測試很多） | ✅ 01（客廳 `d3bc4a0`）、02（客廳 `3950996`，段 1 續）；guard 38 → 56 |
 | 2 同步的兩個 git 行為 | 03 → 04 | xhigh（兩台同時寫 git 的紅燈測試） | ✅ 03（客廳 `b5631ea`）、04（客廳 `0ef32ab`）；autosync 19 → 31、devbox-mods 22 → 29 |
 | 3 tools 整理 | 05 → 06 | high | ✅ 05（客廳 `baebee3`）、06（客廳 `52da7a7`）；autosync 31 → 33、devbox 14 → 17、devbox-mods 29 → 30、limit-guard 52 → 58 |
-| 3b guard 刪東西 | 13（使用者 10/29 加的） | high（「少問」的改動，守住的測試多） | ⬜ |
+| 3b guard 刪東西 | 13（使用者 10/29 加的） | high（「少問」的改動，守住的測試多） | 🟡 程式與測試（客廳 `fbf35e9`；guard 56 → 64）；剩判準 5 量測、limit-guard、這個 repo 的 commit 收尾 → 段 3b 續 |
 | 4 儀表板 | 07 | high（要截圖） | ⬜ |
 | 5 E2E | 10 | high（每次跑之前使用者點頭） | ⬜ |
 | 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ⬜ |
@@ -194,6 +194,24 @@
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
 ```
 
+## 段 3b 續的開場
+
+```
+這一輪在做「工具收尾」。分支 claude/tooling-leftovers（已經在這個 checkout 上）。這是第 3b 續段：把 issue 13（guard：刪東西時救得回來的不問、框上說清楚刪什麼）收尾。07 以後不做。
+段 3b 停在 5 小時額度快滿：程式與測試做完、已經在用了（客廳 fbf35e9，~/.claude/mods/guard 與客廳 mods/ 逐檔相同；guard 56 → 64、tsc 0 錯、validate 過）；這個 repo 的 issue 13「做完時留下的」、spec「行為會變的」13 寫好了。
+
+先讀：這份「每一段共同的規矩」「中途發現」段 3b；issues/13（「做完時留下的」）；spec「行為會變的」13；客廳 mods/guard/hooks/removals.ts、register.ts 的 gitFacts／goneOf。
+
+要做的：
+1. 判準 5：拿過去對話真的跑過的刪除指令量一次（跟 02 一樣：讀 ~/.claude/projects/ 底下這個專案與上一個專案的 transcript，只印筆數與遮過的形狀，不印路徑與私人值）：
+   每條用改之前（classify 不傳 gone）與改之後（removals＋judge）比，少問幾條、多問幾條。git 那一半可以真的問（唯讀），但路徑要在當時的資料夾算——算不出來的（cwd 不同、檔案已經不在）歸「找不到 → 問」，另外列筆數。結果寫進 issue 13「做完時留下的」、spec「行為會變的」13 最後一行。
+2. limit-guard 58 跑一次（claude plugin test ~/.claude/mods/limit-guard）。guard 64 再跑一次。
+3. issue 13 Status: done；HANDOFF 分段表段 3b ✅；commit 這個 repo（一支 issue 一個 commit：這一段的 issue 13、spec、HANDOFF 一起）、推。
+4. 段 3b 留下要確認的：段 3b 刪探測資料夾（.scratch 底下沒追蹤的空資料夾）那兩下，照設計要跳框（「找不到…」）；段 3b 看不到框。問使用者那時有沒有跳框、框上寫什麼——沒跳就是 bug，先查 goneOf（`$.env.get`、`$.session.cwd()` 在真的 hook 裡的值）。
+注意：改 ~/.claude/mods 即時生效，照規矩在 scratchpad 複本改；寫含 firebase／firestore 網址的測試字串前先跟使用者說會跳框。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：medium。
+```
+
 ## 段 4 的開場
 
 ```
@@ -224,6 +242,15 @@
 ## 中途發現
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
+
+### 段 3b
+
+進度：13 的程式與測試 ✅（客廳 `fbf35e9`）；量測與收尾在段 3b 續。照主控的話只記、不加進這一輪。
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | guard `removeVerbs` 的 rm regex `(?:^\|[\s;&\|(`])(?:rm\|…)\s+` | **重現過**（測試裡用改之前的 classify）：`bash -c "rm -rf notes"`（rm 緊接在引號後）、`echo a \| xargs rm`（rm 後面沒東西）改之前、改之後都**不問**。前面要是空白或分隔字、後面要有空白 | 下一輪：前面也認 `"`、`'`，後面認結尾；都是多問 |
+| 2 | 13 的 cd 判斷 | `cd x; rm y`、PowerShell 的 `cd x; Remove-Item y` 一律問（cd 失敗會刪到原本的資料夾）。不是錯，多問一點 | 不用修；量測時看筆數 |
 
 ### 段 3
 

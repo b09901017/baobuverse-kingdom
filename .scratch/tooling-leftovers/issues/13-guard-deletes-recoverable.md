@@ -1,6 +1,6 @@
 # 13 guard：刪東西時救得回來的不問、框上說清楚刪什麼
 
-Status: ready
+Status: in-progress（程式與測試做完，客廳 `fbf35e9`；判準 5 的量測、limit-guard 跑一次留給段 3b 續）
 Blocked by: 02（同一個檔；02 已做完，客廳 `3950996`）
 動工前先讀：這份 HANDOFF「每一段共同的規矩」、spec「不能違反」guard 那一條與「行為會變的」01、02；issues/02 的「做完時留下的」；
 客廳 `mods/guard/hooks/classify.ts`（`TEMP` 與 `deletes` 約 `:243-269`、`KIND_WORD`、`shown`）、`mods/guard/hooks/register.ts`（框上的字「Claude 要刪東西，要讓它做嗎？」從哪裡組出來、hook 拿不拿得到 cwd）、`mods/guard/tests/`（`legacy-parity`、`strict-default`、`not-executed`）
@@ -64,4 +64,24 @@ Claude 要刪東西，要讓它做嗎？
 6. hook 跑 git 的時間：量一下最慢一次多久，寫進「做完時留下的」；超過 1 秒的想辦法（只在有刪除指令時才跑、一次問完）。
 
 ## 做完時留下的
+
+（段 3b，客廳 `fbf35e9`）
+
+- **怎麼放**：新檔 `hooks/removals.ts`（純函式）找每一段刪檔案（rm／rmdir／unlink、PowerShell 的 Remove-Item／del／rd…，跟 `deletes` 共用 `removeVerbs`，位置對得上）的目標：
+  Bash 用 02 的 `parseShell` 找段、代同一串前面**無條件**的 `S=…`／`export S=…`（`a && S=x`、`S=x rm $S`、`source`／`eval`／`read`…之後都不認）、`$TEMP`／`$TMPDIR`／`$HOME`／`~` 用 hook 讀到的環境變數；
+  cd 只認「無條件開頭、一路 `&&` 接到 rm」的（`cd x; rm y` 照問：cd 失敗會刪到原本的資料夾）；PowerShell 自己切句，`$S = "…"` 代進去，cd 一律算不出（PowerShell 的 cd 失敗也會往下跑）。
+  萬用字元、`$(…)`、`{…}`、沒設定的變數、被 `|` 接進來的、`find -exec`／`xargs`／`bash -c` 裡的 → 看不出 → 問。
+- **判斷**：只看路徑就知道的先判（`.local`、`.git`、`~/.claude`、整個專案或家目錄或更上層 → 問；暫存區、`node_modules` 等 8 個建置產物資料夾 → 不問）；其他 `register.ts` 問 git：
+  每個上一層資料夾 `rev-parse --show-toplevel`，每個 repo `--literal-pathspecs ls-files -z -v -s` 與 `status --porcelain=v1 -z --ignored=matching --untracked-files=all`（同時跑、各 3 秒上限、失敗就問）。
+  ls-files 的標記要是 `H`、不是子模組（assume-unchanged／skip-worktree／子模組當救不回來）；status 底下有任何一筆（沒 commit 的修改、沒追蹤、被 ignore）就問；兩邊都沒有＝找不到 → 問。
+- **框上**：`Risk` 多一個 `say`，框上優先顯示（`why` 不動，legacy-parity 照過）：「刪 tmp-x（資料夾，裡面 3 個檔：1 個有沒 commit 的修改、1 個沒進 git，這些救不回來）」「刪 2 個：draft.txt（沒進 git，救不回來）；notes/old.md（在 git 裡、沒改過，救得回來）」「刪 $UNKNOWN/x（看不出 $UNKNOWN 是哪裡）」。同一種下場放一起，名字列前 5 個＋「等 N 個」。原本那行指令照樣留著。
+- `classify` 第 5 個參數 `gone`（register 判斷過的結果）；沒傳就照舊只看字，所以既有 56 條一字不改全過。guard 56 → 64（`tests/recoverable.test.ts` 8 條：判準 1 的 15 條先驗改之前會問、改完不問；判準 2、3 的 34 條先驗改之前也問、改完還問、框上的字；多問 3 條；git 壞掉；接起來 2 條）。tsc 0 錯、validate 過。
+- **hook 拿得到 shell 現在的資料夾**：`$.session.cwd()`。live 探測過：cd 進一個暫存 git repo 之後，下一個 Bash 的 `rm a.txt`（只在那個 repo 裡有、已 commit）沒跳框——用的是 shell cd 之後的資料夾。
+- **git 的時間**：三個 git 呼叫依序跑共 0.11 秒（hook 裡 ls-files 與 status 同時跑）；只有指令裡有刪檔案才跑。
+
+跟 issue 寫的不同：
+
+1. **會多問的**：以前整段看到暫存區的字就不問（`rm -rf important /tmp/x`、`rm -rf "$X/scratchpad/y"`），現在一個一個目標看，`important`、看不出的 `$X` 照問。
+2. `~/.claude` 只認家目錄底下那一份；專案的 `.claude/` 照 git 判斷。
+3. 還沒做：判準 5（拿過去真的跑過的刪除指令量少問／多問幾條）、limit-guard 58 跑一次——段 3b 續。
 

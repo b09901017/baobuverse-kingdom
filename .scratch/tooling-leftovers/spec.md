@@ -152,3 +152,17 @@ J3（算一次 mode、可以被 import）、J6（`vm-state.json` 的字收成常
 | 出門／回家帶 `--project <清單上專案的 worktree>`（在 worktree 開的對話按儀表板） | 多印一行「⚠️ <worktree 名> 還沒加進 VM 的清單…」（照樣處理清單上每一個專案） | 不印 |
 | `--project <清單上專案底下的子資料夾>` | 印「還沒加進清單」 | 不印（同一個 repo） |
 | `--project` 不在清單上（不存在的資料夾、別的 repo 或它的 worktree） | 印 | 照舊印 |
+
+### 13 guard 刪東西時救得回來的不問（客廳 `fbf35e9`；少問，少數多問）
+
+| 寫法 | 以前 | 現在 |
+|---|---|---|
+| 同一串前面設了變數再刪暫存區：`S=<scratchpad>; …; rm -rf $S/exp`、`export T="$TEMP/x"; rm -rf "$T/out"`、`rm -rf $TMPDIR/x`；PowerShell `$S = "$env:TEMP\x"; Remove-Item -Recurse "$S\y"` | 刪的那一段沒有暫存區的字 → 問 | 不問 |
+| git 追蹤、沒改過的檔或資料夾：`rm notes/old.md`、`rm -rf notes/`、`cd <資料夾> && rm old.md`、`Remove-Item -LiteralPath a, b` | 問 | 不問 |
+| 建置產物：路徑裡有 `node_modules`、`coverage`、`test-results`、`playwright-report`、`blob-report`、`.pytest_cache`、`.nyc_output`、`__pycache__`（`.local`、`~/.claude` 底下的除外） | 問（`__pycache__` 以前就不問） | 不問 |
+| 一段刪好幾個、其中有暫存區：`rm -rf important /tmp/x` | 整段有 `/tmp/` → 不問 | 一個一個看：`important` 救不回來 → 問（**多問**） |
+| 變數看不出、路徑裡寫了 scratchpad：`rm -rf "$X/scratchpad/y"` | 不問 | 問（**多問**） |
+| 要問的框上 | 「・刪檔案：rm -rf $S/exp」 | 「・刪 $S/exp（看不出 $S 是哪裡）」「・刪 2 個：draft.txt（沒進 git，救不回來）；notes/old.md（在 git 裡、沒改過，救得回來）」 |
+
+照舊問：沒進 git、有沒 commit 的修改、底下有沒追蹤或被 ignore 的、子模組；`.local`、`~/.claude`、`.git`、整個專案或家目錄；萬用字元、`$(…)`、看不出的變數、算不出的 cd；git 問不到；`git clean`、`reset --hard`、`checkout --`／`restore`、`branch -D`、強推、程式裡刪檔案（照舊只看字）。
+
