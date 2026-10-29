@@ -1,6 +1,6 @@
 # 07 儀表板：「雲端」分頁標題讀設定、J7、J4
 
-Status: 等截圖（程式、測試做完，客廳 `3d925e7`；「雲端」分頁截圖過了才改 done）
+Status: done（客廳 `3d925e7`；「雲端」分頁 10/29 截圖過了：標題是 VM 的名字、狀態與按鈕照常、「在 baobuverse-kingdom 按的」）
 Blocked by: 05（J5 與這支的 J4 都在 limit-guard 加測試，要依序；05 先）
 動工前先讀：`.scratch/legacy-to-home/HANDOFF.md`「中途發現」段 6 第 1 條、「判斷題」J4、J7；這份 HANDOFF「過目抓到的」07；
 客廳 `mods/dash/hooks/register.tsx`（標題 `:1998`、註解 `:1842`、`devboxScript` `:1866,1885,1948`、`Devbox.project` `:1854`、`DashVm.project` `:1890`、退路路徑 `:1981`、`devboxPath` `:1862-1864`、以 email 去重 `:363-371,449-452,1736`）、
