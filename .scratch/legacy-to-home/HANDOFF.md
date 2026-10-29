@@ -12,7 +12,7 @@
 | 3 客廳的出門／回家、mods 改從客廳搬 | 04 | xhigh | ✅ `985c485`（客廳 `d7f980c`；主控查過：四支測試一支一支跑全綠、照 A 的三個條件都在、客廳 `mods/` 跟 `~/.claude/mods` 相同）。**從現在到段 5 做完，使用者不要按出門／回家**（客廳的工具已經生效，VM 那一半還沒換） |
 | 4 換手 | 05 | high | ✅（客廳 `859bf74`、`8d49a61`（mods，自動同步）、`fe4af86`；開關對話重測過了；05 的截圖 10/29 過了；`~/.claude-account1` 的 `hooks` 主控 10/29 代改好了）。主控查過：limit-guard 52、dash 34、autosync 16、mods 兩份相同 |
 | 5 開 VM 走一次 | 08 | high | ✅（10/29 12:03～12:22 開一次、照「回家」關機；VM 那一半換完：`devbox-presync` drop-in＋disable、全域 hook 換成客廳的、平放的開場複製進子資料夾、客廳 pull、unit 重裝；出門後 VM 跟家裡一樣、回家後家裡分支沒變；trust 使用者本人答了。客廳只有判準 5 的兩個自動同步 `807bc91`、`7e375d5`）。**關機時這個專案的 `vm-state.json` 沒推上去**（中途發現段 5 第 1 條） |
-| 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ⬜ |
+| 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ✅（客廳 `8139692`；上一個專案 PR #186 CI 全綠、合進 `develop` `3a39a17`；家裡平放的 8 份刪了，VM 上的留著；guard 32、limit-guard 52；上一個專案的工作目錄、分支、worktree 前後相同） |
 | 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ⬜ |
 | 8 收尾 | 修審查找到的、guard：`project.json` 壞掉＝最嚴預設（段 1 中途發現 2）、dash 總覽「新對話會用 X」改成比 email（段 2 中途發現 1，要截圖）、客廳 `.local` 推之前先 `pull --rebase`（段 5 中途發現 1，使用者 10/29 選段 8；紅燈測試先）、手動檢查清單、PR、合併 | high（要改 mods 與客廳 autosync／devbox） | ⬜ |
 
@@ -237,7 +237,43 @@ issues/01、04、05、08 底下「做完時留下的」；CLAUDE.md；docs/agent
 HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段 7（審查）的開場與建議 effort 寫進 HANDOFF。最後回覆用繁體中文簡短說做了什麼、卡在哪。
 ```
 
+## 段 7 的開場
+
+建議 effort：**xhigh**（審查單獨一段）。段 7 不開 VM、不按出門／回家（段 5 中途發現 1 段 8 才修）。
+
+```
+這一輪是「第 3 階段」：上一個專案改用客廳的工具，拿掉所有寫死它的特例。分支 claude/legacy-to-home（已經在這個 checkout 上）。
+段 1～6 做完 issue 01、07、02、03、04、05、08、06（全部 Status: done）。段 6：上一個專案加了 .claude/project.json（值＝最嚴預設、不寫 skills；
+它的 PR b09901017/baobao-wellness-clinic-scheduler#186 合進 develop）、家裡平放的 8 份開場刪了（VM 上的留著）、客廳文件與 limit-guard 一行註解收乾淨、legacy-parity 加一組（客廳 8139692）。
+這是第 7 段：審查。只審查、不修：找到的寫進 HANDOFF「段 7 審查結果」，段 8 修。
+
+先讀：.scratch/legacy-to-home/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」「中途發現」（段 1～6）「使用者已經決定的」；spec.md 全文（「允許改的既有測試」「行為會變的」「上一個專案一律不能壞」）；
+issues/ 八支全文與底下「做完時留下的」；CLAUDE.md；docs/agents/lessons.md。動工前 git -C C:/Users/DELL/claude-home pull --ff-only。
+
+審查範圍（/matt-code-review，Standards＋Spec 兩軸）：
+- 這個 repo：main...claude/legacy-to-home
+- 客廳 C:/Users/DELL/claude-home：881473b..8139692（這一輪 12 個 commit，含自動同步的 807bc91、7e375d5；之後如果多了自動同步的 commit，看最後的狀態）
+- 上一個專案：只有 develop 上新增的 .claude/project.json（PR #186）；它的工作目錄、分支、worktree 不動，它的 .local/references/ 不讀
+
+要特別注意：
+- Spec 那一軸：每支 issue 的判準有沒有真的做到；「允許改的既有測試」以外有沒有改到既有測試（拿 881473b 跟 8139692 比 mods/*/tests 與 tools/*.test.mjs）；會「少問」的地方（guard 的 STRICT、project.json 壞掉時——段 1 中途發現 2 已排段 8）。
+- 換手的安全：舊的 sync-claude 還有沒有任何路徑會被叫到（家裡三份 settings.json、儀表板、VM 的說明）；mods 的基準點；.local 整個同步會不會推到不該推的（references/ 是她的規定，要推）。
+- 測試一支一支跑（電腦曾過熱斷電）：guard 32、limit-guard 52、dash 34、e2e-progress 5、notify 6；客廳 node --test tools/autosync.test.mjs 16、tools/mods.test.mjs 12、tools/devbox.test.mjs 14、tools/devbox-mods.test.mjs 15（寫檔名，不要 node --test tools/）。
+- subagent 一次最多兩個（matt-code-review 的兩軸剛好兩個）。公開 repo 不帶真名、帳號、email、金鑰、VM host／GCP id。
+- 主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON。
+
+做完要交：HANDOFF「段 7 審查結果」（每一條：哪裡、什麼情境會錯、建議、要不要使用者決定）、分段表段 7 狀態、段 8 的開場與建議 effort（段 8 要修的已列在分段表：審查找到的＋段 1 中途發現 2、段 2 中途發現 1、段 5 中途發現 1）。
+這個 repo 一個 commit 推到 origin claude/legacy-to-home。要使用者決定的一次一題、附建議，寫進「要使用者決定的」段 7。最後回覆用繁體中文簡短說找到什麼、卡在哪。
+```
+
 ## 中途發現
+
+### 段 6
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | dash `register.tsx:1837`、`:1993`、`types/index.d.ts:82` | 「雲端」分頁的標題寫死 VM 的 instance 名（私人值：跟 GCP 專案 id 同一個字，不寫進這個 repo；不是上一個專案的名字）。VM 換名字或重建成別的名字時，畫面上的字不會跟著變 | 讀客廳 `vm/devbox.json` 的 `instance`（或 devbox.mjs `status` 印出來的）。不急，畫面的字會變要截圖；下一輪 |
+| 2 | 上一個專案的 `project.json` 只在 `develop` | `main`、它現在的分支 `claude/availability-sheet-chart-no`、10 個 worktree 都還沒有這個檔，照最嚴預設＝跟有這個檔時逐條相同，所以不會少問。`develop` 進 `main` 時跟著進去 | 不用修；記著 |
 
 ### 段 5
 
@@ -291,7 +327,7 @@ HANDOFF 更新（狀態、中途發現、要使用者做的／決定的）、段
 - **下次開 VM 時順便**（不用特地開；開了再做，段 5 留下的）：
   1. `journalctl -u claude-home-presync -b -1`：10/29 那次關機 presync 實際跑了幾秒、兩個專案各寫了什麼（段 3 中途發現 3；這個專案應該是「沒推成」，段 5 中途發現 1）
   2. 這個專案 VM 上的 `.local`：`git -C ~/baobuverse-kingdom/.local status`、`log @{u}..HEAD`；有那個沒推的 `vm-state.json` commit 就 `pull --rebase` 再推（或等段 5 中途發現 1 修好）
-  3. VM 上 `~/.claude/mods-data/handoffs/` 第一層 8 份刪掉（06 之後；子資料夾有一樣的）
+  3. VM 上 `~/.claude/mods-data/handoffs/` 第一層 8 份刪掉（子資料夾有一樣的，刪前逐檔 `cmp`；家裡的段 6 刪了）
 - ~~VM 上這個專案的 workspace trust ×2、手機確認~~：10/29 段 5 使用者本人做了。
 - ~~**03 的截圖**（段 2）~~：10/29 截好、過了（issue 03 底下「截圖結果」）。
 - ~~**05 的截圖**~~ → **10/29 過了**（主控看過：上一個專案資料夾的儀表板「雲端」分頁，狀態「關著」照常，按鈕下多出「在 baobao-wellness-clinic-scheduler 按的：VM 上的每一個專案都會一起處理（客廳的 devbox.mjs）」）。原本的步驟：
