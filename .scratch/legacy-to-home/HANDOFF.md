@@ -536,8 +536,8 @@ CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/le
 
 ## 要使用者做的
 
-- **送 GitHub Support 清 force push 之前那個舊 commit**（段 7 第 1 條、第 3 題「要清」）：要填的內容在這個專案的 `.local/github-support-request.md`（私人）。對外送出，只能本人送。
-  GitHub 文件說 Support 不處理「不敏感」的資料，GCP 專案 id 可能被回不處理；被拒就算了。
+- ~~**送 GitHub Support 清 force push 之前那個舊 commit**（段 7 第 1 條、第 3 題「要清」）~~ → **使用者 2026-10-29 改成「不送（建議）」**（主控 session）：外流的只有 GCP 專案 id（＝VM 的 instance 名），不是金鑰、沒權限進不去，Support 也可能回不處理。
+  `.local/github-support-request.md` 留著，之後改主意可以照它送。
 - ~~**段 3 做完到段 5 做完之間，不要按出門／回家**~~ → 段 5（10/29）VM 那一半換完了，這個區間結束。
   ~~但下次按「出門」之前先看段 5 中途發現 1~~ → 段 9 修好了（客廳 `7345fbf`）：「出門」的 VM 那一半會把 VM 上那個沒推的 commit 接在家裡推的後面，VM 上之後的自動同步會推上去。
   VM 關著時按「回家」照舊會停、叫 `--check-vm`（10/29 那次關機的 `vm-state.json` 沒推上去，比最後一次開機舊；開著回家或 `--check-vm` 一次就好。現在家裡已經是最新的，不用按）。
@@ -578,7 +578,7 @@ CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/le
    這些都會被自動同步推進它的私人 repo（有版控，改錯救得回來）；`.local/tools/` 不動（第 7 題）。
    建議：**改**。不改的話，在上一個專案說「出門」「回家」「同步一下」，Claude 照記憶跑舊工具，會把 10/29 之前的舊 mods 蓋回來、再被推進客廳。
    另一個做法：不改，下一輪刪舊工具時一起改；這段時間在上一個專案出門／回家只用儀表板，不叫 Claude 做。
-3. ~~**force push 之前那個 commit（含 GCP 專案 id、VM 的 instance 名）要不要請 GitHub Support 清掉？**（段 7 第 1 條）~~ → **使用者 2026-10-29「要清（建議）」**（主控 session）。
+3. ~~**force push 之前那個 commit（含 GCP 專案 id、VM 的 instance 名）要不要請 GitHub Support 清掉？**（段 7 第 1 條）~~ → **使用者 2026-10-29「要清（建議）」**（主控 session），**同一天改成「不送（建議）」**（見「使用者已經決定的」）。
    主控把要填的內容寫在這個專案的 `.local/github-support-request.md`（私人，不進公開 repo），由使用者本人送（見「要使用者做的」）。原本的題目：
    現在：分支上已經沒有，但 GitHub 上用 SHA 還拿得到，repo 的 Activity 頁（公開 repo 誰都看得到）列著那次 force push。要清只能**本人**送 GitHub Support 的表單（對外送出，Claude 不能代送）；
    Claude 可以先把要填的字寫好（repo、那個 commit 的 SHA、「force push 移除了敏感資料，請清掉快取的 view 與沒有分支指著的 commit」，不寫值本身）。
@@ -622,5 +622,5 @@ CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/le
 - 段 6 的公開 commit 帶了 VM 的 instance 名（＝GCP 專案 id）：使用者 2026-10-29 選「改寫歷史（建議）」（主控 session），主控 amend 成 `eee6b6e`、`push --force-with-lease`。
 - 段 7 第 1 題（guard 兩處多問：`project.json` 壞掉＝最嚴預設＋碰 Firebase／`gcloud`／`git push` 一律要問；`firebase use <認不出的>` 要問、`firebase use default` 改回不問）：使用者 2026-10-29「照建議」（主控 session）。段 8 修。
 - 段 7 第 2 題（上一個專案的兩份記憶、`MEMORY.md` 那兩行、`.local/README.md` 三段加「舊工具不要再叫」）：使用者 2026-10-29「改（建議）」（主控 session）。段 8 改；`.local/tools/` 不動。
-- 段 7 第 3 題（force push 之前那個舊 commit 請 GitHub Support 清）：使用者 2026-10-29「要清（建議）」（主控 session）。內容在這個專案的 `.local/github-support-request.md`，使用者本人送；被拒（不算敏感資料）就算了。
+- 段 7 第 3 題（force push 之前那個舊 commit 請 GitHub Support 清）：使用者 2026-10-29 先答「要清（建議）」，同一天問了「有必要嗎」、聽完主控說明後**改成「不送（建議）」**（主控 session）。接受那個舊 commit 留在 GitHub 上；`.local/github-support-request.md` 留著備用。
 - 段 9 `mods.test.mjs:128`（`--check-mods` 的期待值 1 → 0）：主控 2026-10-29「照 A」（主控的決定，不是使用者）；spec「允許改的既有測試」已補。
