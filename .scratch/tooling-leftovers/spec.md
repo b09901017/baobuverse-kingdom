@@ -144,3 +144,11 @@ J3（算一次 mode、可以被 import）、J6（`vm-state.json` 的字收成常
 | autosync 同時帶好幾個模式旗標（J3） | 每個旗標各自是開關（例如 `--dry-run --strict` 兩個都算） | 照 `--restore`、`--check-mods`、`--restore-mods`、`--dry-run`、`--strict` 的順序取第一個。以前就是這個先後的，只有 `--dry-run --strict` 一起帶時不同（現在只當試跑）；devbox 與 hook 都只帶一個 |
 | `import` `autosync.mjs`（J3） | 一 import 就跑、最後 `process.exit` | 什麼都不做；export `mainDir`（06 用）。直接執行（hook、devbox、手動）照舊 |
 | limit-guard：worktree 的 `.git` 寫相對路徑（`gitdir: ../../../.git/worktrees/x`，git 2.48 起的 `--relative-paths`／`worktree.useRelativePaths`）（J5） | 開場寫到 `handoffs/../`（主資料夾名算成 `..`） | 寫到 `handoffs/<主資料夾名>/`，跟 `mainDir` 同一份案例（`mods/limit-guard/tests/fixtures/worktree-cases.ts`） |
+
+### 06 devbox `--project` 是 worktree 時看主資料夾（客廳 `52da7a7`）
+
+| 情況 | 以前 | 現在 |
+|---|---|---|
+| 出門／回家帶 `--project <清單上專案的 worktree>`（在 worktree 開的對話按儀表板） | 多印一行「⚠️ <worktree 名> 還沒加進 VM 的清單…」（照樣處理清單上每一個專案） | 不印 |
+| `--project <清單上專案底下的子資料夾>` | 印「還沒加進清單」 | 不印（同一個 repo） |
+| `--project` 不在清單上（不存在的資料夾、別的 repo 或它的 worktree） | 印 | 照舊印 |

@@ -8,7 +8,7 @@
 |---|---|---|---|
 | 1 guard | 01 → 02 | xhigh（02 是這一輪唯一「少問」的改動，白名單與守住的測試很多） | ✅ 01（客廳 `d3bc4a0`）、02（客廳 `3950996`，段 1 續）；guard 38 → 56 |
 | 2 同步的兩個 git 行為 | 03 → 04 | xhigh（兩台同時寫 git 的紅燈測試） | ✅ 03（客廳 `b5631ea`）、04（客廳 `0ef32ab`）；autosync 19 → 31、devbox-mods 22 → 29 |
-| 3 tools 整理 | 05 → 06 | high | 05 ✅（客廳 `baebee3`）；06 ⬜ |
+| 3 tools 整理 | 05 → 06 | high | ✅ 05（客廳 `baebee3`）、06（客廳 `52da7a7`）；autosync 31 → 33、devbox 14 → 17、devbox-mods 29 → 30、limit-guard 52 → 58 |
 | 4 儀表板 | 07 | high（要截圖） | ⬜ |
 | 5 E2E | 10 | high（每次跑之前使用者點頭） | ⬜ |
 | 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ⬜ |
@@ -166,9 +166,42 @@
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
 ```
 
+## 段 4 的開場
+
+```
+這一輪在做「工具收尾」：第 3 階段留下的清單全部做完，加上 E2E 加速的 skill。分支 claude/tooling-leftovers（已經在這個 checkout 上）。
+這是第 4 段：只做 issue 07（儀表板「雲端」分頁標題讀設定、J7、J4）。08 以後不做。段 1～3 做完了（客廳 d3bc4a0、3950996、b5631ea、0ef32ab、baebee3、52da7a7）。
+
+先讀：.scratch/tooling-leftovers/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」07、「中途發現」段 1～3；spec.md（「不能違反」「允許改的既有測試」「行為會變的」05、06）；issues/05、06 的「做完時留下的」、issues/07；
+.scratch/legacy-to-home/HANDOFF.md「中途發現」段 6 第 1 條、「判斷題」J4、J7；CLAUDE.md；docs/agents/lessons.md。
+
+05、06 留下、07 要接著用的：
+- 兩個 mod（或 mod 與 tools）共用的資料：mod 測試引擎不載入 .json（「is not named like code and was not loaded」），用只有型別標註的 .ts 放在 mod 的 tests/fixtures/；Node 24 也能直接 import .ts，tools 的 node 測試寫 import … from '../mods/<mod>/tests/fixtures/x.ts'。
+  範例：limit-guard tests/fixtures/worktree-cases.ts（05 J5，客廳 autosync.test.mjs 與 limit-guard worktree-handoff.test.ts 各讀一次）。J4 的「同一份假資料」照這個做法，就不用另寫「兩份假資料逐字相同」的比對。
+- J7 順便看的 DashVm.project（在 worktree 開的對話寫 worktree 名）：要改成主資料夾名的話，認法照 limit-guard worktreeOf（05 修好了相對 gitdir）與 autosync mainDir，案例用 worktree-cases.ts，不要再寫第三份認法。devbox 那邊 06 已經改成看主資料夾。
+- 測試基準：limit-guard 58（05 之後）、dash 38；客廳 autosync 33、devbox 17、devbox-mods 30（約 3.5 分鐘）、mods 13。tools/helpers-for-tests.mjs 有 gitWith(env)、write、read、midRebase、releaseLater、hook。
+
+要特別注意：
+- 「雲端」分頁標題寫死的 instance 名是私人值：dash 與 tools/ 還有幾筆用 spawnSync 讀 devbox.json 比、只印筆數，不要把值放進指令字串或印出來。vm/existing/devbox-rc:11 不改（寫進 12 讓那一段決定）。
+- J4：兩個 mod 各一條測試＋同一份假資料，先定好投影成同一種形狀（limit-guard 回其他帳號、排除目前帳號與 switchable:false；dash 回全部）。
+- 改 ~/.claude/mods 即時生效：在複本改、tsc 0 錯、validate 過、複製進客廳 mods/、兩份逐檔相同（段 3 的做法：scratchpad 複本 → 測過 → cp → cmp）。
+- 畫面上的字會變：改完停下來回報「要截圖看哪一頁」（「雲端」分頁），主控請使用者在新對話點、截圖。截圖過了才算 done（Status 先寫「等截圖」）。
+- 測試一支一支跑；寫含反斜線的檔用 Write／Edit（bash heredoc 會把 \\n 變成真的換行，段 3 又踩了一次）。
+
+做完要交：07 一個 commit（這個 repo；客廳照規矩）、Status、「做完時留下的」、HANDOFF 分段表段 4、中途發現、要截圖的頁、段 5 的開場（10，high；照段 1 的開場的格式）。
+額度快用完時：停在可以交接的地方，commit、推、記進 HANDOFF。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
+```
+
 ## 中途發現
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
+
+### 段 3
+
+進度：05 ✅（客廳 `baebee3`、這個 repo `327a1b5`）、06 ✅（客廳 `52da7a7`）。段 2 第 2 條照主控的決定在 05 修了；第 1 條沒動。
+
+沒有新的會錯的地方。整理時看到、沒動的（不是錯，記著）：`autosync.test.mjs`、`devbox.test.mjs` 開頭各還有一份 `git`／`write`，兩支 devbox 測試各有一份找 bash 的 `BASH`（spec 只准 J8 動 mods 與 devbox-mods 兩支）；`--no-home` 下一輪拿掉（`devbox.mjs` 的 `vmState` 那行與 `autosync.mjs` 的 `backupMods`）。
 
 ### 段 2
 
