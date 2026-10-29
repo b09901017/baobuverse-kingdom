@@ -382,6 +382,9 @@ CLAUDE.md（「合併」：CI 綠了直接合；還沒有 CI 時以這一輪驗�
 
 ### 要修的（段 9）
 
+段 9：四條都修了（客廳 `dce741f`）。新的 `tests/review-holes.test.ts` 5 條先紅（第 1、2、4 條的 4 條紅；「真的暫存區照舊不問」本來就綠、當守住的）再綠，guard 64 → 69、limit-guard 67 全過；tsc 0 錯、validate 跟改之前同一個警告；客廳 `mods/guard` 與 `~/.claude/mods/guard` 逐檔相同。spec「行為會變的」02、13 各補了。
+第 1 條做法：暫存區只認 hook 讀到的 `TEMP`／`TMP`／`TMPDIR` 底下（路徑等於暫存區本身照舊問），或**寫的字**（變數展開、還沒接 cwd）本身是 `/tmp/…` 開頭、`AppData/Local/Temp`、`scratchpad`、`.shot-tmp`；路徑中間的 `/tmp/` 不算。第 4 條：git hook 名字照 githooks(5) 的清單比（檔名去掉第一個點之後的部分），`.github/` 不分大小寫。
+
 | # | 哪裡 | 什麼情境會錯 | 嚴重度 | 建議 |
 |---|---|---|---|---|
 | 1 | 客廳 `mods/guard/hooks/removals.ts:73` `byPath` 拿 `TEMP` regex（`[\\/]tmp[\\/]`、`scratchpad`、`.shot-tmp`、`__pycache__` 子字串）去套**算好的絕對路徑**（含 cwd） | **重現過**（`removals`＋`classify` 純函式；register 對 `byPath` 已判的不問 git）：專案裡 `rm -rf tmp/notes`、`rm tmp/draft.md`、`cd tmp && rm x`、PowerShell `Remove-Item -Recurse -Force tmp/notes`（沒進 git 的也一樣）→ 13 之前**問**、現在當「暫存區」**不問**；cwd 名字裡有 `scratchpad`（例如 `…/scratchpad-app`）時 `rm draft.md` 也不問。13 的判準 2「沒進 git 的檔照舊要問」在 `tmp` 子資料夾底下破了，而且沒有守住的測試 | **中**（少問；要專案裡剛好有 `tmp/` 或資料夾名帶 scratchpad） | 暫存區只認 hook 讀到的 `TEMP`／`TMP`（＋Git Bash 的 `/tmp`）底下；`scratchpad` 等字樣只比原本寫的那個字（跟 13 之前一樣），不比接上 cwd 之後的絕對路徑。紅燈先：`rm -rf tmp/notes`、`cd tmp && rm x`、cwd 帶 scratchpad 的 `rm x`（沒進 git）要問；`spec`「行為會變的」13 補一行 |

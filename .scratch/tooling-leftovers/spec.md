@@ -112,6 +112,7 @@ E2E 加速（第 3 階段開始前說的，主控交接記的原話）：
 |---|---|---|
 | 別段的 `demo-`：`git commit -m "add demo-page" && firebase deploy --project baobu-app`、`git checkout demo-x && firebase deploy`、`cd demo-site && npm run restore -- b.json`、`ls demo-data; firebase firestore:delete -r / --project baobu-app` | 整串有 `demo-` → 當成模擬器，不問（國王日記那道 `neverWrite` 也跟著跳過） | 照這一段自己的環境：要問 |
 | 別段的 `--project staging`、staging 的專案 id：`node scripts/restore-backup.mjs b.json; echo "--project staging"`、python heredoc 內文寫到 staging id 之後 `node --check scripts/seed-staging.mjs`（上一個專案過去的指令裡有 2 條） | 整串有 staging → 當 staging，不問 | 這一段看不出 → 要問 |
+| （段 9，段 8 審查第 4 條，客廳 `dce741f`）帶引號 heredoc 寫進 git hook 名字的檔（`tools/pre-push.mjs`、`scripts/pre-commit`、`commit-msg`…，有沒有副檔名都算）或 `.github/` 底下的檔，同一串接 `git commit`／`push`／`pull`：`cat <<'EOF' > tools/pre-push.mjs`＋內文 `firebase deploy`＋`&& git commit -m x && git push` | 02 之後：檔名不帶 hook／husky、其他段都是 `git` → 內文遮掉，不問（hook、CI 同一串就會跑） | 不遮，照 02 之前掃內文：要問 |
 
 拿過去對話裡真的跑過的 Bash 指令量過（只算筆數）：這個專案 1689 條，少問 3 條（都是上面的誤判）、多問 0；上一個專案 14066 條（它的規則），少問 2、多問 2（就是上面寫的），16 條讀不懂照舊掃整串。
 
@@ -185,6 +186,8 @@ J7 其他的改名、J4 的測試不改行為。
 | 建置產物：路徑裡有 `node_modules`、`coverage`、`test-results`、`playwright-report`、`blob-report`、`.pytest_cache`、`.nyc_output`、`__pycache__`（`.local`、`~/.claude` 底下的除外） | 問（`__pycache__` 以前就不問） | 不問 |
 | 一段刪好幾個、其中有暫存區：`rm -rf important /tmp/x` | 整段有 `/tmp/` → 不問 | 一個一個看：`important` 救不回來 → 問（**多問**） |
 | 變數看不出、路徑裡寫了 scratchpad：`rm -rf "$X/scratchpad/y"` | 不問 | 問（**多問**） |
+| （段 9，段 8 審查第 1 條，客廳 `dce741f`）專案裡的 `tmp/` 子資料夾、名字帶 `scratchpad` 的 cwd：`rm -rf tmp/notes`、`cd tmp && rm x`、`Remove-Item -Recurse -Force tmp/notes`、cwd 是 `…/scratchpad-app` 時 `rm draft.md`（沒進 git） | 13 之後：接上 cwd 的路徑有 `/tmp/`、`scratchpad` → 當暫存區，不問 | 跟 13 之前一樣問；暫存區只認 hook 讀到的 `TEMP`／`TMP`／`TMPDIR` 底下，或寫的字本身（`/tmp/…`、`…AppData/Local/Temp…`、`scratchpad`、`.shot-tmp`）（**多問**） |
+| （段 9，段 8 審查第 2 條）`.LOCAL`、`.Git` 這種大小寫不同的寫法：`rm -rf .LOCAL/claude-memory/x.md` | 不是 `.local` → 問 git → 在 git 裡沒改過就不問 | 跟 `.local`、`.git` 一樣照規矩要問（**多問**） |
 | 要問的框上 | 「・刪檔案：rm -rf $S/exp」 | 「・刪 $S/exp（看不出 $S 是哪裡）」「・刪 2 個：draft.txt（沒進 git，救不回來）；notes/old.md（在 git 裡、沒改過，救得回來）」 |
 
 照舊問：沒進 git、有沒 commit 的修改、底下有沒追蹤或被 ignore 的、子模組；`.local`、`~/.claude`、`.git`、整個專案或家目錄；萬用字元、`$(…)`、看不出的變數、算不出的 cd；git 問不到；`git clean`、`reset --hard`、`checkout --`／`restore`、`branch -D`、強推、程式裡刪檔案（照舊只看字）。
