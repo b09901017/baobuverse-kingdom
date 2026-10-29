@@ -47,6 +47,10 @@
 
 做 15 c（python／node 串列寫法）時同一條會再拿掉 python 那個例子：照同樣的理由改、記在這張表。
 
+| 檔:行 | 改什麼 | 為什麼 | 誰 |
+|---|---|---|---|
+| 客廳 `mods/guard/tests/not-executed.test.ts:240-245` | 「改之前就不問的（python 用串列叫 subprocess）」整條拿掉（剩下的唯一一個例子就是它），留兩行註解說 a、c 搬去 `tests/small-holes.test.ts` | 它釘住的就是 15 c 要補的洞；15 c 之後那個指令要問 | 段 1，2026-10-30（客廳 `1d3f7ec`） |
+
 14：沒有（既有 75 條一字未改就全過；跟 13 那幾條比框上字的 `recoverable.test.ts:208,220`，靠「判斷失敗時保留原本那一行」照過）。
 
 ## 行為會變的
@@ -72,13 +76,22 @@
 | 14 | `rm "$TEMP/x/server.pem"`（暫存區的金鑰檔名） | 不問（暫存區） | 問（底線） |
 | 14 審查 5 | `rm -rf "$TEMP/.."`、`rm -rf /tmp/../..`、`Remove-Item -Recurse "$env:TEMP\.."`（字像暫存區、實際在外面） | 不問（13 就有的洞） | 交給 Claude 判斷 |
 | 14 審查 | `node -e "require('fs').rmSync('out', …)"`、import 進來的 `rmSync(…)` | 不問（不算刪東西） | 交給 Claude 判斷（字上有 `.git`、`.local`…就一定問） |
-
-13 本來就問、14 也不交給模型決定（底線）的：`cd x; rm -rf .git`、`cd ~; rm -rf .claude`、`cd x; rm -rf *`、`python -c "…rmtree('.git')"`、`bash -c "rm -rf .local"`、`git clean -fdx`、`git clean -fd`（現在沒追蹤的檔裡有金鑰檔名）、專案根目錄的 `rm -rf *`。
 | 15 a | `powershell -enc ZgBp…`、`pwsh -ec …`、`powershell.exe -NoProfile -EncodedCommand …` | 不問 | 問「跑看不到內容的指令」（新的風險種類 `opaque`） |
 | 15 b | `gcloud config set project baobu-app && gcloud firestore import gs://b/x`、`CLOUDSDK_CORE_PROJECT=baobu-app gcloud firestore import …` | 不問 | 照 `neverWrite` 擋（寫絕對不能寫的地方） |
 | 15 b | `gcloud firestore import gs://b/x`（同一串沒有 `--project`、也沒有 config set） | 不問 | 問「看不出打哪一個專案」 |
+| 15 c | `python - <<'EOF'` 裡 `subprocess.run(['firebase', 'deploy', '--project', 'baobu-app'])`、`node -e "…spawnSync('firebase', ['deploy', '--project', 'baobu-app'])"` | 不問 | 照 `neverWrite` 擋；沒有 project.json 的資料夾問「寫正式站」 |
+| 15 d | `bash scripts/deploy.sh`、`./scripts/deploy.sh`、`source x.sh`、`. x.sh`（腳本裡有 `firebase deploy --project baobu-app`、`git push origin main`…） | 不問（不讀腳本內容） | 讀得到內容就照裡面的指令判斷（刪東西除外） |
 
-不變：`-File`、`-Command`、`-ExecutionPolicy`／`-ep`；`gcloud firestore export`、`indexes list`；前面設的是別的專案、或 `--database=` 別的 database。
+13 本來就問、14 也不交給模型決定（底線）的：`cd x; rm -rf .git`、`cd ~; rm -rf .claude`、`cd x; rm -rf *`、`python -c "…rmtree('.git')"`、`bash -c "rm -rf .local"`、`git clean -fdx`、`git clean -fd`（現在沒追蹤的檔裡有金鑰檔名）、專案根目錄的 `rm -rf *`。
+
+不變：`-File`、`-Command`、`-ExecutionPolicy`／`-ep`；`gcloud firestore export`、`indexes list`；前面設的是別的專案、或 `--database=` 別的 database；
+串列裡是讀的子指令或模擬器；`cat ./x.sh`、`chmod +x ./x.sh`、`bash -c "…"`；腳本裡的 `rm`。
+
+### 少問（15 e）
+
+| issue | 指令例子 | 之前 | 之後 |
+|---|---|---|---|
+| 15 e | `node --check scripts/fix.mjs`、`node -c scripts/fix.mjs`（腳本會寫 Firebase） | 問（當成跑了腳本） | 不問（只檢查語法）；`node scripts/fix.mjs`、`python -c "…"` 照舊問 |
 
 ## 共用偏好要跟著改的
 
