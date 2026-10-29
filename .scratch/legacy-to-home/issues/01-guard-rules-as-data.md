@@ -1,6 +1,6 @@
 # 01 guard：上一個專案的特例規則變成資料，沒有設定檔時用「最嚴的一份」
 
-Status: todo
+Status: done
 Type: task
 Blocked by: —
 
@@ -52,3 +52,34 @@ staging 比對不加邊界（`:83-86`）、`firebase` 帶 `--project` 但認不�
 ## 規矩
 
 改 `~/.claude/mods` 的規矩照 HANDOFF「每一段共同的規矩」。允許改的既有測試只有 spec「允許改的既有測試」列的幾條，其他一條都不改。
+
+## 做完時留下的（2026-10-29，段 1）
+
+改 `~/.claude/mods/guard`，複製進客廳（客廳 `30a7191`，已推；客廳 `mods/` 跟 `~/.claude/mods` 逐檔相同，49 個檔）。客廳 `docs/project-config.md` 加「guard 的特例」一節。
+
+- `rules.legacy` 拿掉，換成六個欄位（`Rules` 與 `project.json` 同名）：`mainDeploysProd`（推 main／PR 合進 main／`gh workflow run …deploy… --ref main` ＝ 部署正式站，`register.ts` 的 `branchRisks` 也看它）、
+  `npmScripts`、`writeScripts`、`prodReadScripts`、`stagingScripts`、`looseStaging`。有 `project.json` 卻沒寫＝沒有那個特例；型別不對當成沒寫。
+- `LEGACY` → `STRICT`（＝原本上一個專案的規則），**不帶任何 Firebase 專案 id**。沒有 `project.json` 用它；讀不到專案資料夾（`register.ts`）也用它；`envOf`／`classify` 的預設參數也是它。
+  專案 id 只從 `.firebaserc` 讀。`project.json` 壞掉照舊當成「有設定、沒有特例」。
+- 第 3 題：`firebase … --project <認不出的 id>` 每個專案都要問。框上的字改成「--project 不是這個專案的正式站或 staging」（原本那句「沒寫 --project」不對）。
+
+**跟 issue 寫的不同的地方**
+
+1. **`firebase use <認不出的專案>` 也要問**（issue 沒寫）。不加的話，最嚴預設沒有寫死的 id，`firebase use <上一個專案正式站的 id>` 在讀不到 `.firebaserc` 時會從「要問」變成「不問」——少問。
+   切過去之後沒寫 `--project` 的指令都會打它，跟第 3 題是同一件事，所以每個專案都套用。**這個專案受影響的只有這一條**（`firebase use <不是 .firebaserc 正式站或 staging 的專案>` 原本不問、現在問）；`firebase use`（不帶目標）、`firebase use --add`、模擬器 `demo-*` 照舊不問。
+2. **spec 沒列、但改了的既有測試兩行**：`guard.test.ts` 的 `touched('firebase deploy --only hosting')`（期待 `staging:write` → `unknown:write`）、
+   `project-config.test.ts` 的「讀設定那條路跟 `classify()` 一樣」（改成跟 `e8f9058` 比）。兩行都靠 `classify()` 預設參數裡寫死的 id；預設參數改成最嚴預設之後，就是判準允許的第 2 類。已回報主控（見 HANDOFF「要使用者決定的」）。
+3. 指令清單從 `legacy-parity.test.ts` 搬到 `tests/fixtures/parity-cases.ts` 共用（指令一個字沒改）。
+
+**改到的既有測試**（spec 允許的）：`legacy-parity.test.ts`（兩類例外寫成 `onlyMoreAsking`：原本要問的照樣要問、多出來的只能是寫正式站、認得的環境只能變成「看不出」）、`project-config.test.ts:31`（比 `STRICT`＋`.firebaserc` 的 id）、`:112`（看 `mainDeploysProd`）。
+
+**判準**
+
+| 判準 | 結果 |
+|---|---|
+| 沒有 `project.json`：跟 `e8f9058` 逐條比 | 讀得到 `.firebaserc`：只有 `firebase deploy --project some-other-id` 不同（變成要問）；讀不到：每一條都是「一樣或只多問」（`legacy-parity.test.ts`） |
+| 寫了全部新欄位、值＝最嚴預設的 `project.json` | 規則與每一條判斷都跟沒有 `project.json` 一樣（`strict-default.test.ts`，issue 06 靠這條） |
+| 這個專案（有 `project.json`、沒有那些欄位） | 拿改之前的 `classify`（`tests/fixtures/classify-881473b.ts`）逐條比，只有上面第 1 點那一類不同（`strict-default.test.ts`，另外比了空的 `project.json`、有 `.firebaserc` 的新專案、壞掉的 `project.json`） |
+| 程式裡還有 `rules.legacy`、寫死的上一個專案 Firebase 專案 id 嗎 | `hooks/` 沒有（grep `wellness`、`legacy`、`LEGACY` 0 筆；測試的假資料有） |
+
+驗證：`claude plugin test guard` 31 過（基準 24＋新 7）、`tsc` 0 錯、`claude plugin validate` 過（警告只有原本的「沒有 author」）。新測試先紅（`STRICT` 不存在，檔案載不進來）再綠。
