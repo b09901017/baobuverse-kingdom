@@ -450,6 +450,12 @@ CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/le
 
 ## 中途發現
 
+### 段 9
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | 客廳 `devbox.mjs` 回家的家裡那一半 `pullLocal`（`.local` 照舊 `pull --ff-only`） | 段 9 只照決定改了「出門」的 VM 那一半。家裡的 `.local` 有沒推上去的 commit、VM 也推了新的時，回家停在「家裡電腦的 X/.local 拉不下來」。段 9 之後家裡的自動同步推之前會 `pull --rebase`，家裡留著沒推的 commit 只剩「兩台改了同一個檔」那一種（那種本來就要人看），所以很少碰到 | 下一輪：`pullLocal` 也 `pull --rebase --autostash`、衝突就 abort 停（跟 `out` 同一種寫法）；或維持現狀。不急 |
+
 ### 段 8
 
 | # | 哪裡 | 什麼情境會錯 | 建議 |
@@ -472,7 +478,7 @@ CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/le
 
 | # | 哪裡 | 什麼情境會錯 | 建議 |
 |---|---|---|---|
-| 1 | 客廳 `autosync.mjs` 的 `commitAndPush`（推之前不 `pull`），VM 關機時的 presync | VM 開著的時候，家裡（主控 session）在 12:20 推了這個專案 `.local` 一個 commit；12:22 VM 關機，presync 在 VM 那份舊的 `.local` 上寫 `vm-state.json`、commit、push → **被拒（不是 fast-forward）**，GitHub 上這個專案的 `vm-state.json` 還是 10/28 那份（上一個專案的推上去了）。VM 上那份 `.local` 現在多一個沒推的 commit（或沒 commit 的 `vm-state.json`；要開 VM 看 `journalctl -u claude-home-presync -b -1` 才確定）。後果：① 下次「出門」，VM 那一半的 `git -C .local pull --ff-only` 會停在這個專案（「VM 上 baobuverse-kingdom 沒接好」，VM 開著）；② VM 關著時按「回家」，這個專案的 `vm-state.json` 比 VM 最後一次開機舊 → 停、叫 `--check-vm`。這次沒出事是因為用 VM 開著的「回家」關機。主控在家裡、VM 開著，兩台同時寫 `.local` 是常態（主控交接檔、開場） | `commitAndPush` 推之前 `pull --rebase`（`.local` 只有自動產生的檔），推失敗再 `pull --rebase` 重推一次；`out` 的 VM 那一半 `.local` 用 `pull --rebase`。要紅燈測試（兩台各一個 commit）。見「要使用者決定的」段 5 |
+| 1 ✅ 段 9（客廳 `7345fbf`；`.local` 推之前 `pull --rebase`、推被拒再拉一次重推，衝突就 abort、commit 留著；`out` 的 VM 那一半 `.local` `pull --rebase --autostash`，接不起來就 abort、停。客廳不 rebase。新測試 autosync 3、devbox-mods 3，既有一字不改） | 客廳 `autosync.mjs` 的 `commitAndPush`（推之前不 `pull`），VM 關機時的 presync | VM 開著的時候，家裡（主控 session）在 12:20 推了這個專案 `.local` 一個 commit；12:22 VM 關機，presync 在 VM 那份舊的 `.local` 上寫 `vm-state.json`、commit、push → **被拒（不是 fast-forward）**，GitHub 上這個專案的 `vm-state.json` 還是 10/28 那份（上一個專案的推上去了）。VM 上那份 `.local` 現在多一個沒推的 commit（或沒 commit 的 `vm-state.json`；要開 VM 看 `journalctl -u claude-home-presync -b -1` 才確定）。後果：① 下次「出門」，VM 那一半的 `git -C .local pull --ff-only` 會停在這個專案（「VM 上 baobuverse-kingdom 沒接好」，VM 開著）；② VM 關著時按「回家」，這個專案的 `vm-state.json` 比 VM 最後一次開機舊 → 停、叫 `--check-vm`。這次沒出事是因為用 VM 開著的「回家」關機。主控在家裡、VM 開著，兩台同時寫 `.local` 是常態（主控交接檔、開場） | `commitAndPush` 推之前 `pull --rebase`（`.local` 只有自動產生的檔），推失敗再 `pull --rebase` 重推一次；`out` 的 VM 那一半 `.local` 用 `pull --rebase`。要紅燈測試（兩台各一個 commit）。見「要使用者決定的」段 5 |
 | 2 | VM 開機就有 session 程序 | `devbox-rc` 開機後 Remote Control 馬上帶起 `--sdk-url` 的程序（12:03 就有兩個，在上一個專案的資料夾）；`vm/README.md` 說「VM 上任何對話開始之前」換 hook，但 `out` 開機後也馬上在 VM 上做事。這次舊的同步沒跑（log 沒有新行），換好之後也不會再有這個問題 | 不用修（換手只有這一次）。新 VM 重建時照 `vm/README.md`「VM 壞了」第 4 步先換 hook 再 enable Remote Control |
 | 3 | VM 上 `~/.claude/mods` | 判準 5 加的那一行註解（`e2e-progress/tests/parse.test.ts`）還在 VM 上（家裡改回來時 VM 關著）。VM 的基準點 `807bc91`、上游 `7e375d5` 之後改過 → VM 對話結束不會推回去；下次「出門」`--restore-mods` 接回客廳那一份 | 不用修；下次出門後 `--check-mods` 看一次 |
 | 4 | VM 的平放開場 | VM 第一層的 8 份還在（只複製、沒刪）。VM 上已經沒有東西會叫舊的 sync-claude（hook 換了、`devbox-presync` 停了），limit-guard 也跳過跟子資料夾同名的 | 06 刪家裡的；VM 的等下次開 VM 再刪（要開 VM，06 不開） |
@@ -518,10 +524,11 @@ CLAUDE.md（合併：一輪做完開 PR，CI 綠了直接合）；docs/agents/le
 - **送 GitHub Support 清 force push 之前那個舊 commit**（段 7 第 1 條、第 3 題「要清」）：要填的內容在這個專案的 `.local/github-support-request.md`（私人）。對外送出，只能本人送。
   GitHub 文件說 Support 不處理「不敏感」的資料，GCP 專案 id 可能被回不處理；被拒就算了。
 - ~~**段 3 做完到段 5 做完之間，不要按出門／回家**~~ → 段 5（10/29）VM 那一半換完了，這個區間結束。
-  但**下次按「出門」之前先看段 5 中途發現 1**：沒修之前，「出門」會停在這個專案的 `.local`（VM 開著）；VM 關著時按「回家」也會停、叫 `--check-vm`（現在家裡已經是最新的，不用按）。
+  ~~但下次按「出門」之前先看段 5 中途發現 1~~ → 段 9 修好了（客廳 `7345fbf`）：「出門」的 VM 那一半會把 VM 上那個沒推的 commit 接在家裡推的後面，VM 上之後的自動同步會推上去。
+  VM 關著時按「回家」照舊會停、叫 `--check-vm`（10/29 那次關機的 `vm-state.json` 沒推上去，比最後一次開機舊；開著回家或 `--check-vm` 一次就好。現在家裡已經是最新的，不用按）。
 - **下次開 VM 時順便**（不用特地開；開了再做，段 5 留下的）：
   1. `journalctl -u claude-home-presync -b -1`：10/29 那次關機 presync 實際跑了幾秒、兩個專案各寫了什麼（段 3 中途發現 3；這個專案應該是「沒推成」，段 5 中途發現 1）
-  2. 這個專案 VM 上的 `.local`：`git -C ~/baobuverse-kingdom/.local status`、`log @{u}..HEAD`；有那個沒推的 `vm-state.json` commit 就 `pull --rebase` 再推（或等段 5 中途發現 1 修好）
+  2. 這個專案 VM 上的 `.local`：`git -C ~/baobuverse-kingdom/.local status`、`log @{u}..HEAD`；有那個沒推的 `vm-state.json` commit 的話，段 9 之後 VM 上第一個對話開始（或「出門」）就會 `pull --rebase` 推上去，看一眼推上去了沒就好
   3. VM 上 `~/.claude/mods-data/handoffs/` 第一層 8 份刪掉（子資料夾有一樣的，刪前逐檔 `cmp`；家裡的段 6 刪了）
 - ~~VM 上這個專案的 workspace trust ×2、手機確認~~：10/29 段 5 使用者本人做了。
 - ~~**03 的截圖**（段 2）~~：10/29 截好、過了（issue 03 底下「截圖結果」）。
