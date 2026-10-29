@@ -55,7 +55,7 @@ staging 比對不加邊界（`:83-86`）、`firebase` 帶 `--project` 但認不�
 
 ## 做完時留下的（2026-10-29，段 1）
 
-改 `~/.claude/mods/guard`，複製進客廳（客廳 `30a7191`，已推；客廳 `mods/` 跟 `~/.claude/mods` 逐檔相同，49 個檔）。客廳 `docs/project-config.md` 加「guard 的特例」一節。
+改 `~/.claude/mods/guard`，複製進客廳（客廳 `30a7191`＋`2e1f9b5`，已推；客廳 `mods/` 跟 `~/.claude/mods` 逐檔相同，49 個檔）。客廳 `docs/project-config.md` 加「guard 的特例」一節。
 
 - `rules.legacy` 拿掉，換成六個欄位（`Rules` 與 `project.json` 同名）：`mainDeploysProd`（推 main／PR 合進 main／`gh workflow run …deploy… --ref main` ＝ 部署正式站，`register.ts` 的 `branchRisks` 也看它）、
   `npmScripts`、`writeScripts`、`prodReadScripts`、`stagingScripts`、`looseStaging`。有 `project.json` 卻沒寫＝沒有那個特例；型別不對當成沒寫。
@@ -67,8 +67,9 @@ staging 比對不加邊界（`:83-86`）、`firebase` 帶 `--project` 但認不�
 
 1. **`firebase use <認不出的專案>` 也要問**（issue 沒寫）。不加的話，最嚴預設沒有寫死的 id，`firebase use <上一個專案正式站的 id>` 在讀不到 `.firebaserc` 時會從「要問」變成「不問」——少問。
    切過去之後沒寫 `--project` 的指令都會打它，跟第 3 題是同一件事，所以每個專案都套用。**這個專案受影響的只有這一條**（`firebase use <不是 .firebaserc 正式站或 staging 的專案>` 原本不問、現在問）；`firebase use`（不帶目標）、`firebase use --add`、模擬器 `demo-*` 照舊不問。
-2. **spec 沒列、但改了的既有測試兩行**：`guard.test.ts` 的 `touched('firebase deploy --only hosting')`（期待 `staging:write` → `unknown:write`）、
-   `project-config.test.ts` 的「讀設定那條路跟 `classify()` 一樣」（改成跟 `e8f9058` 比）。兩行都靠 `classify()` 預設參數裡寫死的 id；預設參數改成最嚴預設之後，就是判準允許的第 2 類。已回報主控（見 HANDOFF「要使用者決定的」）。
+2. **spec 原本沒列、後來補進去的既有測試兩行**（主控 2026-10-29 照建議，spec「允許改的既有測試」已補）：`guard.test.ts:30` 的 `touched('firebase deploy --only hosting')`（只改期待值：`staging:write` → `unknown:write`）、
+   `project-config.test.ts:51` 的「讀設定那條路」（原本跟 `classify()` 預設參數比，改成跟「最嚴預設＋那份 `.firebaserc` 的 id」比，保留「讀 `.firebaserc` 得到的規則＝最嚴預設加上它的 id」的意思，跟 `legacy-parity.test.ts` 拿 `e8f9058` 逐條比互相補；客廳 `2e1f9b5`）。
+   兩行都靠 `classify()` 預設參數裡寫死的 id；預設參數改成最嚴預設之後，就是判準允許的第 2 類（多問）。
 3. 指令清單從 `legacy-parity.test.ts` 搬到 `tests/fixtures/parity-cases.ts` 共用（指令一個字沒改）。
 
 **改到的既有測試**（spec 允許的）：`legacy-parity.test.ts`（兩類例外寫成 `onlyMoreAsking`：原本要問的照樣要問、多出來的只能是寫正式站、認得的環境只能變成「看不出」）、`project-config.test.ts:31`（比 `STRICT`＋`.firebaserc` 的 id）、`:112`（看 `mainDeploysProd`）。

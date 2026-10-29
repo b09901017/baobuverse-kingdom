@@ -79,7 +79,11 @@ hook 換手、「mods 改由客廳搬」、VM 那一半**一定要接著做完**
 
 其他既有測試一條都不改。下面這幾條是因為「行為會變的」而必須改，改的時候在 commit 訊息與「做完時留下的」逐條寫為什麼：
 
-- guard：`tests/legacy-parity.test.ts`（只對 01 判準列的兩類「多問」寫例外）、`tests/project-config.test.ts:31,112`（`legacy` 布林拿掉）
+- guard：`tests/legacy-parity.test.ts`（只對 01 判準列的兩類「多問」寫例外）、`tests/project-config.test.ts:31,112`（`legacy` 布林拿掉）、
+  `tests/guard.test.ts:30`（只改 `touched('firebase deploy --only hosting')` 的期待值：`staging:write` → `unknown:write`）、
+  `tests/project-config.test.ts:51`（「讀設定那條路」改成跟「最嚴預設＋那份 `.firebaserc` 的 id」比）。後兩行都靠 `classify()` 預設參數裡寫死的上一個專案 id，
+  拿掉之後是 01 判準允許的第 2 類「多問」（段 1 發現，主控 2026-10-29 照建議補進來）
+- **同一類之後不用再問**（主控 2026-10-29）：因為拿掉寫死的 id 而變成「多問」的既有測試期待值，照上面的做法改，記進這裡與那支 issue 的「做完時留下的」；會「少問」的停下來問
 - limit-guard：`tests/handoff-dir.test.ts:58-64,86-98`、`tests/worktree-handoff.test.ts:64-95`（`FLAT_PROJECTS` 拿掉、worktree 一律用主資料夾名）
 - dash：`tests/vm-projects.test.tsx:63-81`、`tests/vm.test.tsx:7`（雲端分頁一律叫客廳的 devbox）
 
