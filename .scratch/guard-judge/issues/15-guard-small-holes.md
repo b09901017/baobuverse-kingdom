@@ -1,7 +1,7 @@
 # 15 guard：工具收尾留下的幾個 Firebase 小洞（有額度才做）
 
-Status: todo
-Blocked by: 14（同一組檔；14 做完、推了再開始）
+Status: todo（a、b 已做：主控 2026-10-30，客廳 `2245538`；c、d、e 還沒做）
+Blocked by: c～e 等 14（同一組檔；14 做完、推了再開始）
 動工前先讀：`../../tooling-leftovers/HANDOFF.md`「中途發現」段 1 第 3、4、5、7 條與「下一輪要做的」；客廳 `mods/guard/hooks/classify.ts`（`FIREBASE_CLI` 約 `:176`、`scriptHits`／`scriptPaths` 約 `:234-242`、gcloud firestore 的規則）、`hooks/register.ts`（`readScripts`）；`tests/not-executed.test.ts`、`tests/cli-forms.test.ts`。
 
 ## 使用者要的
@@ -33,3 +33,8 @@ Blocked by: 14（同一組檔；14 做完、推了再開始）
 ## 做完時留下的
 
 （段寫：做了哪幾列、沒做的列寫「沒做（額度）」）
+
+**a、b**（主控 2026-10-30，規劃的帳號用剩下的額度先做；客廳 `2245538`；guard 73 → 75，新的 `tests/small-holes.test.ts`）：
+- a：新的風險種類 `opaque`（`KIND_WORD`「跑看不到內容的指令」），框上寫「指令是編碼過的（-EncodedCommand），看不到要做什麼」。旗標照 PowerShell 的縮寫規則：`-ec`，或 `e` 開頭又是 `encodedcommand` 的前綴（`-e`、`-en`、`-enc`、`-Enco`…）；看到 `-Command`／`-File`（含縮寫）就停，後面的不看。只掃遮過的字（`echo "powershell -enc …"` 不問）。
+- b：`classify.ts` 的 gcloud firestore 迴圈：寫入那一段沒有 `--project[ =]` 時，往**同一串前面**找最後一個 `gcloud config set [core/]project X` 或 `CLOUDSDK_CORE_PROJECT=X`，當成 `--project=X` 再照 `neverWrite` 判斷；都找不到就推一條 `prodWrite`「沒寫 --project，看不出打哪一個專案」。之前的另一個指令設的 config 看不到，所以那種情況會問（多問，照設計）。
+- 既有測試改一處：`not-executed.test.ts:240-241` 拿掉 `-enc` 例子（spec「允許改的既有測試」）。做 c 時同一條要再拿掉 python 例子。

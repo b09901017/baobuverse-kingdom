@@ -7,7 +7,8 @@
 
 | 段 | issue | effort | 狀態 |
 |---|---|---|---|
-| 1 | 14 → （額度允許）一個唯讀 subagent 審 14 → （額度允許）15 a～e → PR、合併 | xhigh | ⬜ |
+| 0（規劃的帳號） | 15 a、b | — | ✅ 客廳 `2245538`；guard 73 → 75 |
+| 1 | 14 → （額度允許）一個唯讀 subagent 審 14 → （額度允許）15 c～e → PR、合併 | xhigh | ⬜ |
 
 ## 每一段共同的規矩
 
@@ -15,7 +16,7 @@
 - **紅燈先**：新行為先寫失敗的測試、跑過確認紅，再修到綠。新測試放新檔（例如 `tests/judge.test.ts`），既有測試一條都不改；真的要改寫進 spec「允許改的既有測試」。
 - **改 guard 的做法**：在客廳 `mods/guard` 改、在客廳跑 `claude plugin test .`；改完複製進 `~/.claude/mods/guard`，在那裡跑 `npx -y -p typescript@5 tsc -p . --noEmit`（客廳那份沒有型別檔，tsc 要在 `~/.claude/mods` 跑）與 `claude plugin validate .`；
   兩份 `diff -rq --exclude=node_modules --exclude=types` 相同。客廳 commit、推 `main`（自動同步會先備份改到一半的檔：最後一個 commit 完整就好）。這個對話載入的是舊版 guard，新版要新開的對話才生效。
-- **測試一支一支跑**（使用者的電腦曾經過熱斷電）。基準：guard 73、limit-guard 67、dash 59（`claude plugin test <mod>`）。客廳 `tools/` 這一輪不動就不用跑。
+- **測試一支一支跑**（使用者的電腦曾經過熱斷電）。基準：guard 75（15 a、b 之後）、limit-guard 67、dash 59（`claude plugin test <mod>`）。客廳 `tools/` 這一輪不動就不用跑。
 - **guard 會掃這個對話的指令**：測試字串寫 firebase、`git push` 國王日記的，用 Write／Edit 寫測試檔（不要 `python - <<'EOF'`、`node -e`）；探針裡的字用拼的（`'fire'+'base'`）。被跳框照實跟使用者說是測試字串，不要換寫法繞。
   改筆記、issue、spec、HANDOFF 一律用 Edit／Write。
 - **公開 repo**（這個）：commit、`.scratch`、PR 不帶真名、帳號、email、金鑰、VM host／GCP 專案 id／zone／instance 名。
@@ -56,7 +57,7 @@ kickoff 的「唯讀 subagent 過目」這一輪沒做：規劃的帳號額度�
 
 ```
 這一輪在做：guard 刪東西改成「程式粗篩 → Claude 判斷 → 判斷是重要的才問使用者、寫白話」，加上有額度才做的幾個 guard 小洞。
-分支 claude/guard-judge（從 origin/main ad0a858 開；規劃的 commit 在上面）。這是唯一的一段：做 issue 14 →（額度允許）唯讀 subagent 審 14 →（額度允許）15 a～e → PR、合併。
+分支 claude/guard-judge（從 origin/main ad0a858 開；規劃的 commit 在上面）。這是唯一的一段：做 issue 14 →（額度允許）唯讀 subagent 審 14 →（額度允許）15 c～e（a、b 規劃的帳號已做，客廳 2245538）→ PR、合併。
 程式在客廳 C:/Users/DELL/claude-home 的 mods/guard（~/.claude/mods/guard 是正在用的那份）。
 
 先讀：.scratch/guard-judge/HANDOFF.md（全部，特別是「每一段共同的規矩」的額度門檻）、spec.md（全部：使用者原話、三種分法、不能違反）、issues/14、issues/15；

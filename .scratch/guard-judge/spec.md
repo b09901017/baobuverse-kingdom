@@ -41,9 +41,25 @@
 
 （段寫：檔名:行、改什麼、為什麼）
 
+| 檔:行 | 改什麼 | 為什麼 | 誰 |
+|---|---|---|---|
+| 客廳 `mods/guard/tests/not-executed.test.ts:240-241` | 「改之前就不問的兩種」拿掉 `powershell -enc …` 那個例子（標題改成只剩 python 串列），加一行註解說搬去哪 | 那條釘住的就是 15 a 要補的洞（工具收尾 02 時記成「改完跟改之前一樣」）；新行為在 `tests/small-holes.test.ts` | 主控，2026-10-30（客廳 `2245538`） |
+
+做 15 c（python／node 串列寫法）時同一條會再拿掉 python 那個例子：照同樣的理由改、記在這張表。
+
 ## 行為會變的
 
 （段寫：少問／多問兩張表，每列一個指令例子）
+
+### 多問
+
+| issue | 指令例子 | 之前 | 之後 |
+|---|---|---|---|
+| 15 a | `powershell -enc ZgBp…`、`pwsh -ec …`、`powershell.exe -NoProfile -EncodedCommand …` | 不問 | 問「跑看不到內容的指令」（新的風險種類 `opaque`） |
+| 15 b | `gcloud config set project baobu-app && gcloud firestore import gs://b/x`、`CLOUDSDK_CORE_PROJECT=baobu-app gcloud firestore import …` | 不問 | 照 `neverWrite` 擋（寫絕對不能寫的地方） |
+| 15 b | `gcloud firestore import gs://b/x`（同一串沒有 `--project`、也沒有 config set） | 不問 | 問「看不出打哪一個專案」 |
+
+不變：`-File`、`-Command`、`-ExecutionPolicy`／`-ep`；`gcloud firestore export`、`indexes list`；前面設的是別的專案、或 `--database=` 別的 database。
 
 ## 共用偏好要跟著改的
 

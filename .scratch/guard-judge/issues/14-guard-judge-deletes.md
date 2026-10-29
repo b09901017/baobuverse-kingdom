@@ -59,7 +59,7 @@ mod 的型別 `~/.claude/mods/guard/.claude-plugin/types/claude-code/index.d.ts`
 | 8 | 新對話第一輪（`nothing-to-fork`）→ 有沒有改用 `complete`？ | 有 |
 | 9 | PowerShell `Remove-Item` 走同一套嗎？ | 是 |
 | 10 | 沒有刪東西的指令會不會叫模型？ | 不會 |
-| 11 | guard 既有測試（73）一條都沒改，全過嗎？ | 是（要改的寫進 spec「允許改的既有測試」） |
+| 11 | guard 既有測試（75，15 a、b 之後）一條都沒改，全過嗎？ | 是（要改的寫進 spec「允許改的既有測試」） |
 | 12 | `~/.claude/CLAUDE.md` 跟客廳 `user/CLAUDE.md` 雜湊一樣嗎？「先問再做」與「刪東西的指令說明」兩處改了嗎？ | 是 |
 
 ## 不做
