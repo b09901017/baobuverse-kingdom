@@ -14,7 +14,7 @@
 | 5 開 VM 走一次 | 08 | high | ✅（10/29 12:03～12:22 開一次、照「回家」關機；VM 那一半換完：`devbox-presync` drop-in＋disable、全域 hook 換成客廳的、平放的開場複製進子資料夾、客廳 pull、unit 重裝；出門後 VM 跟家裡一樣、回家後家裡分支沒變；trust 使用者本人答了。客廳只有判準 5 的兩個自動同步 `807bc91`、`7e375d5`）。**關機時這個專案的 `vm-state.json` 沒推上去**（中途發現段 5 第 1 條） |
 | 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ✅（客廳 `8139692`；上一個專案 PR #186 CI 全綠、合進 `develop` `3a39a17`；家裡平放的 8 份刪了，VM 上的留著；guard 32、limit-guard 52；上一個專案的工作目錄、分支、worktree 前後相同） |
 | 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ✅ 10/29：結果在「段 7 審查結果」（12 條＋9 條判斷題；照規矩沒修）；測試全過、mods 兩份相同、上一個專案 develop 的 CI 綠。**要使用者決定的段 7 三題，開段 8 之前先問第 1、2 題** |
-| 8 收尾（一）guard 與文件 | 段 7 第 6、7、10 條（guard；第 7 條含段 1 中途發現 2「`project.json` 壞掉」，照段 7 第 1 題的答案）、第 3、4、9、12 條（換行、文件、註解）、第 2 條（照段 7 第 2 題的答案改上一個專案的記憶與 `.local/README.md`） | high | 🔄 做到：第 6、7、10 條 ✅ |
+| 8 收尾（一）guard 與文件 | 段 7 第 6、7、10 條（guard；第 7 條含段 1 中途發現 2「`project.json` 壞掉」，照段 7 第 1 題的答案）、第 3、4、9、12 條（換行、文件、註解）、第 2 條（照段 7 第 2 題的答案改上一個專案的記憶與 `.local/README.md`） | high | 🔄 第 6、7、10 條 ✅（客廳 `9529bce`、`32923b0`、`f264938`；guard 33→38 全過、tsc 0 錯、validate 過、兩份 mods 相同）。**5 小時額度 86% 停下**，剩第 3、4、9、12、2 條 → 「段 8 續的開場」 |
 | 9 收尾（二）同步、儀表板、PR | 段 5 中途發現 1（客廳 `.local` 推之前 `pull --rebase`，紅燈先）、段 7 第 8 條（`--check-mods` 改成「這台改的推上去了」，紅燈先；跟段 5 中途發現 1 同在 `autosync.mjs`／`devbox.mjs`）、第 11 條要不要順手（`vm/README.md` 一句）、段 2 中途發現 1（dash 總覽「新對話會用 X」改成比 email，要截圖）、手動檢查清單、PR、合併 | xhigh（兩台同時寫 git 的測試、devbox 流程） | ⬜ |
 
 段 7 建議把原本的段 8 拆成兩段（guard 與文件／同步與儀表板）：段 7 多找到 4 條要改程式的，跟原本 3 條加起來分在 guard、客廳 autosync／devbox、dash 三處，一段做完會很長。兩段改的檔不重疊。**主控開段 8 之前先跟使用者說這個拆法。**
@@ -307,6 +307,42 @@ spec.md「允許改的既有測試」「行為會變的」；issues/01、06 底�
 HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 9 的開場與建議 effort（段 9 的範圍見分段表）。最後回覆用繁體中文簡短說做了什麼、卡在哪。
 ```
 
+## 段 8 續的開場
+
+建議 effort：**medium**（剩下的都是換行、文件、記憶的字；guard 的程式不動）。段 8 做到第 6、7、10 條（guard），額度 86% 停下。主控照這份開，跟段 8 的開場同一套規矩。
+
+```
+這一輪是「第 3 階段」：上一個專案改用客廳的工具，拿掉所有寫死它的特例。分支 claude/legacy-to-home（已經在這個 checkout 上）。
+這是第 8 段的後半（收尾一續）：段 8 前半做完段 7 審查第 6、7、10 條（guard，客廳 9529bce、32923b0、f264938；guard 38 條全過）。
+這一段只做剩下的：換行、文件、註解、上一個專案記憶的舊說明。不改 guard 的程式；段 9 的（客廳 autosync／devbox、dash、PR、合併）不做。
+
+先讀：.scratch/legacy-to-home/HANDOFF.md 的「每一段共同的規矩」「段 7 審查結果」第 2、3、4、9、12 條、「要使用者決定的」段 7 第 2 題（含答案）、「中途發現」段 8；
+CLAUDE.md；docs/agents/lessons.md。動工前 git -C C:/Users/DELL/claude-home pull --ff-only。
+
+要修的（照這個順序；每修完一條就在這個 repo 與客廳各 commit、推，HANDOFF 那一條標 ✅ 與 commit）：
+1. 段 7 第 3 條：客廳 mods/guard/tests/guard.test.ts 換回 CRLF（只改換行），~/.claude/mods 那份一起。
+   改完 git -C <客廳> diff 881473b -- mods/guard/tests/guard.test.ts 只剩一行（:30／:32 那一行）。客廳 .gitattributes／core.autocrlf 先看一下，免得 commit 時又被換回 LF。
+   guard 測試跑一次（38 條）。
+2. 文件與註解：段 7 第 4 條（客廳 docs/project-config.md 的 prodReadScripts 那一列補「檔名前後是字的邊界就算，例如 dry-run.mjs 也算 run.mjs」，不改比對方式；
+   同一列段 8 前半已經補了「--project 認不出時不推定」，不要重複）、第 9 條（客廳 README「新電腦怎麼接」把 --restore-mods 排到裝全域 hook 之前，只改文件）、
+   第 12 條（limit-guard tests/handoff-dir.test.ts:8 那一行說明改成跟程式一樣：照舊也讀第一層，不動斷言；limit-guard 測試跑一次 52 條、tsc、validate、複製進客廳）。
+3. 段 7 第 2 條：照段 7 第 2 題的答案（使用者「改（建議）」）。上一個專案（C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler）的記憶
+   cloud-vm-devbox-2026-10-21.md、private-local-repo.md 各加一行「2026-10-29 起換成客廳的工具（儀表板「雲端」分頁或 <客廳>/tools/devbox.mjs）；.local/tools/ 的舊工具不要再叫，--restore 會把舊 mods 蓋回來」，
+   它的 MEMORY.md 那兩行的說明跟著改；它的 .local/README.md 的 D 段、「自動更新」「手動更新」三段各加同一句。
+   記憶用 grep -l 找檔、不要 grep -n 印整行（裡面有 VM 的私人值，段 7 第 5 條）；要看內容只挑沒有私人值的那幾行。.local/tools/ 一個都不改，.local/references/ 不讀。
+   這些檔有版控，客廳的自動同步會推進它的私人 repo；推私人 repo 被擋就停、寫進 HANDOFF。
+
+要特別注意：
+- 改 ~/.claude/mods 的規矩照 HANDOFF「每一段共同的規矩」。測試一支一支跑（電腦曾過熱斷電）：guard 38、limit-guard 52。客廳 tools/ 不改，客廳的 node 測試不用跑。
+- 這個環境的 Bash heredoc 會把 \\ 變成 \（段 8 中途發現 1）：要寫反斜線的檔用 Write／Edit，不要用 heredoc 餵 python。
+- guard 會把指令字串裡的 firebase CLI、firestore 網址當成指令（段 1 中途發現 1，下一輪修）：被跳框或被記成「碰了 Firebase」時照實說明，不要改寫法繞。
+- 公開 repo 不帶真名、帳號、email、金鑰、VM host／GCP 專案 id／zone／VM 的 instance 名。
+- 中途發現記進 HANDOFF，不岔出去修。subagent 一次最多兩個。主控會開下一段：不要自己開 session，也不要存 limit-guard 的開場 JSON。
+
+做完要交：分段表段 8 標 ✅、「段 7 審查結果」修了的每一條標 ✅ 與 commit、HANDOFF 更新（狀態、中途發現、要使用者決定的）、
+段 9 的開場與建議 effort（段 9 的範圍見分段表；建議 xhigh）。最後回覆用繁體中文簡短說做了什麼、卡在哪。
+```
+
 ## 段 7 審查結果（2026-10-29）
 
 範圍：這個 repo `main...claude/legacy-to-home`（21 個 commit）、客廳 `881473b..8139692`（12 個）、上一個專案 PR #186 新增的 `.claude/project.json`。
@@ -370,6 +406,15 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 9 的開
 上一輪段 6 審查的硬違規（路由寫三處、Status 三套、hook 腳本正本在這個 repo、寫死專案名字）與 `rules.legacy` 的 Repeated Switches 都修好了（Standards 軸確認）。
 
 ## 中途發現
+
+### 段 8
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | 這個環境的 Bash 工具（heredoc 餵 python） | `<<'EOF'` 裡寫 `\\b`，python 收到的是 `\b`（退格字元）：第 7 條第一次寫進 `classify.ts` 的兩個 regex 變成控制字元，5 支測試檔載不進來（馬上看到、用 Write 寫的修正腳本改回，`grep -c $'\x08'` 0 筆）。測試檔裡的 `\\.` 也是同一回事（只是剛好沒壞） | 要寫反斜線的檔用 Write／Edit；可以考慮記進 `docs/agents/lessons.md` |
+| 2 | guard 的 Firestore REST 那一段（`curl …firestore.googleapis.com…` 掃整行） | 段 8 寫測試時，heredoc 裡的測試字串含 `curl https://firestore.googleapis.com/…`，guard 記成「看不出是哪一個環境讀（Firestore REST）」。其實什麼都沒讀。跟段 1 中途發現 1 同一類（指令文字裡的字被當成指令） | 下一輪修段 1 中途發現 1 時一起：REST 那一段也只看一段指令的開頭 |
+| 3 | 第 7 條的範圍 | 使用者答的是「碰 Firebase／`gcloud`（模擬器除外）與 `git push`」。段 8 另外把 `gh` 的寫入（`gh pr create`、`gh api -X …` 等，`GH_WRITE`）也算進「讀不懂要問」：`neverWrite` 的 git repo 本來就也擋 `gh` 寫入，讀不懂時這一半保護也會消失。只會多問，寫進 spec「行為會變的」 | 不用決定；記著。要拿掉只要刪 `classify.ts` 裡 `rules.broken` 那一段的 `GH_WRITE` 一行 |
+| 4 | 第 7 條，`project.json` 合法但欄位壞掉 | 例如 `"neverWrite": {}`（不是陣列）照舊當成「沒有 neverWrite」、不標成讀不懂，國王日記那道保護一樣消失。段 7 第 1 題只講整個檔讀不懂 | 下一輪：`neverWrite` 在但不是陣列（或某一項沒有 `firebaseProject`／`gitRepo`）也當成讀不懂。只會多問 |
 
 ### 段 6
 
