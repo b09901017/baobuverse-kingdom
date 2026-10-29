@@ -14,7 +14,7 @@
 | 5 開 VM 走一次 | 08 | high | ⬜（緊接段 4；開 VM 花錢，使用者已同意一次） |
 | 6 上一個專案的 project.json、收乾淨、刪平放的開場 | 06 | high | ⬜ |
 | 7 審查 | `/matt-code-review`：這個 repo `main...claude/legacy-to-home`＋客廳這一輪的 commit＋上一個專案新增的 `project.json` | xhigh | ⬜ |
-| 8 收尾 | 修審查找到的、guard：`project.json` 壞掉＝最嚴預設（段 1 中途發現 2）、手動檢查清單、PR、合併 | medium（要修 mods 就 high） | ⬜ |
+| 8 收尾 | 修審查找到的、guard：`project.json` 壞掉＝最嚴預設（段 1 中途發現 2）、dash 總覽「新對話會用 X」改成比 email（段 2 中途發現 1，要截圖）、手動檢查清單、PR、合併 | medium（要修 mods 就 high） | ⬜ |
 
 ## 每一段共同的規矩
 
@@ -186,3 +186,7 @@ HANDOFF 更新（狀態、中途發現、要使用者決定的）、段 4 的開
 - 段 1 中途發現 1、2（「照建議」，主控 session 轉達、主控的解讀）：
   - 1（guard 把指令**文字裡**的 `firebase deploy` 當成指令，多問）：放下一輪。
   - 2（`project.json` 壞掉時比最嚴預設少問）：改成「壞掉＝最嚴預設」，**段 8 修**；會改 `project-config.test.ts:112` 的意思，修時把它加進 spec「允許改的既有測試」。
+- 段 2 中途發現 1、3（使用者：「第 2 段另外記了兩個小問題都照你的建議」，主控 session）：
+  - 1（dash 總覽「新對話會用 X」比資料夾不比 email）：**段 8 修**，畫面的字會變，要截圖。
+  - 3（`accounts.json` 的 account1 `label` 還寫「終端機」）：主控改成跟另外兩個同一個寫法（「account1 資料夾」）；私人資料，不在任何 repo，改前備份在主控 scratchpad。
+- 段 3 由使用者換帳號自己開（不是主控用 `start_session` 開的）：段 3 做完時主控不會自動收到通知，段 3 照開場把結果寫進這份、跟使用者說；使用者回主控 session（或換帳號後開新對話接手主控）再開段 4。
