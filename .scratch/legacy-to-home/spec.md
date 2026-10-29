@@ -85,6 +85,12 @@ hook 換手、「mods 改由客廳搬」、VM 那一半**一定要接著做完**
   拿掉之後是 01 判準允許的第 2 類「多問」（段 1 發現，主控 2026-10-29 照建議補進來）
 - **同一類之後不用再問**（主控 2026-10-29）：因為拿掉寫死的 id 而變成「多問」的既有測試期待值，照上面的做法改，記進這裡與那支 issue 的「做完時留下的」；會「少問」的停下來問
 - limit-guard：`tests/handoff-dir.test.ts:58-64,86-98`、`tests/worktree-handoff.test.ts:64-95`（`FLAT_PROJECTS` 拿掉、worktree 一律用主資料夾名）
+- 客廳 `tools/devbox.test.mjs`（**主控 2026-10-29 照 A**；段 3 發現，issue 04 做法 3 拿掉 `devbox.mjs` 的 `legacy` 分支，測 legacy 的跟著改）：
+  - 刪 4 條（只在測「叫上一個專案自己的 devbox.mjs」）：「回家（VM 關著）：上一個專案在 VM 上有沒推的 → 它的 devbox.mjs 停下來…」「回家（VM 開著）：上一個專案停下來就不關 VM」「出門：上一個專案的出門停下來…」「上一個專案的 devbox.mjs 不見了…」。
+    每條在 `tools/devbox-mods.test.mjs` 有一條上一個專案（`projects` 的一列）當主角的新測試：VM 關著回家時它有沒推的 → 整個停住、每個專案的程式碼都不動；VM 開著回家時它有沒推的 → VM 不關；出門時它在 VM 上有沒 commit 的 → 整個停住、VM 上其他專案也不動；`projects` 有一列的 `home` 不存在 → 停下來講是哪一列
+  - 5 條只拿掉 `legacyCalls()` 那一行斷言（情境與其他斷言不動）：「回家（VM 關著）：關機時記下這個專案有沒推的…」「…vm-state.json 比 VM 最後一次開機舊…」「…都推了 → …」（標題的「上一個專案先回家，」拿掉）、
+    「出門：都好 → …」（標題的「先叫上一個專案的 out，再」拿掉，連同「它的 out 印在 ③ 之前」那一行）、「--project 不在清單上…」。理由：`legacy` 拿掉之後沒有東西會叫那支假的 devbox.mjs
+  - `before()` 的假設定拿掉 `legacy` 那一格（新的 `devbox.mjs` 看到這一格會停下來叫你搬進 `projects`）；開頭說明改成「假的上一個專案 devbox.mjs 留著，確認它沒被叫到」
 - dash：`tests/vm-projects.test.tsx:63-81`、`tests/vm.test.tsx:7`（雲端分頁一律叫客廳的 devbox）
 
 ### 行為會變的（使用者點過頭的）
