@@ -15,7 +15,7 @@
 | 6 上一個專案 | 09 → 08 | high（08 中途要問使用者） | ✅ 09（上一個專案 `.local` `dca9cd8`：刪 59 個檔、`pre-push` 留著；客廳 `24d8413`）、08（差異報告 `08-skill-diff-report.md`；使用者照建議換 6 支＋kickoff 的合併規定搬進它的 `CLAUDE.md`；PR b09901017/baobao-wellness-clinic-scheduler#187 CI 全綠、合進 `develop` `869503d`） |
 | 7 VM | 段 2 中途發現 1 → 12 | high（開 VM、花錢，主控開段前再提醒使用者） | ✅ 段 2 中途發現 1（客廳 `62adaf0`；devbox-mods 30 → 31、devbox 17）、12（客廳 `1abf957`；VM 21:28 開 → 21:33 回家關機，status 關著） |
 | 8 審查 | `/matt-code-review`：這個 repo `main...claude/tooling-leftovers`＋客廳這一輪的 commit＋上一個專案這一輪的 PR 與 `.local` commit | xhigh | ✅ 「段 8 審查結果」：要修的 4 條（中 1：13 把專案裡的 `tmp/` 當暫存區；低 3）、記著 2 條；測試全過、私人值 0 筆、上一個專案 staging 部署成功 |
-| 9 修審查、教訓、PR、合併 | 審查找到的、11、手動檢查清單、PR、合併 | high | ⬜ |
+| 9 修審查、教訓、PR、合併 | 審查找到的、11、手動檢查清單、PR、合併 | high | ✅ 審查要修的 4 條（客廳 `dce741f`；guard 64 → 69、limit-guard 67）、11（`docs/agents/lessons.md` 二～八）；PR 與合併見「下一輪要做的」上面那行 |
 
 ## 每一段共同的規矩
 
@@ -373,6 +373,25 @@ CLAUDE.md（「合併」：CI 綠了直接合；還沒有 CI 時以這一輪驗�
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：high。
 ```
 
+## 下一輪要做的
+
+（段 9 寫；這一輪都只記、沒做的。細節在各自那一條）
+
+| 來源 | 什麼 | 建議 |
+|---|---|---|
+| 段 8 審查第 5 條 | guard：`git commit -m "<危險指令>" && eval "$(git log -1 --format=%s)"` 現在不問（02 的遮罩） | 同一串有 `eval`／`source`／`.`／`bash -c "$(…)"` 時整串不遮。多問 |
+| 段 8 審查第 6 條 | guard 的 Bash／PowerShell 剖析分在 `classify.ts`、`removals.ts` 兩處，指令名取兩份、`envOf` 同名；`devbox.mjs`、dash 幾處重複 | 整理時把兩種 shell 的剖析搬進一個 `shell.ts`、指令名只留一份。不影響行為 |
+| 段 1 第 2、3、4、5、7 條 | guard：`gcloud firestore export` 要不要問；python 串列叫 `subprocess`、`powershell -enc`；不讀 `bash x.sh` 的內容；`node --check` 當成跑腳本；`gcloud config set project` 之後沒寫 `--project` | 都是多問（第 5 條是少問一點）；第 2 條要先問使用者 |
+| 段 3b 第 1 條 | guard `rm` 的 regex：`bash -c "rm -rf x"`、`xargs rm` 尾巴沒東西都不問 | 前面也認引號、後面認結尾。多問 |
+| 段 4 第 3 條 | guard 刪東西的框：python／node heredoc 裡每一處 `rm` 一行一樣的字 | 同樣的理由合併成一行、寫出是哪個程式 |
+| 段 4 第 2 條 | dash `vmView` 拿 `month` 沒檢查是字串 | 動 `vmUsage` 時順手 |
+| 段 2 第 2 條、段 3 | 客廳 tools：兩支 devbox 測試各一份 `BASH`、`git`／`write`；`--no-home` 舊名字 | 下一輪拿掉 `--no-home`（`devbox.mjs` `vmState`、`autosync.mjs` `backupMods`） |
+| 段 6 第 1～4 條 | `legacy-parity` 的 `OLD_JSON` 少了 `skills`（改既有測試，先問）；`sync-skills` 是手動的（客廳更新不會自己跟到專案）；上一個專案兩支 skill 留舊版；上一個專案沒選 `pr` | 第 2 條最值得：對話開始用 `--dry-run` 比一次、不同就提醒（不要自動 commit） |
+| 段 5 第 2、4 條 | 這台沒有全域 git 身分；上一個專案 E2E 斷網整批紅（SDK／字型快取還沒做） | E2E 平行之前先做快取；全量在 clone 量一次（`C:/w/e2e-exp` 留著） |
+| 段 7 第 1、2 條 | VM 看 presync 要 `sudo journalctl`；`claude-home-presync.service` 註解舊了 | 下次動那個 unit 一起改、在 VM 重裝 |
+| 段 8 中途發現第 1 條 | 本機 `main` 停在舊的 | 合併後 `git fetch`、`git branch -f main origin/main`（不在這個 checkout 切分支） |
+| 段 9 中途發現 | 見「中途發現」段 9 | |
+
 ## 段 8 審查結果
 
 （2026-10-29，段 8；`/matt-code-review` 兩個 subagent（Standards、Spec）＋段自己對「少問」的 02、13 寫探針，拿改之前與現在的 classify／removals 純函式比。只審、不修。）
@@ -417,6 +436,15 @@ CLAUDE.md（「合併」：CI 綠了直接合；還沒有 CI 時以這一輪驗�
 ## 中途發現
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
+
+### 段 9
+
+進度：段 8 審查要修的 4 條 ✅（客廳 `dce741f`）、11 ✅。只記、不加進這一輪。沒有會壞東西的。
+
+| # | 哪裡 | 什麼情境會錯 | 建議 |
+|---|---|---|---|
+| 1 | 客廳 `mods/guard/hooks/classify.ts` `deletes` 的「程式裡刪檔案」（`shutil.rmtree`、`fs.rmSync`…）照舊拿 `TEMP` regex 比字 | `TEMP` 有 `[\\/]tmp[\\/]`：`python -c "import shutil; shutil.rmtree('./tmp/notes')"`、`'C:/proj/tmp/x'` 這種寫法字裡有 `/tmp/` → 當暫存區不問（`'tmp/notes'` 沒有前面的斜線就問）。13 之前就這樣（13 說程式裡刪檔案照舊只看字），跟段 8 審查第 1 條同一類，但沒經過 `removals.ts` | 下一輪：「程式裡刪檔案」改用段 9 的 `TEMP_WORD`（只認 `/tmp` 開頭），或一律問。多問 |
+| 2 | issue 11 查證時 | 段 1 中途發現 1 的 `printf "%s" $(grep -c $'\r' $f)` 印行數，段 9 沒重現（同樣寫法數得對）；上一輪段 8 續「`$(…)` 裡有 `$'…'` 報錯」也沒重現 | 不用修；lessons 只寫了發生的事。再遇到時把那一整行指令原樣記下來 |
 
 ### 段 8
 
