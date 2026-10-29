@@ -82,3 +82,28 @@ E2E 加速（第 3 階段開始前說的，主控交接記的原話）：
 | firebase 全域旗標寫在子指令前面：`firebase --project prod deploy`、`firebase -P baobu-app firestore:delete …`、`firebase --debug deploy …` | 子指令被當成旗標（`--project`），只記一筆讀、不問 | 子指令認成 `deploy`／`firestore:delete`，跟旗標寫在後面同一種判斷 |
 | `gcloud` 全域旗標寫在 `firestore` 前面：`gcloud --project=baobu-app firestore import …`、`gcloud --quiet --project=… beta firestore import …` | 認不出，不擋 | 照 `neverWrite` 擋（跟寫在後面同一種判斷；`export` 照舊不問） |
 | `firebase -P prod`（只有旗標、沒有子指令） | 記一筆讀「firebase -P」 | 記一筆讀「firebase prod」（都不問，只是記的字不同） |
+
+### 02 guard 確定不會執行的字不當成指令（客廳 `3950996`；少問）
+
+只在 Bash 指令；PowerShell、Bash 讀不懂的（引號沒關、heredoc 沒結束、括號沒對上、有 `case`）照舊掃整串。
+
+不再問的：
+
+| 寫法 | 以前 | 現在 |
+|---|---|---|
+| `echo`、`printf`、`grep`、`egrep`、`fgrep`、`rg` 的引號參數裡寫到 firebase CLI、firestore 網址、`git push <國王日記 repo>`、`gcloud firestore import … --project=baobu-app`、`rm -rf`、`paypal`、`node <寫入腳本>`：`echo "git push <國王日記 repo>.git main"`、`grep -n "gcloud firestore import --project=baobu-app" file`、`echo '$(firebase deploy)'`（單引號不會執行） | 當成真的要跑：要問、記成碰了 Firebase | 不問、不記 |
+| `git [-C 資料夾] commit` 的 `-m`／`-am`／`--message`、`git tag -m`、`gh pr\|issue create\|edit` 的 `--title`／`-t`／`--body`／`-b` 的引號內容，含 `"$(cat <<'EOF' … EOF)"` 的內文：`git commit -m "fix firebase deploy"`、`git commit -m "add paypal"`、`git commit -m "run node scripts/restore-backup.mjs"`、推 main 就部署的專案裡 `git commit -m "改完再 git push"`（以前 register 去問 git 現在在 main → 當成推 main） | 同上 | 不問、不記。`gh issue create／edit` 本身「傳出去」照舊問；`gh pr create --repo <國王日記 repo>` 照舊擋 |
+| 帶引號分隔字（`<<'EOF'`、`<<"EOF"`、`<<\EOF`）的 heredoc 餵給 `cat`、`tee`、`git commit -F -`：`cat <<'EOF' > notes.md`＋內文 `gcloud firestore import … --project=baobu-app`、`cat >> 筆記 <<'EOF' … && git add … && git commit -m …`、`git commit -F - <<'MSG'` | 同上 | 不問、不記 |
+| 環境只看同一段：別段寫到的正式站 id／網址不再讓這一段跟著認：`node scripts/reset-staging.mjs --project staging 2>&1 \| tail; curl <正式站網址>`（上一個專案過去的指令裡有一條） | 整串有正式站 id → 這一段的腳本當成寫正式站，要問 | 這一段自己寫了 `--project staging` → staging，不問 |
+
+以上都要「這一段的輸出不會被拿去執行」才遮：`|` 只接到 `cat`、`tee`、`grep`、`rg`、`head`、`tail`、`wc`、`uniq`、`cut`、`tr`、`nl`、`clip`、`column`；這一層沒有括號、`{ }`、`if`／`for`／`while`、`coproc`、`exec`、process substitution、重導向到 1、2 以外的 fd；寫了檔案的話，檔名不像 hook、不是點開頭，而且這串指令的其他段都只是 `git`（不帶 `-c`）、`gh`、`cat`、`ls`、`cd`、`mkdir` 這種不會執行東西的；`printf -v`、`rg --pre` 不算。引號裡的 `$(…)`、反引號照樣當指令看。
+其他寫法（`bash -c`、`| bash`、`ssh`、`node -e`、`python - <<'EOF'`、不帶引號的 heredoc、`timeout`／`sudo` 包一層…）一律照舊，`tests/not-executed.test.ts` 逐條跟改之前比。
+
+多問的（環境只看同一段＋同一層前面 `export` 的段）：
+
+| 寫法 | 以前 | 現在 |
+|---|---|---|
+| 別段的 `demo-`：`git commit -m "add demo-page" && firebase deploy --project baobu-app`、`git checkout demo-x && firebase deploy`、`cd demo-site && npm run restore -- b.json`、`ls demo-data; firebase firestore:delete -r / --project baobu-app` | 整串有 `demo-` → 當成模擬器，不問（國王日記那道 `neverWrite` 也跟著跳過） | 照這一段自己的環境：要問 |
+| 別段的 `--project staging`、staging 的專案 id：`node scripts/restore-backup.mjs b.json; echo "--project staging"`、python heredoc 內文寫到 staging id 之後 `node --check scripts/seed-staging.mjs`（上一個專案過去的指令裡有 2 條） | 整串有 staging → 當 staging，不問 | 這一段看不出 → 要問 |
+
+拿過去對話裡真的跑過的 Bash 指令量過（只算筆數）：這個專案 1689 條，少問 3 條（都是上面的誤判）、多問 0；上一個專案 14066 條（它的規則），少問 2、多問 2（就是上面寫的），16 條讀不懂照舊掃整串。

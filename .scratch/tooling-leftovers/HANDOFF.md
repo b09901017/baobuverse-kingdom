@@ -1,12 +1,12 @@
 # 工具收尾 HANDOFF
 
-分支 `claude/tooling-leftovers`（從 `claude/legacy-to-home` 的 `1de96ba` 開）。spec：`spec.md`。主控：`local_fba130a7-69e8-44e8-a663-406bab3cb262`（主控自己的筆記在 `.local/main-session-handoff.md`）。
+分支 `claude/tooling-leftovers`（從 `claude/legacy-to-home` 的 `1de96ba` 開）。spec：`spec.md`。主控：`local_cc2e38d3-2974-40a4-ac57-e68e916de22b`（段 1 續的時候換了帳號；舊的是 `local_fba130a7-…`。主控自己的筆記在 `.local/main-session-handoff.md`）。
 
 ## 分段
 
 | 段 | issue | effort | 狀態 |
 |---|---|---|---|
-| 1 guard | 01 → 02 | xhigh（02 是這一輪唯一「少問」的改動，白名單與守住的測試很多） | 🟡 01 ✅（客廳 `d3bc4a0`）；02 沒動（5 小時額度 93%，停在支與支之間）→「段 1 續的開場」 |
+| 1 guard | 01 → 02 | xhigh（02 是這一輪唯一「少問」的改動，白名單與守住的測試很多） | ✅ 01（客廳 `d3bc4a0`）、02（客廳 `3950996`，段 1 續）；guard 38 → 56 |
 | 2 同步的兩個 git 行為 | 03 → 04 | xhigh（兩台同時寫 git 的紅燈測試） | ⬜ |
 | 3 tools 整理 | 05 → 06 | high | ⬜ |
 | 4 儀表板 | 07 | high（要截圖） | ⬜ |
@@ -25,15 +25,16 @@
 - **改 `~/.claude/mods`**：tsc 0 錯（`npx -y -p typescript@5 tsc -p <mod 資料夾> --noEmit`；notify 沒有 tsconfig 不跑）、`claude plugin validate <mod 資料夾>` 過；
   改完複製進客廳 `mods/`、客廳 commit、推；客廳 `mods/` 跟 `~/.claude/mods` 逐檔相同（不算 `node_modules`、`.claude-plugin/types`）。客廳的自動同步會先把改到一半的檔備份成「自動同步」commit：**最後一個 commit 的狀態完整就好**。
 - **測試一支一支跑**，不要平行全開（使用者的電腦曾經過熱斷電）。基準（2026-10-29 段 9 之後）：
-  mods `claude plugin test <mod>`：guard 38、limit-guard 52、dash 38、e2e-progress 5、notify 6；
+  mods `claude plugin test <mod>`：guard 56（段 1 之後）、limit-guard 52、dash 38、e2e-progress 5、notify 6；
   客廳寫檔名：`node --test tools/autosync.test.mjs` 19、`tools/mods.test.mjs` 13、`tools/devbox.test.mjs` 14、`tools/devbox-mods.test.mjs` 22（**不要** `node --test tools/`）。
 - **上一個專案**（`C:/Users/DELL/Desktop/baobao-wellness-clinic-scheduler`）：它的資料夾、分支、worktree、正在用的設定都不動；`.local/references/` 不讀；記憶用 `grep -l` 找檔、只看沒有私人值的行。
   動它的 repo 只有 08（照它自己的 `CLAUDE.md` 開 PR）；10 的實驗在另一份 clone。
 - 公開 repo（這個）：commit、`.scratch`、PR 不帶真名、帳號名字、email、金鑰、VM host／GCP 專案 id／zone／instance 名。`~/.claude/mods-data/accounts.json`、客廳 `vm/devbox.json` 的值不要印出來、不要抄過來；
   比對私人值用 spawnSync 讀檔、只印筆數，不要把值放進指令字串（錯誤訊息會把值印進對話）。
 - 這個環境的 Bash：heredoc 會把 `\\` 變成 `\`；`$(…)` 裡有 `$'…'` 會報錯但前半已經跑了；Git Bash 的 `awk` 把 CRLF 變 LF。要寫反斜線或改 CRLF 的檔用 Write／Edit 或 python 讀寫 bytes。
-- guard 會把指令字串裡的 firebase CLI、firestore 網址、`neverWrite` 的 `git push`／`gh`／`gcloud` 當成指令，heredoc 內文也算（02 修好之前）：被跳框照實說明，不要改寫法繞；
-  要在指令裡寫這類測試字串之前，先跟使用者說「等一下會跳框，是測試字串」；改測試檔用 Write／Edit 可以避開。
+- guard（02 之後，客廳 `3950996`）：`echo`、`grep`、`git commit -m`、`gh pr create --body` 的引號參數、餵給 `cat`／`tee`／`git commit -F -` 的帶引號 heredoc（`<<'EOF'`）裡的字不再當成指令；
+  `python - <<'EOF'`、`node -e`、`bash -c`、不帶引號的 heredoc、`| bash`、寫檔之後同一串又跑別的程式（`cat > x <<'EOF' … && node …`）照舊掃。在這些裡寫 firebase CLI、firestore 網址、`git push` 國王日記 repo 的測試字串之前，
+  先跟使用者說「等一下會跳框，是測試字串」；改測試檔用 Write／Edit 可以避開。被跳框照實說明，不要改寫法繞。
 - 推到私人 repo、改 `settings.json`、改 skill 被 auto mode 擋下：**停**，寫進下面，請使用者做或交給主控，不要繞。
 - 中途發現的事不岔出去修，記進下面「中途發現」（哪裡、什麼情境會錯、建議）；使用者說要修的，修之前再 grep 一次牽連。
 - 改一個函式、一段文件或畫面上的字之前，grep／graphify 找出所有用到它的地方。
@@ -110,6 +111,31 @@
 最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：xhigh。
 ```
 
+## 段 2 的開場
+
+```
+這一輪在做「工具收尾」：第 3 階段留下的清單全部做完，加上 E2E 加速的 skill。分支 claude/tooling-leftovers（已經在這個 checkout 上）。
+這是第 2 段：只做 issue 03 → 04（客廳的同步：autosync 嚴格模式、devbox 回家的家裡那一半）。05 以後不做。段 1（01、02 guard）做完了（客廳 d3bc4a0、3950996）。
+
+先讀：.scratch/tooling-leftovers/HANDOFF.md 的「每一段共同的規矩」「過目抓到的」03、04、「中途發現」段 1；spec.md（「不能違反」「允許改的既有測試」）；issues/03、04；
+.scratch/legacy-to-home/HANDOFF.md「判斷題」J1、「中途發現」段 5 第 1 條、段 9 第 1 條；CLAUDE.md；docs/agents/lessons.md。
+
+要特別注意：
+- 03：autosync 加嚴格模式（旗標名段裡定），一定在前景跑；推被拒／推失敗、拿不到鎖（比照 --restore-mods 等約 30 秒）、git add／commit 出錯、memoryDir／mirror 出錯都 exit 1，訊息說是哪個專案哪一步。
+  mods 那一半不在範圍。不帶這個模式照舊 exit 0、只寫 log（對話開始／結束的 hook 不受影響）。
+  devbox 只拿掉家裡（pushLocal）與 presync 兩份「推完了沒」，改看 exit code；VM 那一半的 vmState／checkVmState 不動（回家時 VM 上可能是舊版客廳，新旗標會被忽略）。
+- 04：回家的家裡那一半直接叫 03 的嚴格模式（在鎖裡 commit → pull --rebase → 推；接不起來就 abort、exit 1），成功才 --restore。不另寫 rebase、不用 --autostash（套回衝突時 exit 0，接著 --restore 的 mirror 會刪掉剛寫的記憶）。
+- 紅燈先：暫存 bare repo＋兩個 clone 做「兩台同時寫 git」，不碰真的 .local。推被拒、拿不到鎖、commit 出錯、兩邊改同一個檔、沒 commit 的檔＋遠端改同一個檔，各一條先紅。
+- 對話開始／結束的 hook 直接跑 C:/Users/DELL/claude-home/tools/autosync.mjs：改到一半的檔會被真的同步叫到（其他對話也是）。先在暫存的複本改、測過再放回客廳（段 1 改 guard 也是這樣做）。
+- autosync 一 import 就跑、最後 process.exit（05 J3 才改）：測試照既有的寫法用子程序跑，不要 import。
+- 既有測試一條都不改：autosync 19、devbox 14、devbox-mods 22、mods 13（客廳寫檔名 node --test tools/<檔名>，不要 node --test tools/）；要改的先停、用 SendMessage 問主控。
+- 不要按出門／回家、不要開 VM（12 才開）。
+
+做完要交：03、04 各一個 commit（這個 repo；客廳照規矩）、Status: done、「做完時留下的」、HANDOFF 分段表段 2 ✅、中途發現、段 3 的開場（05 → 06，high；照段 1 的開場的格式）。
+額度快用完時：每做完一支就 commit、推、記進 HANDOFF，停在支與支之間。
+最後回覆用繁體中文簡短說做了什麼、卡在哪。建議 effort：xhigh。
+```
+
 ## 中途發現
 
 （段寫：`### 段 N`，表格「# | 哪裡 | 什麼情境會錯 | 建議」）
@@ -117,11 +143,17 @@
 ### 段 1
 
 進度：01 ✅（客廳 `d3bc4a0`、這個 repo `609c6d5`）；02 沒動：開 02 之前 5 小時額度 93%（18:50 重置），停在支與支之間，開場在上面「段 1 續的開場」。
+段 1 續：02 ✅（客廳 `3950996`）。第 3～7 條是段 1 續找到的，照主控的話只記、不加進這一輪。
 
 | # | 哪裡 | 什麼情境會錯 | 建議 |
 |---|---|---|---|
 | 1 | 這個環境的 Bash：`printf "%s" $(grep -c $'\r' $f)` | 印出來的是**行數**，不是 CR 的數（`$'\r'` 在 `$(…)` 裡沒變成 CR，`grep -c` 什麼都比對得到）。段 1 因此以為 guard 的檔全是 CRLF，把 `classify.ts` 換成 CRLF、整份變成改過，發現後換回 LF（commit 前，沒有進 repo）。實際上客廳 guard 只有 `tests/guard.test.ts` 是 CRLF，其他是 LF | 查換行用 python 讀 bytes 數 `\r\n`。給 11（lessons）：跟上一輪段 8 第 1、6 條同一類 |
 | 2 | 01 判準「`gcloud --project baobu-app firestore export …`（要：照 `neverWrite` 擋）」 | `export` 本來就不在 guard 的 `gcloud firestore` 寫入清單（`import`、`delete`、`bulk-delete`、`create`、`update`、`restore`、`clone`）：它讀 database、寫到 GCS bucket，不寫國王日記的 database。段 1 做成跟寫在後面的同一種判斷（不問）。要「匯出國王日記也要問」就是把 `export` 加進清單（多問） | 不急；審查時主控看要不要問使用者 |
+| 3 | 02 判準 3 的兩種「照舊要問」其實現在就不問 | `python - <<'EOF'`＋`subprocess.run(['firebase', 'deploy', '--project', 'baobu-app'])`（串列寫法：firebase 的 regex 要後面接空白）、`powershell -enc <base64>`（看不到字）：02 之前之後都不問。issue 02 以為會問。測試只守「改完跟改之前一樣」 | 下一輪：firebase 的 regex 也認 `'firebase', 'deploy'` 這種串列；`-enc`／`-EncodedCommand` 解 base64 再掃，或一律問。都是多問 |
+| 4 | guard 不讀 bash 腳本的內容 | `bash x.sh`、`sh x.sh`、`./x.sh`、`source x.sh` 跑的腳本，guard 不讀內容（只讀 node／python 的）。02 之前用 heredoc 寫 `x.sh` 那一下會因為內文跳框（碰巧擋到）；02 之後同一串指令再跑它照舊掃（有測試），但「這一次寫、下一個 Bash 才跑」不會問——跟用 Write 寫檔再跑一樣，本來就有的洞 | 下一輪：`scriptPaths` 也認 `bash`／`sh`／`source`／`.`／`./x`，讀內容當成指令掃 |
+| 5 | guard 把 `node --check x.mjs` 當成跑腳本 | `--check` 只檢查語法、不執行。02 之後別段寫到 staging id 不再讓它被當成 staging，上一個專案過去的指令裡有 2 條會多問一次（spec「行為會變的」02） | 小：`scriptPaths` 跳過 `--check`。不急 |
+| 6 | 02 的切段器遇到 `case` 整串照舊掃 | `case … in a) …;; esac` 的 `pattern)` 會讓切段器以為 `$(…)` 結束（會把真的會執行的字遮掉），所以有 `case` 就當讀不懂。上一個專案過去的指令有 13 條，都是只讀的檢查，照舊掃沒有多問 | 不用修；記著 |
+| 7 | `gcloud config set project baobu-app && gcloud firestore import gs://…` | 第二段沒寫 `--project`，`neverWrite` 認不出國王日記（02 之前之後都一樣；`export CLOUDSDK_CORE_PROJECT=…` 也是） | 下一輪：`gcloud firestore` 寫入沒寫 `--project` 時看同一串前面的 `gcloud config set project`，或沒寫就問（多問） |
 
 ## 要使用者決定的
 
