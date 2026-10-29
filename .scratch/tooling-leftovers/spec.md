@@ -107,3 +107,14 @@ E2E 加速（第 3 階段開始前說的，主控交接記的原話）：
 | 別段的 `--project staging`、staging 的專案 id：`node scripts/restore-backup.mjs b.json; echo "--project staging"`、python heredoc 內文寫到 staging id 之後 `node --check scripts/seed-staging.mjs`（上一個專案過去的指令裡有 2 條） | 整串有 staging → 當 staging，不問 | 這一段看不出 → 要問 |
 
 拿過去對話裡真的跑過的 Bash 指令量過（只算筆數）：這個專案 1689 條，少問 3 條（都是上面的誤判）、多問 0；上一個專案 14066 條（它的規則），少問 2、多問 2（就是上面寫的），16 條讀不懂照舊掃整串。
+
+### 03 autosync 嚴格模式、devbox 家裡與 presync 看 exit code（客廳 `b5631ea`）
+
+| 哪裡 | 以前 | 現在 |
+|---|---|---|
+| `autosync.mjs --strict`（新的） | 沒有（不認得的旗標：跑到背景、馬上 exit 0） | 前景；`.local` 沒有要推的也拉；拿不到鎖等最多 30 秒；任何一步沒做成 exit 1、stderr 一行「`<專案>/.local：<哪一步>：<原因>`」 |
+| 不帶 `--strict`（對話開始／結束的 hook）的 `tools/autosync.log` | 出錯那行只有 git 的最後一行（常是 `hint:`）；推不上去是「沒推成：<推的原因>（pull --rebase 沒成功：<拉的原因>）」 | 多了哪個專案哪一步、取 git 的 `fatal:`／`error:` 那行；推不上去是「沒推成：pull --rebase 沒成功：兩台改了同一個檔（檔名），回到拉之前」。exit code 照舊 0 |
+| 出門：家裡的 `.local` 推不上去 | 停：「家裡電腦的 X/.local 沒推成，看客廳 tools/autosync.log 最後幾行」 | 停：「家裡電腦的 X/.local 沒推成：X/.local：<哪一步>：<原因>」＋「VM 還沒開，處理完再按一次「出門」」 |
+| 出門：家裡的 `.local` 正被對話結束的同步拿著鎖 | 跳過這次；有沒推的就停在「沒推成」 | 等它做完（最多 30 秒）再推，照常出門 |
+| presync：某個專案的 `.local` 沒推成 | 「X：沒推成：.local 沒推上去（看 ~/claude-home/tools/autosync.log）」；拿不到鎖直接算沒推成 | 「X：沒推成：X/.local：<哪一步>：<原因>」；拿不到鎖等最多 30 秒（還在那個專案的 35 秒限時裡） |
+| `--restore-mods` 等鎖 | 寫死 30 秒 | 一樣 30 秒（跟 `--strict` 共用 `LOCK_WAIT`；測試可以用 `AUTOSYNC_LOCK_WAIT_MS` 換短） |
