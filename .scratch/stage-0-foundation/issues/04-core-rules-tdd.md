@@ -64,3 +64,51 @@ Blocked by: 03
 ## 做完時留下的
 
 （段做完填：測試檔、哪幾條規則跟 03 的介面不合而改了什麼。）
+
+## Comments
+
+### 段二（03）留給 04 的測試清單（2026-10-30）
+
+介面在 `packages/core`：`openBook(catalog, events)` 回傳的帳本有 `total`、`breakdown`、`lines`、`debts`、`problems`；另外是 `validateEvent`、`participantsOf`、`splitEvenly`。
+型別與每個數字的定義（正負號、`person` 是誰）在 `model.ts`、`book.ts` 的註解；`shape.test.ts` 有每一種情況的事件例子，可以拿來改成測試資料。
+下面一條（或一組 `it.each`）一支測試，名稱用 GLOSSARY 的詞。「步的」＝ `person: 步`。
+
+- **上表每一列**：步的 `total({ measure: "paid" })`、`"use"`、`"tab"`；「其他」欄用寶的 `use`、`spoilGiven`、`spoilReceived`（`where: { cause: "spend" | "giveMoney" }` 分買東西、直接給錢）、`income`、`balance`、`netWorth`。
+- **恆等式**，上表每一列、寶媽卡、待收各一支：
+  `paid − use ＝ tab ＋ spoilGiven − spoilReceived ＋ receivable − 寶媽卡幫出`；
+  tab、receivable、寶媽卡幫出都不含還款那幾行（`cause: "repayment"`），spoilReceived 不含直接給錢那幾行（`cause: "giveMoney"`），
+  寶媽卡幫出 ＝ −（寶媽卡的 `balance`，因為餘額那幾行是負的）。按月攤單月不驗。
+- **信用卡、轉帳**：刷 1,000 → 信用卡 `balance` −1,000、步的 paid +1,000；用銀行繳卡費是轉帳（兩邊一減一加、`netWorth` 不變、paid／use 不動）；跨行轉帳＋手續費同一則事件 → 只有 15 進 paid、use。
+- **寶媽卡**（寶的）：照上面表格下的例子；另外驗寶媽卡的 `balance` 是 −3,000 → −1,000，寶的 `netWorth` 刷的時候不動、還的時候 −2,000。
+- **還款先抵最早**：`debts({ channel: "othersCard", person: 寶 })` 照上面的兩個例子＋手動指定（`allocations`）那一個。
+- **往來帳用同一套**：步幫寶付 3,000、之後寶幫步付 1,200 → `debts({ channel: "tab" })` 那 3,000 已抵 1,200、還欠 1,800；寶還步 1,800 → 還清；再多還 100 → 變成步欠寶 100（`ref` 沒有 `item`）。
+- **待收**：聚餐例子 → 步的 use 500、paid 2,000、`receivable` 1,500；朋友還 500 → `receivable` 1,000、`debts({ channel: "receivable" })` 那一項還欠 1,000；
+  `splitEvenly(1000, 3)` → `[334, 333, 333]`、`splitEvenly(2000, 4)` → `[500, 500, 500, 500]`。
+- **按月攤**：12,000 分 12 期 → 信用卡 `balance` 當天 −12,000、paid 當天 12,000、use 用 `breakdown(…, "month")` 看 10 月到隔年 9 月每月 1,000；年繳保險一樣；1,000 攤 3 個月 → 334、333、333。
+- **投資**：郵局轉 10,000 進共有的加密貨幣 → 郵局 −10,000、`total({ measure: "balance", person: 步, where: { account: 加密貨幣 } })` 10,000、步的 `netWorth` 不變；寶的帳本也算得出步投入 10,000。
+- **對帳**：實際 1,050、算出 1,200 → `reconcileDiff` −150、之後 `balance` 1,050、paid／use／income 不動；第一次對帳 → `balance` 等於實際、`reconcileDiff` 0（`cause: "opening"`）；在對帳之前補記一筆 → 差額跟著變。
+- **退款**：上面的例子 → 日常、「家樂福」的 use 各少 95，paid 也少 95，income 不動；原本是幫寶付的那一項退款 → 往來帳也少。
+- **品項**：上面的例子用 `where: { tags: [...] }` 查；品項加總不等於整筆 → `validateEvent` 回 `items-sum-mismatch`，`openBook` 不算它、列在 `problems`。
+- **進階**：上面兩個例子；另外共付 1,001 平分 → 出錢的人 501。
+- **視角**：同一個罐子的 use，`breakdown` 依 `payer`、`account`、`repay`、`{ tag }`（含固定花費）、`amortized` 各拆一次，每次加起來等於 `total`；
+  「寶的冥想」：寶自己付、步寵寶、刷寶媽卡各一筆 → `repay` 拆得出 self／noRepay、`account` 拆得出寶媽卡。
+- **篩選**：上面的例子用 `from`／`to`；`withoutTags` 排除押金。
+- **合併的標籤**：「7-11」併進「711」→ 查「711」兩個都算，`lines` 上的標籤是「711」。
+- **收件匣**：`status: "pending"` 的事件，任何 `total` 都不算、也不在 `problems`。
+- **看不到的帳戶**：寶的帳本（catalog 沒有步的帳戶）裡，「步幫共付、從國泰出」→ 寶的 use 1,000、tab −1,000，不在 `problems`。
+- **參與者**（`participantsOf`）：步幫步付（步記）→ 只有步；寶幫步付（步記）→ 兩個；步幫共付 → 兩個；轉進共有的投資帳戶 → 兩個；
+  寶刷寶媽卡幫自己（寶記）→ 只有寶；寶直接給步 → 兩個；退款 → 原本那則的參與者＋記的人。
+- **驗證**（`validateEvent`）：`validate.ts` 的 `ProblemCode` 每一種一支（註解寫了是什麼情況）。
+- **還了沒**（`breakdown(…, "settled")`；做不完可以先 `it.todo`，留到階段 3）：寶的冥想 3,000 刷寶媽卡、還 2,000 之後 → repaid 2,000、outstanding 1,000。
+
+### 段二自己定的細節
+
+文件沒寫到、不是定義的細節。都是讀的時候算的，之後要改只改 core，資料不用動。
+
+- 共付除不盡的零頭算誰出的人；改比例的也一樣（照比例取整數，零頭給誰出）。
+- 按月攤：第一份在付錢那天，之後每個月同一天（那個月沒有這天就用月底）；零頭放在前面幾個月。往來帳、我付的不攤，付錢那天全額。
+- 退款算在退款那天（我付的、我用的同一天少，恆等式每一段時間都成立）；照原本那一項的分法按比例沖回；按月攤的品項退款不攤。
+- 往來帳的抵：之後反方向的花費、還款都先抵最早還沒抵完的；多還的變成反方向的一筆。寶媽卡、待收多還的就讓餘額變正、待收變負，不擋。
+- 帳戶不知道的支出算誰出的人自己的錢（進我付的），不動任何帳戶的餘額。
+- 事件的先後：日期 → 時間（沒寫的排前面）→ 記下來的時間 → ID。
+- 標籤合併可以接好幾層；繞成圈的當成沒合併。

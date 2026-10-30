@@ -1,6 +1,6 @@
 # 03 packages/core 的資料形狀與介面（設計兩次＋ADR）
 
-Status: todo
+Status: done
 Blocked by: 02
 動工前先讀：`../spec.md`；`../HANDOFF.md`「每一段共同的規矩」；`README.md`；`GLOSSARY.md`（全部）；`docs/plan.md`（「使用者的決定」與「已討論、使用者沒有反對的理解」全部）；
 skill `codebase-design`（含 `DESIGN-IT-TWICE.md`、`DEEPENING.md`）、`domain-modeling` 的 `ADR-FORMAT.md`；`.local/research/kingdom-diary-habits-2026-10-30.md`（國王日記實際怎麼記，只看統計）。
@@ -68,4 +68,39 @@ skill `codebase-design`（含 `DESIGN-IT-TWICE.md`、`DEEPENING.md`）、`domain
 
 ## 做完時留下的
 
-（段做完填：選了哪個草案、ADR 檔名、公開函式清單、Firestore 路徑。）
+2026-10-30 段二。
+
+- **選了草案 A：事件存記下來的原樣，所有數字讀的時候才算**；介面選 A-2（一種查詢：數字的種類 × 面向 × 篩選），不是每個數字一個函式。
+  三個草案（A 讀時算、B 存時展開成分錄、C 存時更新彙總）與比較表在 `../03-drafts.md`。草案是段二自己做的，沒開 subagent。
+- **ADR**：`docs/adr/0001-events-as-source-numbers-at-read.md`（為什麼、定下來難改的八件事、Firestore 怎麼放、讀取量的後果）。
+- **公開函式**（`@baobu/core`，本體都丟「還沒做：issue 04」）：
+
+  | 函式 | 做什麼 |
+  |---|---|
+  | `openBook(catalog, events)` → `Book` | 從頭算一本帳；`total(query)` 一個數字、`breakdown(query, by)` 視角、`lines(query)` 背後那幾行、`debts(query)` 每一筆已還多少還欠多少、`problems` 沒算進去的事件 |
+  | `validateEvent(event, catalog, events?)` | 存之前檢查，回傳問題清單（`ProblemCode`） |
+  | `participantsOf(event, catalog, events?)` | 誰看得到這則事件 |
+  | `splitEvenly(amount, ways)` | 一鍵平分，零頭算自己 |
+
+  數字的種類（`Measure`）：我用的 `use`、我付的 `paid`、收入、往來帳 `tab`、待收、寵對方、被寵、帳戶餘額、淨資產、對帳差額。
+  面向（`Dimension`）：人、誰出、帳戶、要不要還、罐子、標籤（有／沒有）、分期、種類、往來帳的另一個人、還了沒、月份。
+  `coreReady` 留著：`apps/treasury/src/App.tsx` 還在用，05 換掉驗證頁時可以拿掉。
+- **檔案**：`packages/core/src/model.ts`（存起來的形狀，開頭有 GLOSSARY → 程式名字的對照）、`book.ts`、`validate.ts`、`split.ts`、`index.ts`；
+  `shape.test.ts` 用型別檢查證明 04 的每一種情況都裝得下（04 可以拿裡面的例子改成測試資料）。
+- **Firestore 路徑**：全部在 `kingdoms/{kingdomId}/` 底下：`members/{uid}`（登入帳號 → 人）、`people`、`accounts`（只有主人讀得到）、`jars`、`tags`、`recurring`、`prefs/{personId}`、
+  `events/{eventId}`（一則事件一份文件，效果與品項都在裡面；另外存 `participants`、`updatedAt`、`deleted`、`v`）。
+- **GLOSSARY 補的**：效果、參與者、人、封存。只加新詞，沒有改到已有的定義。
+- **判準**：
+
+  | 判準 | 答案 |
+  |---|---|
+  | 轉帳會不會算成花費 | 不會：轉帳只出帳戶餘額那幾行，我用的、我付的只從支出、退款來 |
+  | 幫對方付會不會算進自己的罐子；寶媽卡、被寵的冥想會不會漏 | 我用的跟著幫誰：幫對方的算對方的；寶媽卡、被寵的都算寶的冥想 |
+  | 兩個品項＋整筆標籤「家樂福」會不會少算或重算 | 整筆的標籤不複製到品項，算的時候才套到每一項，加起來 820 |
+  | 窩日記要不要讀國庫特有的東西 | 不用：只查 `events` 的日期與參與者 |
+  | 「寶幫共付、步記的」放哪、誰讀得到；「步幫步付」寶讀不讀得到 | 都在 `events`；前者參與者兩個人，後者只有步，寶讀不到。寫成 05 的規則案例（05 的 Comments） |
+  | 寶沒有帳號時存不存得進「寶幫步付」、之後認不認得出 | 存得進：事件記的是人的 ID；寶有帳號後 `members/{uid}` 對到寶 |
+  | core 有沒有 import Firebase | 沒有：`packages/core` 只依賴 vitest（開發用） |
+
+- **留給下一段的**：04 的測試清單與段二自己定的細節在 04 的「Comments」；05 的規則案例在 05 的「Comments」。
+  要使用者決定的一題（一筆裡同時有幫自己、幫對方的品項時，對方看不看得到整筆）記在 HANDOFF，可以等到階段 6。
