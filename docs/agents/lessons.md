@@ -19,7 +19,10 @@
 發生的例子：2026-10-29，legacy-to-home 段 8 用 `python - <<'EOF'` 改 guard 的 `classify.ts`，程式裡寫 `\\b`，python 收到 `\b`（退格字元），兩個 regex 變成控制字元、5 支測試檔載不進來。當時以為是 heredoc 的問題。
 工具收尾段 9 重現：直接在 Bash 工具裡跑 `printf '%s\n' 'x\\y'` 印出 `x\y`、`<<'EOF'` 裡的 `a\\b` 也剩一個；**同樣幾行寫成檔再 `bash 檔`，兩個反斜線都在**。單引號與 `<<'EOF'` 在 bash 本來就不處理反斜線，所以是 bash 之前那一層改的。
 
-> 這段指令裡有沒有反斜線（regex、Windows 路徑、跳脫字元）？有的話用 Write／Edit 寫檔，或先把指令寫成檔再跑，寫完數一次反斜線。
+2026-10-30 階段 0 段三：Bash 工具的 heredoc 裡有 JS 樣板字串（反引號＋`${…}`），整段報 `unexpected EOF while looking for matching`、什麼都沒跑；同樣的程式寫成檔再跑就好。
+段六用簡單的樣板字串（`<<'EOF'` 寫檔、`node - <<'EOF'`、包在 `$(…)` 裡）重現不出來，原因沒查到，先當成同一類。
+
+> 這段指令裡有沒有反斜線（regex、Windows 路徑、跳脫字元）或一整段程式碼？有的話用 Write／Edit 寫檔，或先把指令寫成檔再跑，寫完數一次反斜線。
 
 ## 三、Git Bash 的 `awk` 把 CRLF 變成 LF；查換行的指令也可能算錯
 
@@ -64,3 +67,25 @@
 發生的例子：2026-10-29，工具收尾段 5 要照 09-09 的實驗「先跑那 10 個在 3 個 worker 下紅的檔」，但那個對話已經不在了（留下的最早是 10-05），issue 只寫了紅的「形狀」，commit 只點名 4 個，剩下 6 個找不回來。
 
 > 這次量到的結果，原始清單（檔名、測試名、數字、指令）寫進 issue 或 commit 了嗎？只在對話裡的，過幾週就沒了。
+
+## 九、scratchpad 的路徑太深：Windows 上 git、pnpm 會因為超過 260 字元壞掉
+
+發生的例子：2026-10-29，legacy-to-home 段 3 在 scratchpad 的深路徑 clone，checkout 失敗（錯誤訊息見第五條）。
+2026-10-30，階段 0 段一在 scratchpad 的深路徑 clone 跑 `pnpm verify`，pnpm 12 寫 `node_modules/.pnpm-task-run-state-v1/...` 時報「系統找不到指定的路徑」；改放 `%TEMP%\bkv` 這種短路徑就好（跑完刪掉）。
+
+> 要另外 clone 一份來跑？放短路徑（`%TEMP%\` 底下兩三個字的資料夾），git 加 `core.longpaths=true`，跑完刪掉。
+
+## 十、第一次就全過的測試，可能是空過
+
+發生的例子：2026-10-30，階段 0 段四寫規則測試。讀伺服器上文件的小幫手包在 `@firebase/rules-unit-testing` 的 `withSecurityRulesDisabled` 裡，那個函式不回傳回呼的結果，小幫手永遠拿到 `undefined`，
+「沒存進去」那支因此空過；同一輪另外兩支變紅才發現。規則測試第一次就 26 支全過，所以另外把規則放寬，確認該紅的會紅（3 支變紅、還原後全綠）。
+
+> 這批測試第一次就全過？把要測的那條規則或程式故意弄壞，看它會不會紅；包在別人函式裡的小幫手，先確認它真的拿到值。
+
+## 十一、本機與模擬器沒有的那一層，只在正式網址上壞：PWA 的 service worker 會攔同網域的每個網址
+
+發生的例子：2026-10-30，階段 0 段五第一次部署後，正式網址按 Google 登入停在「載入中」：`vite-plugin-pwa` 預設把每個網頁導向換成 `index.html`，連 Firebase 的 `/__/auth/handler` 也是
+（`vite.config.ts` 加 `navigateFallbackDenylist` 修好）。修好之後又跳 `redirect_uri_mismatch`：Google 的 OAuth 用戶端只認 `firebaseapp.com` 的網址，使用者在主控台加了 `web.app` 的。
+測試、模擬器都抓不到：本機開發沒有 service worker，模擬器的登入頁在另一個 port。
+
+> 這次改動有沒有只在正式網址才有的那一層（service worker、真的登入網域、快取標頭）？部署後在正式網址從登入走一次，不要只看模擬器。
