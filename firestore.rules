@@ -21,6 +21,9 @@ rules_version = '2';
 // 第一份成員文件：王國文件還不存在時，第一個登入的人在同一批寫入裡建王國（founder 寫自己）和自己的成員文件。
 // 之後王國文件已經在了，別人建不了（create 一個已經存在的文件會被當成 update，而王國不能 update）。
 //
+// 上線前的一鍵重置（issue 06）：canReset() 是 true 時，本人可以真的刪自己的資料（我記的事件、主人有我的帳戶與罐子、標籤、
+// 我的固定花費與排序）。王國、成員、王國裡的人永遠不能刪。上線時 canReset() 改成 false（跟 apps/treasury/src/launch.ts 一起切）。
+//
 // 規則只檢查欄位的種類、大小與「誰能動」；事件裡效果的內容（金額、品項、幫誰）在存之前由 core 的 validateEvent 檢查。
 // 記的人只能寫壞自己記的事件，寫不到別人的。
 //
@@ -56,6 +59,11 @@ service cloud.firestore {
 
     function meAfter(k) {
       return getAfter(memberPath(k)).data.person;
+    }
+
+    // 「已上線」開關的規則那一半：上線前 true，上線後 false（apps/treasury/test/launch.test.ts 檢查兩邊一致）
+    function canReset() {
+      return true;
     }
 
     function incoming() {
@@ -143,7 +151,7 @@ service cloud.firestore {
         allow read: if isMember(k);
         allow create: if isMemberAfter(k) && validJar(j);
         allow update: if isMemberAfter(k) && validJar(j) && unchanged(['id']);
-        allow delete: if false;
+        allow delete: if canReset() && isMember(k) && me(k) in existing().owners;
       }
 
       function validTag(t) {
@@ -161,7 +169,8 @@ service cloud.firestore {
         allow read: if isMember(k);
         allow create: if isMemberAfter(k) && validTag(t);
         allow update: if isMemberAfter(k) && validTag(t) && unchanged(['id']);
-        allow delete: if false;
+        // 標籤沒有主人：成員都能刪（上線前只有步）
+        allow delete: if canReset() && isMember(k);
       }
 
       // ── 帳戶：只有主人（owners）讀寫得到；共有的投資帳戶兩個人都可以 ──
@@ -187,7 +196,7 @@ service cloud.firestore {
         allow update: if isMemberAfter(k) && meAfter(k) in existing().owners
           && validAccount(a) && meAfter(k) in incoming().owners
           && unchanged(['id']);
-        allow delete: if false;
+        allow delete: if canReset() && isMember(k) && me(k) in existing().owners;
       }
 
       // ── 固定花費、自己的排序：只有本人 ──
@@ -215,7 +224,7 @@ service cloud.firestore {
         allow create: if isMemberAfter(k) && validRecurring(r) && incoming().owner == meAfter(k);
         allow update: if isMemberAfter(k) && existing().owner == meAfter(k)
           && validRecurring(r) && incoming().owner == meAfter(k) && unchanged(['id']);
-        allow delete: if false;
+        allow delete: if canReset() && isMember(k) && existing().owner == me(k);
       }
 
       match /prefs/{p} {
@@ -225,7 +234,7 @@ service cloud.firestore {
           && optionalIdList(incoming(), 'accounts', 200)
           && optionalIdList(incoming(), 'jars', 100)
           && optionalIdList(incoming(), 'tags', 500);
-        allow delete: if false;
+        allow delete: if canReset() && isMember(k) && me(k) == p;
       }
 
       // ── 事件：參與者讀得到；記的人建、改；其他參與者只能改 doubts 裡自己那一格 ──
@@ -294,8 +303,8 @@ service cloud.firestore {
           && incoming().updatedAt == request.time
           && onlyMyDoubt(meAfter(k));
 
-        // 刪除只做標記（deleted），文件留著
-        allow delete: if false;
+        // 平常刪除只做標記（deleted），文件留著；上線前重置時，記的人可以真的刪
+        allow delete: if canReset() && isMember(k) && existing().recordedBy == me(k);
       }
 
       function onlyMyDoubtOnCreate(person) {

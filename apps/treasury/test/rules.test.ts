@@ -233,14 +233,13 @@ describe("步的事件", () => {
     await assertFails(getDocs(collection(db, `${K}/events`)));
   });
 
-  it("改自己記的、標記刪除；誰記的不能改；真的刪除不行", async () => {
+  it("改自己記的、標記刪除；誰記的不能改（真的刪除在「一鍵重置」）", async () => {
     await seed({ [`${K}/events/a`]: eventDoc("a") });
     const db = as(步的帳號);
     await assertSucceeds(setDoc(doc(db, `${K}/events/a`), eventDoc("a", { title: "晚餐" })));
     await assertSucceeds(updateDoc(doc(db, `${K}/events/a`), { deleted: true, updatedAt: serverTimestamp() }));
     await assertFails(updateDoc(doc(db, `${K}/events/a`), { recordedAt: 1, updatedAt: serverTimestamp() }));
     await assertFails(updateDoc(doc(db, `${K}/events/a`), { title: "沒更新時間" }));
-    await assertFails(deleteDoc(doc(db, `${K}/events/a`)));
   });
 });
 
@@ -337,7 +336,6 @@ describe("帳戶", () => {
     await assertFails(setDoc(doc(db, `${K}/accounts/x`), account("x", [寶])));
     await assertFails(setDoc(doc(db, `${K}/accounts/z`), { ...account("z", [步]), currency: "USD" }));
     await assertFails(setDoc(doc(db, `${K}/accounts/z`), { ...account("z", [步]), balance: 100 }));
-    await assertFails(deleteDoc(doc(db, `${K}/accounts/x`)));
   });
 });
 
@@ -349,7 +347,60 @@ describe("參考資料", () => {
     await assertSucceeds(setDoc(doc(db, `${K}/jars/play`), { id: "play", name: "玩玩", owners: [步, 寶] }));
     await assertFails(setDoc(doc(db, `${K}/jars/x`), { id: "y", name: "x", owners: [步] }));
     await assertFails(setDoc(doc(db, `${K}/jars/x`), { id: "x", name: "x".repeat(41), owners: [步] }));
-    await assertFails(deleteDoc(doc(db, `${K}/jars/daily`)));
+  });
+});
+
+// 上線前（firestore.rules 的 canReset() 是 true）：本人可以真的刪自己的資料。上線後 canReset() 是 false，這一段要改成全部拒絕。
+describe("一鍵重置（上線前）", () => {
+  beforeEach(async () => {
+    await 寶加入();
+    await seed({
+      [`${K}/events/mine`]: eventDoc("mine"),
+      [`${K}/events/bao`]: { ...寶幫共付步記的("bao"), recordedBy: 寶 },
+      [`${K}/jars/meditate`]: { id: "meditate", name: "冥想", owners: [寶] },
+      [`${K}/tags/food`]: { id: "food", name: "吃" },
+      [`${K}/recurring/rent`]: { id: "rent", owner: 步 },
+      [`${K}/recurring/bao-rent`]: { id: "bao-rent", owner: 寶 },
+      [`${K}/prefs/${步}`]: { accounts: ["post"] },
+      [`${K}/prefs/${寶}`]: { accounts: ["bao-bank"] },
+    });
+  });
+
+  it("步刪得掉自己的：自己記的事件、主人有步的帳戶與罐子、標籤、自己的固定花費與排序", async () => {
+    const db = as(步的帳號);
+    for (const path of [
+      "events/mine",
+      "accounts/post",
+      "accounts/crypto",
+      "jars/daily",
+      "tags/food",
+      "recurring/rent",
+      `prefs/${步}`,
+    ]) {
+      await assertSucceeds(deleteDoc(doc(db, `${K}/${path}`)));
+    }
+  });
+
+  it("步刪不掉別人的：寶記的事件（參與者有步也一樣）、寶的帳戶、罐子、固定花費、排序", async () => {
+    const db = as(步的帳號);
+    for (const path of ["events/bao", "accounts/bao-bank", "jars/meditate", "recurring/bao-rent", `prefs/${寶}`]) {
+      await assertFails(deleteDoc(doc(db, `${K}/${path}`)));
+    }
+  });
+
+  it("王國、成員、王國裡的人永遠刪不掉", async () => {
+    const db = as(步的帳號);
+    for (const path of [K, `${K}/members/${步的帳號}`, `${K}/members/${寶的帳號}`, `${K}/people/${步}`]) {
+      await assertFails(deleteDoc(doc(db, path)));
+    }
+  });
+
+  it("沒登入、不是成員：什麼都刪不掉", async () => {
+    for (const db of [沒登入(), as(路人的帳號)]) {
+      for (const path of ["events/mine", "accounts/post", "jars/daily", "tags/food", `prefs/${步}`]) {
+        await assertFails(deleteDoc(doc(db, `${K}/${path}`)));
+      }
+    }
   });
 });
 

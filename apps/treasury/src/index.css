@@ -30,3 +30,28 @@ button {
 .error {
   color: #b3261e;
 }
+
+.settings {
+  margin-top: 3rem;
+}
+
+.confirm {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 1rem;
+  border: 2px solid #b3261e;
+  border-radius: 0.5rem;
+}
+
+.confirm ul {
+  list-style: disc;
+  text-align: left;
+  padding-left: 1.5rem;
+}
+
+.danger {
+  background: #b3261e;
+  color: #fff;
+  border: none;
+  border-radius: 0.25rem;
+}

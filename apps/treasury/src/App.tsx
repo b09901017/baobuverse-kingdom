@@ -16,6 +16,8 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { redirectError, signIn, signOut, watchSession, type Session } from "./auth";
 import { KINGDOM_ID, db, useEmulators } from "./firebase";
+import { LAUNCHED } from "./launch";
+import { RESET_DELETES, RESET_KEEPS, clearLocalCache, resetMine } from "./reset";
 import { findMember, foundKingdom, save, watchCatalog, watchEvents } from "./store";
 
 // 驗證地基用的頁面（issue 05）：登入 → 用 core 建一則事件 → 存 → 讀回來 → 用 core 算餘額。階段 1 換成真正的記帳畫面。
@@ -169,7 +171,70 @@ function Treasury({ me, onError }: { me: PersonId; onError: (message: string) =>
       <p className="note">
         看得到的事件 {events.length} 則{book.problems.length > 0 && `，沒算進去的 ${book.problems.length} 則`}
       </p>
+      {!LAUNCHED && (
+        <section className="settings">
+          <h2>設定</h2>
+          <Reset me={me} />
+        </section>
+      )}
     </>
+  );
+}
+
+/** 上線前的一鍵重置（issue 06）：上線後（launch.ts）整個不出現 */
+function Reset({ me }: { me: PersonId }) {
+  const [step, setStep] = useState<"idle" | "confirm" | "working">("idle");
+  const [message, setMessage] = useState<string | null>(null);
+
+  const reset = async () => {
+    setStep("working");
+    setMessage(null);
+    let count: number;
+    try {
+      count = await resetMine(db, KINGDOM_ID, me);
+    } catch (e) {
+      setStep("confirm");
+      setMessage(`沒有刪任何東西（要有網路才能重置）：${(e as Error).message}`);
+      return;
+    }
+    try {
+      await clearLocalCache(db);
+    } catch {
+      setMessage(
+        `雲端的 ${count} 份已經刪了，但這台裝置的離線資料沒清掉（其他分頁也開著國庫）。關掉其他分頁、重新整理，再按一次重置。`,
+      );
+      return;
+    }
+    location.reload();
+  };
+
+  if (step === "idle") {
+    return (
+      <button type="button" onClick={() => setStep("confirm")}>
+        一鍵重置（上線前才有）
+      </button>
+    );
+  }
+  return (
+    <div className="confirm" role="alertdialog" aria-labelledby="reset-title">
+      <p id="reset-title">
+        <strong>確定要重置嗎？刪了就救不回來。</strong>
+      </p>
+      <p>會刪掉：</p>
+      <ul>
+        {RESET_DELETES.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+      <p>會留著：{RESET_KEEPS.join("、")}。</p>
+      <button type="button" disabled={step === "working"} onClick={() => setStep("idle")}>
+        取消
+      </button>{" "}
+      <button type="button" className="danger" disabled={step === "working"} onClick={() => void reset()}>
+        {step === "working" ? "刪除中…" : "確定刪掉"}
+      </button>
+      {message && <p className="error">{message}</p>}
+    </div>
   );
 }
 
