@@ -204,9 +204,7 @@ export function openBook(catalog: Catalog, events: readonly Event[]): Book {
       throw new Error("還沒做：issue 04");
     },
     lines: select,
-    debts: () => {
-      throw new Error("還沒做：issue 04");
-    },
+    debts: (query) => ledger.debts.list(query),
     problems: [],
   };
 }

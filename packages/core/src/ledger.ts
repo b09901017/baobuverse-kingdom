@@ -14,10 +14,12 @@ import type {
   Repayment,
   Transfer,
 } from "./model";
+import { debtBook, type OpenDebt } from "./debts";
 import { splitByWeights } from "./split";
 
 export interface Ledger {
   readonly lines: readonly Line[];
+  readonly debts: ReturnType<typeof debtBook>;
 }
 
 /** 一行裡跟「哪一筆」有關的欄位 */
@@ -30,6 +32,7 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
   /** 照時間算到現在的帳戶餘額（對帳拿來比） */
   const running = new Map<AccountId, number>();
   const reconciled = new Set<AccountId>();
+  const debts = debtBook();
 
   for (const event of [...events].sort(byTime)) {
     if (event.status !== "confirmed") continue;
@@ -40,7 +43,7 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
       else if (entry.kind === "reconciliation") reconcile(event, entry);
     }
   }
-  return { lines };
+  return { lines, debts };
 
   function origin(event: Event, entry: EntryId, cause: Cause): Origin {
     return { date: event.date, event: event.id, entry, cause, amortized: false, tags: [] };
@@ -55,7 +58,17 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
       const othersCard = entry.account !== undefined && accounts.get(entry.account)?.paidByOthers === true;
       if (!othersCard) lines.push({ ...base, measure: "paid", person: payer, amount: item.amount });
       if (entry.account !== undefined) move(base, entry.account, -item.amount, payer);
-      for (const [person, amount] of shares(item.beneficiary ?? entry.beneficiary, item.amount, payer)) {
+      if (othersCard && entry.account !== undefined) {
+        const ref = { event: event.id, entry: entry.id, item: item.id };
+        debts.add({ channel: "othersCard", ref, date: event.date, debtor: payer, account: entry.account, amount: item.amount });
+      }
+      const receivable = item.receivable ?? 0;
+      if (receivable > 0) {
+        lines.push({ ...base, measure: "receivable", person: payer, amount: receivable });
+        const ref = { event: event.id, entry: entry.id, item: item.id };
+        debts.add({ channel: "receivable", ref, date: event.date, creditor: payer, amount: receivable });
+      }
+      for (const [person, amount] of shares(item.beneficiary ?? entry.beneficiary, item.amount - receivable, payer)) {
         if (item.cash === undefined) lines.push({ ...base, measure: "use", person, amount });
         else {
           lines.push({ ...base, measure: "income", person, amount });
@@ -68,6 +81,8 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
         } else {
           lines.push({ ...base, measure: "tab", person: payer, amount, counterpart: person });
           lines.push({ ...base, measure: "tab", person, amount: -amount, counterpart: payer });
+          const ref = { event: event.id, entry: entry.id, item: item.id };
+          debts.add({ channel: "tab", ref, date: event.date, debtor: person, creditor: payer, amount });
         }
       }
     }
@@ -84,12 +99,27 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
     const base = origin(event, entry.id, "repayment");
     const { from, to, amount } = entry;
     if (from.kind === "person" && to.kind === "person") {
-      lines.push({ ...base, measure: "tab", person: to.person, amount: -amount, counterpart: from.person });
-      lines.push({ ...base, measure: "tab", person: from.person, amount, counterpart: to.person });
+      const debtor = from.person;
+      const creditor = to.person;
+      lines.push({ ...base, measure: "tab", person: creditor, amount: -amount, counterpart: debtor });
+      lines.push({ ...base, measure: "tab", person: debtor, amount, counterpart: creditor });
+      const tab = (d: OpenDebt) => d.channel === "tab" && d.debtor === debtor && d.creditor === creditor;
+      const left = debts.settle(tab, amount, event.date, entry.allocations);
+      // 多還的變成反方向的一筆
+      if (left > 0) debts.add({ channel: "tab", ref: { event: event.id, entry: entry.id }, date: event.date, debtor: creditor, creditor: debtor, amount: left });
     }
     if (from.kind === "person" && from.account !== undefined) move(base, from.account, -amount, from.person);
     if (to.kind === "person" && to.account !== undefined) move(base, to.account, amount, to.person);
-    if (to.kind === "othersAccount" && from.kind === "person") move(base, to.account, amount, from.person);
+    if (from.kind === "outside" && to.kind === "person") {
+      const creditor = to.person;
+      lines.push({ ...base, measure: "receivable", person: creditor, amount: -amount });
+      debts.settle((d) => d.channel === "receivable" && d.creditor === creditor, amount, event.date, entry.allocations);
+    }
+    if (to.kind === "othersAccount" && from.kind === "person") {
+      move(base, to.account, amount, from.person);
+      const card = to.account;
+      debts.settle((d) => d.channel === "othersCard" && d.account === card && d.debtor === from.person, amount, event.date, entry.allocations);
+    }
   }
 
   /** 對帳：實際減掉算出來的就是差額；每個帳戶的第一次是初始餘額，不算差額 */
