@@ -29,7 +29,7 @@ export const RESET_DELETES = [
   "你的固定花費、你的排序",
   "這台裝置上的離線資料",
 ] as const;
-export const RESET_KEEPS = ["王國", "你是誰（成員資料）", "別人記的事件", "只屬於別人的帳戶、罐子"] as const;
+export const RESET_KEEPS = ["王國", "你是誰（成員資料）", "別人記的事件", "只屬於別人的帳戶與罐子"] as const;
 
 /**
  * 刪掉 me 在王國 k 裡的資料，回傳刪了幾份文件。
