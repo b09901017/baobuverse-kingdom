@@ -10,6 +10,7 @@ import type {
   Event,
   Expense,
   PersonId,
+  Reconciliation,
   Repayment,
   Transfer,
 } from "./model";
@@ -26,6 +27,9 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
   const lines: Line[] = [];
   const people = catalog.people.map((p) => p.id);
   const accounts = new Map(catalog.accounts.map((a) => [a.id, a]));
+  /** 照時間算到現在的帳戶餘額（對帳拿來比） */
+  const running = new Map<AccountId, number>();
+  const reconciled = new Set<AccountId>();
 
   for (const event of [...events].sort(byTime)) {
     if (event.status !== "confirmed") continue;
@@ -33,6 +37,7 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
       if (entry.kind === "expense") spend(event, entry);
       else if (entry.kind === "transfer") transfer(event, entry);
       else if (entry.kind === "repayment") repay(event, entry);
+      else if (entry.kind === "reconciliation") reconcile(event, entry);
     }
   }
   return { lines };
@@ -47,10 +52,15 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
       const noRepay = item.noRepay ?? entry.noRepay ?? false;
       const cause: Cause = item.cash === undefined ? "spend" : "giveMoney";
       const base = { ...origin(event, entry.id, cause), item: item.id, payer, jar: item.jar };
-      lines.push({ ...base, measure: "paid", person: payer, amount: item.amount });
+      const othersCard = entry.account !== undefined && accounts.get(entry.account)?.paidByOthers === true;
+      if (!othersCard) lines.push({ ...base, measure: "paid", person: payer, amount: item.amount });
+      if (entry.account !== undefined) move(base, entry.account, -item.amount, payer);
       for (const [person, amount] of shares(item.beneficiary ?? entry.beneficiary, item.amount, payer)) {
         if (item.cash === undefined) lines.push({ ...base, measure: "use", person, amount });
-        else lines.push({ ...base, measure: "income", person, amount });
+        else {
+          lines.push({ ...base, measure: "income", person, amount });
+          if (item.cash.into !== undefined) move(base, item.cash.into, amount, person);
+        }
         if (person === payer) continue;
         if (noRepay) {
           lines.push({ ...base, measure: "spoilGiven", person: payer, amount, counterpart: person });
@@ -79,6 +89,21 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
     }
     if (from.kind === "person" && from.account !== undefined) move(base, from.account, -amount, from.person);
     if (to.kind === "person" && to.account !== undefined) move(base, to.account, amount, to.person);
+    if (to.kind === "othersAccount" && from.kind === "person") move(base, to.account, amount, from.person);
+  }
+
+  /** 對帳：實際減掉算出來的就是差額；每個帳戶的第一次是初始餘額，不算差額 */
+  function reconcile(event: Event, entry: Reconciliation): void {
+    const account = accounts.get(entry.account);
+    if (account === undefined) return;
+    const opening = !reconciled.has(entry.account);
+    reconciled.add(entry.account);
+    const diff = entry.actual - (running.get(entry.account) ?? 0);
+    if (diff === 0) return;
+    const base = origin(event, entry.id, opening ? "opening" : "reconcile");
+    const person = holder(account, event.recordedBy);
+    move(base, entry.account, diff, person);
+    if (!opening) lines.push({ ...base, measure: "reconcileDiff", person, account: entry.account, amount: diff });
   }
 
   /** 帳戶餘額變了：一行 balance，算進淨資產的再一行 netWorth。看不到的帳戶不算 */
@@ -86,6 +111,7 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
     const account = accounts.get(id);
     if (account === undefined) return;
     const person = holder(account, by);
+    running.set(id, (running.get(id) ?? 0) + amount);
     const line = { ...base, person, account: id, amount };
     lines.push({ ...line, measure: "balance" });
     if (account.paidByOthers !== true) lines.push({ ...line, measure: "netWorth" });
