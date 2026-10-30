@@ -21,3 +21,6 @@ dev-dist/
 
 # Firebase 模擬器的紀錄檔
 *-debug.log
+
+# firebase deploy 的 Hosting 上傳快取
+.firebase/

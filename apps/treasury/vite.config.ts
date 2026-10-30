@@ -8,6 +8,11 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: "auto",
+      workbox: {
+        // /__/ 是 Firebase Hosting 自己的網址（Google 登入的 /__/auth/handler）：不要拿國庫的頁面頂替，
+        // 不然 redirect 登入會停在國庫的「載入中」、到不了 Google（2026-10-30 段五在正式網址上遇到）
+        navigateFallbackDenylist: [/^\/__\//],
+      },
       manifest: {
         name: "國庫",
         short_name: "國庫",
