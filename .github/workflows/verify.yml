@@ -15,6 +15,15 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      # 05 加模擬器時，這裡要補 actions/setup-java（JDK 21）
+      # 規則測試要 Firestore 模擬器，模擬器要 JDK 21
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      # 模擬器第一次跑會下載，存起來下次不用再下載
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify

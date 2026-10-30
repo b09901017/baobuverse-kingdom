@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "treasury-emulators",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@baobu/treasury", "dev:emulators"],
+      "port": 5173
+    }
+  ]
+}
