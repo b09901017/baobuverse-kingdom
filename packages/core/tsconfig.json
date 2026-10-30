@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  // core 是純 TypeScript：不給 DOM、不給 Node 的型別，用到瀏覽器或 Node 的 API 就型別檢查失敗
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src"]
+}

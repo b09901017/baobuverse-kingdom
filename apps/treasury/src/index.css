@@ -1,0 +1,13 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  padding: 2rem 1rem;
+  text-align: center;
+}

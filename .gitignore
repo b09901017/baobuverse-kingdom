@@ -7,3 +7,14 @@ graphify-out/
 
 # 每台電腦自己的 Claude Code 設定（例如本機關掉 Playwright MCP），不進版控
 .claude/settings.local.json
+
+# 套件與建置產物
+node_modules/
+dist/
+dev-dist/
+*.tsbuildinfo
+
+# 本機的環境變數（.env.example 可以進）
+.env
+.env.*
+!.env.example
