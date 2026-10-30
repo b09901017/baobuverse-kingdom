@@ -1,6 +1,7 @@
 // 帳本：從事件算出所有數字（docs/adr/0001：事件存原樣，數字讀的時候才算）。
-// 規則的實作在 issue 04；這裡先定介面，本體丟「還沒做」。
+// 這裡是介面與查詢；事件怎麼展開成一行一行在 ledger.ts。
 
+import { buildLedger } from "./ledger";
 import type {
   AccountId,
   Amount,
@@ -185,5 +186,27 @@ export interface Book {
  * 收件匣裡的（pending）不算；有問題的事件不算、列在 problems。看不到的帳戶不算問題，只是沒有那個帳戶的餘額。
  */
 export function openBook(catalog: Catalog, events: readonly Event[]): Book {
-  throw new Error("還沒做：issue 04");
+  const ledger = buildLedger(catalog, events);
+
+  function select(query: Query): readonly Line[] {
+    return ledger.lines.filter(
+      (line) =>
+        line.measure === query.measure &&
+        (query.person === undefined || line.person === query.person) &&
+        (query.where?.cause === undefined || line.cause === query.where.cause) &&
+        (query.where?.account === undefined || line.account === query.where.account),
+    );
+  }
+
+  return {
+    total: (query) => select(query).reduce((sum, line) => sum + line.amount, 0),
+    breakdown: () => {
+      throw new Error("還沒做：issue 04");
+    },
+    lines: select,
+    debts: () => {
+      throw new Error("還沒做：issue 04");
+    },
+    problems: [],
+  };
 }
