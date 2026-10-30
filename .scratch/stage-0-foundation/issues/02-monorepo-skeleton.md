@@ -2,7 +2,7 @@
 
 Status: todo
 Blocked by: 無（可以跟 01 同一段，先後都行）
-動工前先讀：`../spec.md`；`../HANDOFF.md`「每一段共同的規矩」；`docs/plan.md`「repo 用 monorepo」「APK 的疑問」；`.gitignore`；`CLAUDE.md`「合併」。
+動工前先讀：`../spec.md`；`../HANDOFF.md`「每一段共同的規矩」；`docs/plan.md`「方向」（monorepo、APK 只當殼）與「APK 與網址」；`.gitignore`；`CLAUDE.md`「合併」。
 
 ## 使用者要的
 

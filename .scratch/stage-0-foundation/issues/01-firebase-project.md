@@ -2,7 +2,7 @@
 
 Status: todo
 Blocked by: 無
-動工前先讀：`../spec.md`；`../HANDOFF.md`「每一段共同的規矩」；`docs/plan.md`「不要跟國王日記擠在同一個專案裡」；`docs/agents/lessons.md` 第七條（指令裡有 firebase 字樣會跳框）；
+動工前先讀：`../spec.md`；`../HANDOFF.md`「每一段共同的規矩」；`docs/plan.md`「方向」（資料放在新的免費 Firebase 專案）；`docs/agents/lessons.md` 第七條（指令裡有 firebase 字樣會跳框）；
 skill `wizard`、`firebase-basics`、`firebase-auth-basics`。
 
 ## 使用者要的

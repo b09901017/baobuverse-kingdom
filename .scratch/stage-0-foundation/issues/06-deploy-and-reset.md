@@ -2,7 +2,7 @@
 
 Status: todo
 Blocked by: 01、02、05
-動工前先讀：`../spec.md`；`../HANDOFF.md`「每一段共同的規矩」；01、05 的「做完時留下的」；`docs/plan.md`「只有一個網址」「APK 的疑問」；
+動工前先讀：`../spec.md`；`../HANDOFF.md`「每一段共同的規矩」；01、05 的「做完時留下的」；`docs/plan.md`「方向」裡的「一個網址」「APK 只當殼」與「APK 與網址」；
 skill `firebase-hosting-basics`；`docs/agents/lessons.md` 第七條；國王日記的 `firebase.json` 長相（只讀，`gh api repos/b09901017/baobu_money_track/contents/firebase.json`）。
 
 ## 使用者要的
@@ -18,7 +18,8 @@ skill `firebase-hosting-basics`；`docs/agents/lessons.md` 第七條；國王日
 
 1. `.firebaserc` 只有新專案；`firebase.json`（05 已建 firestore 與 emulators）補 hosting：寫明 site（新專案的預設網址）、指到 `apps/treasury` 的建置結果。
 2. 部署腳本（例如 `pnpm run deploy`）：先跑驗證指令；檢查目標專案 ID 是新專案、**是 `baobu-app` 就拒絕**；用 `--project` 與 `--only` 明確指定。
-3. 部署由段來做（使用者 01 已登入 CLI；這一輪部署到新專案，使用者在開段前答應過，見 HANDOFF「使用者已經決定的」）；
+3. 部署由段來做（使用者 01 已登入 CLI）。**部署要使用者先答應**（全域規則：傳到外部服務先問）：主控開段五之前會問，答應了寫進 HANDOFF「使用者已經決定的」；
+   段裡部署前先看那一條在不在，不在就停下來問；
    部署之後打開網址，**請使用者自己按登入**（Claude 不能輸入 Google 密碼），確認 Google 登入能用（新網址要在授權網域裡，`web.app` 預設就有）。
 4. 一鍵重置：設定裡一個按鈕，刪掉**目前登入的人**在新專案裡的所有資料，**也清掉本機的離線快取**（05 開的），先跳確認框（白話寫要刪什麼、救不回來）。
    一個「已上線」的開關（程式裡的常數）打開時，按鈕整個不出現；開關怎麼切寫進 `docs/plan.md` 旁的說明或 HANDOFF，上線時使用者說了才切。
