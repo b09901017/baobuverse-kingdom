@@ -145,6 +145,16 @@ describe("按月攤：帳戶記全額，我用的平均攤到之後幾個月", (
     ]);
   });
 
+  it("恆等式只在整段攤完的期間成立：10 月到隔年 9 月成立，單看 10 月不成立", () => {
+    const k = kingdom();
+    k.spend("2026-10-10", { payer: 步, account: 信用卡, amount: 12000, for: "共", items: [{ amount: 12000, months: 12 }] });
+    const book = k.book();
+    expect(恆等式(book, 步, { from: "2026-10-01", to: "2027-09-30" })).toEqual({ 左邊: 6000, 右邊: 6000 });
+    expect(恆等式(book, 寶, { from: "2026-10-01", to: "2027-09-30" })).toEqual({ 左邊: -6000, 右邊: -6000 });
+    const 十月 = 恆等式(book, 步, { from: "2026-10-01", to: "2026-10-31" });
+    expect(十月.左邊).not.toBe(十月.右邊);
+  });
+
   it("共付的分期：每個人那一份各自攤", () => {
     const k = kingdom();
     k.spend("2026-10-10", { payer: 步, amount: 3000, for: "共", items: [{ amount: 3000, months: 3 }] });
@@ -186,6 +196,15 @@ describe("進階：單項改幫誰、改比例", () => {
     const book = k.book();
     expect(book.total({ measure: "use", person: 寶 })).toBe(501);
     expect(book.total({ measure: "use", person: 步 })).toBe(500);
+  });
+
+  it("共付 1 元：零頭全給誰出，對方分到 0 就沒有 0 元的行、也沒有 0 元要還的錢", () => {
+    const k = kingdom();
+    k.spend("2026-10-12", { payer: 步, amount: 1, for: "共" });
+    const book = k.book();
+    expect(book.total({ measure: "use", person: 步 })).toBe(1);
+    expect(book.lines({ measure: "use" })).toHaveLength(1);
+    expect(book.debts({ channel: "tab" })).toEqual([]);
   });
 
   it("比例除不盡也只用整數：1,000 用 步 1、寶 2，步付 → 寶 666、步 334", () => {

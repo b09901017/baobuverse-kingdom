@@ -3,7 +3,27 @@
 import { describe, expect, it } from "vitest";
 import type { EntryId } from "./index";
 import { 恆等式 } from "./identity.test-kit";
-import { expense, kingdom, 人, 信用卡, 冥想, 加密貨幣, 寶, 寶媽, 寶媽卡, 寶的catalog, 寶的銀行, 步, 現金, 郵局, 國泰 } from "./test-kit";
+import { expense, kingdom, 人, 信用卡, 冥想, 加密貨幣, 寶, 寶媽, 寶媽卡, 寶的catalog, 寶的銀行, 朋友, 步, 現金, 郵局, 國泰 } from "./test-kit";
+
+describe("不灌水：轉帳、還款、對帳差額、投資都不進我用的、我付的", () => {
+  it("一連串只有這幾種的事件之後，步和寶的我用的、我付的、收入都是 0", () => {
+    const k = kingdom();
+    k.reconcile("2026-10-01", 郵局, 50000);
+    k.transfer("2026-10-02", 郵局, 國泰, 10000);
+    k.transfer("2026-10-03", 郵局, 信用卡, 3000);
+    k.transfer("2026-10-04", 郵局, 加密貨幣, 10000);
+    k.transfer("2026-10-05", 寶的銀行, 加密貨幣, 4000, { by: 寶 });
+    k.repay("2026-10-06", 1000, 人(寶, 寶的銀行), 人(步, 郵局));
+    k.repay("2026-10-07", 2000, 人(寶, 寶的銀行), 寶媽(), undefined, { by: 寶 });
+    k.repay("2026-10-08", 500, 朋友, 人(步, 現金));
+    k.reconcile("2026-10-31", 郵局, 27000);
+    const book = k.book();
+    expect(book.total({ measure: "reconcileDiff", person: 步 })).toBe(-1000);
+    for (const measure of ["use", "paid", "income", "spoilGiven", "spoilReceived"] as const) {
+      expect(book.lines({ measure })).toEqual([]);
+    }
+  });
+});
 
 describe("信用卡與轉帳", () => {
   it("刷信用卡 1,000：信用卡欠款 +1,000（餘額 −1,000），步的我付的 +1,000", () => {

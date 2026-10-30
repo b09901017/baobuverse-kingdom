@@ -193,7 +193,7 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
     const part: Part = {
       total: entry.amount,
       receivable: split.get("receivable") ?? 0,
-      shares: new Map([...s.part.shares.keys()].map((p) => [p, split.get(p) ?? 0])),
+      shares: nonZero(new Map([...s.part.shares.keys()].map((p) => [p, split.get(p) ?? 0]))),
     };
     // 退款的行指到退款這一則；原本那一項的罐子、標籤、誰出、帳戶照舊
     const { item: _original, ...rest } = s.base;
@@ -330,11 +330,11 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
     return event.recordedBy;
   }
 
-  /** 幫誰分到的錢：共沒寫比例就平分，零頭算誰出 */
+  /** 幫誰分到的錢：共沒寫比例就平分，零頭算誰出；分到 0 的不列 */
   function shares(b: Beneficiary, amount: number, payer: PersonId): Map<PersonId, number> {
     if (b.kind === "person") return new Map([[b.person, amount]]);
     const weights = b.weights?.map((w) => [w.person, w.weight] as const) ?? people.map((p) => [p, 1] as const);
-    return splitByWeights(amount, weights, payer);
+    return nonZero(splitByWeights(amount, weights, payer));
   }
 }
 
@@ -355,6 +355,10 @@ export function tagResolver(catalog: Catalog): (id: TagId) => TagId {
     }
     return current;
   };
+}
+
+function nonZero<K>(m: Map<K, number>): Map<K, number> {
+  return new Map([...m].filter(([, amount]) => amount !== 0));
 }
 
 function unique<T>(xs: readonly T[]): T[] {
