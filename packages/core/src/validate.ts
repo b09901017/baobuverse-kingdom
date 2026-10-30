@@ -1,4 +1,4 @@
-// 存之前的檢查，與誰看得到一則事件（參與者）。規則的實作在 issue 04。
+// 存之前的檢查，與誰看得到一則事件（參與者）。
 
 import type { Catalog, EntryId, Event, EventId, ItemId, PersonId } from "./model";
 
@@ -36,7 +36,27 @@ export interface Problem {
  * 給了 events 才檢查要對照別則事件的（退款、手動指定的還款）。
  */
 export function validateEvent(event: Event, catalog: Catalog, events?: readonly Event[]): readonly Problem[] {
-  throw new Error("還沒做：issue 04");
+  return check(event, catalog);
+}
+
+/**
+ * openBook 用的檢查：只看事件本身。看不到的參考資料（寶的帳本裡步的帳戶）不算問題；
+ * 要對照別則事件的（退款、手動指定的還款）在帳本照時間算的時候處理。
+ */
+export function checkForBook(event: Event, catalog: Catalog): readonly Problem[] {
+  return check(event, catalog);
+}
+
+function check(event: Event, catalog: Catalog): Problem[] {
+  const problems: Problem[] = [];
+  for (const entry of event.effects) {
+    const at = { event: event.id, entry: entry.id };
+    if (entry.kind === "expense") {
+      const sum = entry.items.reduce((total, i) => total + i.amount, 0);
+      if (sum !== entry.amount) problems.push({ ...at, code: "items-sum-mismatch" });
+    }
+  }
+  return problems;
 }
 
 /**

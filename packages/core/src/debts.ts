@@ -65,6 +65,15 @@ export function debtBook() {
     d.changes.push({ date, amount, settled });
   }
 
+  /** 退款：那一筆要還的錢變少。已經抵掉的比剩下的多時，多的部分回傳（呼叫的人當成還款再抵別筆） */
+  function reduce(match: (d: OpenDebt) => boolean, by: number, date: LocalDate): number {
+    const d = all.find(match);
+    if (d === undefined || by <= 0) return 0;
+    const excess = Math.max(d.settled - (d.amount - by), 0);
+    change(d, date, -by, -excess);
+    return excess;
+  }
+
   function list(q: DebtQuery): Debt[] {
     const result: Debt[] = [];
     for (const d of all) {
@@ -89,7 +98,7 @@ export function debtBook() {
     return result;
   }
 
-  return { add, settle, list };
+  return { add, settle, reduce, list };
 }
 
 /** 那一天（含）為止的金額與已抵的 */

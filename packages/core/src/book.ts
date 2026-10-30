@@ -189,22 +189,55 @@ export function openBook(catalog: Catalog, events: readonly Event[]): Book {
   const ledger = buildLedger(catalog, events);
 
   function select(query: Query): readonly Line[] {
+    const w = query.where ?? {};
+    const tags = w.tags?.map(ledger.tag) ?? [];
+    // 存量從第一天加到 to
+    const from = stocks.has(query.measure) ? undefined : query.from;
     return ledger.lines.filter(
       (line) =>
         line.measure === query.measure &&
         (query.person === undefined || line.person === query.person) &&
-        (query.where?.cause === undefined || line.cause === query.where.cause) &&
-        (query.where?.account === undefined || line.account === query.where.account),
+        (from === undefined || line.date >= from) &&
+        (query.to === undefined || line.date <= query.to) &&
+        (w.cause === undefined || line.cause === w.cause) &&
+        (w.account === undefined || line.account === w.account) &&
+        (w.jar === undefined || line.jar === w.jar) &&
+        tags.every((t) => line.tags.includes(t)),
     );
   }
 
   return {
     total: (query) => select(query).reduce((sum, line) => sum + line.amount, 0),
-    breakdown: () => {
-      throw new Error("還沒做：issue 04");
+    breakdown: (query, by) => {
+      const buckets = new Map<string, Amount>();
+      for (const line of select(query)) {
+        const key = keyOf(line, by);
+        buckets.set(key, (buckets.get(key) ?? 0) + line.amount);
+      }
+      return [...buckets]
+        .filter(([, amount]) => amount !== 0)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([key, amount]) => ({ key, amount }));
     },
     lines: select,
     debts: (query) => ledger.debts.list(query),
-    problems: [],
+    problems: ledger.problems,
   };
+}
+
+const stocks = new Set<Measure>(["balance", "netWorth", "tab", "receivable"]);
+
+/** 一行在某個面向上的值；沒有值的是 "none" */
+function keyOf(line: Line, by: Dimension): string {
+  if (typeof by === "object") return line.tags.includes(by.tag) ? "with" : "without";
+  switch (by) {
+    case "amortized":
+      return line.amortized ? "yes" : "no";
+    case "month":
+      return line.date.slice(0, 7);
+    case "cause":
+      return line.cause;
+    default:
+      return line[by] ?? "none";
+  }
 }
