@@ -152,7 +152,7 @@ export interface DebtQuery {
   readonly outstandingOnly?: boolean;
 }
 
-/** 一筆要還的錢，跟它被抵掉了多少（還款、或往來帳裡之後反方向的花費） */
+/** 一筆要還的錢，跟它被抵掉了多少（還款、或往來帳裡之後反方向的支出） */
 export interface Debt {
   readonly channel: DebtChannel;
   readonly ref: DebtRef;

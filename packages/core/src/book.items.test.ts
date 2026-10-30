@@ -77,6 +77,18 @@ describe("退款：沖回原本那一項，不算收入", () => {
     expect(恆等式(book, 步)).toEqual({ 左邊: 600, 右邊: 600 });
   });
 
+  it("寵寶的那一項退款：寶的我用的、被寵，步的寵對方各少 100；兩個人的恆等式照樣成立", () => {
+    const k = kingdom();
+    const e = k.spend("2026-10-10", { payer: 步, amount: 500, for: 寶, noRepay: true });
+    k.refund("2026-10-12", itemOf(e), 100);
+    const book = k.book();
+    expect(book.total({ measure: "use", person: 寶 })).toBe(400);
+    expect(book.total({ measure: "spoilReceived", person: 寶 })).toBe(400);
+    expect(book.total({ measure: "spoilGiven", person: 步 })).toBe(400);
+    expect(恆等式(book, 步)).toEqual({ 左邊: 400, 右邊: 400 });
+    expect(恆等式(book, 寶)).toEqual({ 左邊: -400, 右邊: -400 });
+  });
+
   it("共付那一項退款照原本的分法按比例沖回：2,000 平分退 301 → 步 −151、寶 −150", () => {
     const k = kingdom();
     const e = k.spend("2026-10-10", { payer: 步, amount: 2000, for: "共" });

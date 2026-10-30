@@ -18,7 +18,8 @@ export function 恆等式(book: Book, person: PersonId, 期間: { from?: LocalDa
     右邊:
       不含還款("tab") +
       total("spoilGiven") -
-      total("spoilReceived", { cause: "spend" }) +
+      // 被寵（買東西的）＝全部扣掉直接給錢的；退款沖回的那幾行要留著（直接給錢的不能退款）
+      (total("spoilReceived") - total("spoilReceived", { cause: "giveMoney" })) +
       不含還款("receivable") -
       寶媽卡幫出,
   };

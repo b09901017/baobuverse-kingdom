@@ -11,6 +11,7 @@ import type {
   EntryId,
   Event,
   Expense,
+  Income,
   Item,
   ItemRef,
   PersonId,
@@ -78,11 +79,29 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
       continue;
     }
     for (const entry of event.effects) {
-      if (entry.kind === "expense") spend(event, entry);
-      else if (entry.kind === "transfer") transfer(event, entry);
-      else if (entry.kind === "repayment") repay(event, entry);
-      else if (entry.kind === "reconciliation") reconcile(event, entry);
-      else if (entry.kind === "refund") refund(event, entry);
+      // 每一種都要處理到：新加一種一筆，這裡沒寫就過不了型別檢查
+      switch (entry.kind) {
+        case "expense":
+          spend(event, entry);
+          break;
+        case "income":
+          earn(event, entry);
+          break;
+        case "transfer":
+          transfer(event, entry);
+          break;
+        case "repayment":
+          repay(event, entry);
+          break;
+        case "reconciliation":
+          reconcile(event, entry);
+          break;
+        case "refund":
+          refund(event, entry);
+          break;
+        default:
+          entry satisfies never;
+      }
     }
   }
   return { lines, links, debts, problems, tag };
@@ -250,6 +269,14 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
       if (total > s.item.amount) found.push({ event: event.id, code: "refund-too-big", entry: entry.id });
     }
     return found;
+  }
+
+  /** 收入：收入一行（帶整筆的標籤），錢進收的那個人的帳戶；沒寫帳戶就不動任何帳戶 */
+  function earn(event: Event, entry: Income): void {
+    const base: Origin = { ...origin(event, entry.id, "income"), tags: unique(entry.tags.map(tag)) };
+    const person = entry.person;
+    lines.push({ ...base, measure: "income", person, ...(entry.account === undefined ? {} : { account: entry.account }), amount: entry.amount });
+    if (entry.account !== undefined) move(base, entry.account, entry.amount, person);
   }
 
   function transfer(event: Event, entry: Transfer): void {

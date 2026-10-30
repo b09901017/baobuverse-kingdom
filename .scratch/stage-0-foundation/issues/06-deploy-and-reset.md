@@ -50,8 +50,9 @@ skill `firebase-hosting-basics`；`docs/agents/lessons.md` 第七條；國王日
 - **`firebase.json` 的 hosting**：`site` 寫明、`public` 是 `apps/treasury/dist`、所有路徑改寫到 `/index.html`、`sw.js`／`index.html`／manifest 不快取、`/assets/` 長快取（檔名有雜湊）。
   判準「沒寫目標時會不會部署到別的地方」：不會，`site` 寫死，而且腳本永遠帶 `--project baobu-kingdom`。
 - **重置按鈕在哪**：國庫驗證頁最下面「設定」→「一鍵重置（上線前才有）」（`apps/treasury/src/App.tsx` 的 `Reset`）。按了先出現紅框的確認（會刪什麼、會留什麼、救不回來），再按「確定刪掉」。
-  - 刪什麼（`src/reset.ts` 的 `resetMine`）：我記的事件（包括標記刪除的）、主人有我的帳戶與罐子、標籤（沒有主人，整個王國的）、我的固定花費、我的排序。
-    **留著**：`kingdoms/baobu`、`members`、`people`（段四的中途發現：刪了王國文件，任何登入的人都能搶先建王國）、別人記的事件、別人的帳戶與罐子。
+  - 刪什麼（`src/reset.ts` 的 `resetMine`）：我記的事件（包括標記刪除的）、主人有我的帳戶與罐子（**包括跟別人共有的**）、標籤（沒有主人，整個王國的）、我的固定花費、我的排序。
+    **留著**：`kingdoms/baobu`、`members`、`people`（段四的中途發現：刪了王國文件，任何登入的人都能搶先建王國）、別人記的事件、只屬於別人的帳戶與罐子。
+    （段六審查後把確認框的字改成「包括跟別人共有的」「只屬於別人的」，原本寫「別人的帳戶」會留著，對共有的帳戶是誤導。）
   - 要有網路：先等還沒送出的寫入送完，再從伺服器查（不從快取查）；斷網時查詢丟錯、什麼都不刪。
   - 刪完清本機離線快取（`terminate` → `clearIndexedDbPersistence`）再重新整理。其他分頁也開著國庫時清不掉，畫面會說「雲端已經刪了，關掉其他分頁、重新整理，再按一次」。
   - 規則：`firestore.rules` 加 `canReset()`（現在 `true`），本人可以真的刪上面那幾種；王國、成員、人永遠不能刪。規則測試「一鍵重置（上線前）」4 支；`test/reset.test.ts` 3 支（模擬器上只刪步的 9 份、再按一次 0 份、斷網不刪）。

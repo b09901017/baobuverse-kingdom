@@ -119,7 +119,7 @@ export type EventStatus = "confirmed" | "pending";
  */
 export interface Event {
   readonly id: EventId;
-  /** 消費當天（當地的日期）。日記就是查同一天的事件 */
+  /** 事件發生那天（當地的日期）。日記就是查同一天的事件 */
   readonly date: LocalDate;
   readonly time?: LocalTime;
   /** 名稱，也是日記上的那一行；只有一個品項時就是那一項的名稱 */

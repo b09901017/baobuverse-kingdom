@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import type { EntryId } from "./index";
 import { 恆等式 } from "./identity.test-kit";
-import { expense, kingdom, 人, 信用卡, 冥想, 加密貨幣, 寶, 寶媽, 寶媽卡, 寶的catalog, 寶的銀行, 朋友, 步, 現金, 郵局, 國泰 } from "./test-kit";
+import { expense, kingdom, 人, 信用卡, 冥想, 加密貨幣, 家樂福, 寶, 寶媽, 寶媽卡, 寶的catalog, 寶的銀行, 朋友, 步, 現金, 郵局, 國泰 } from "./test-kit";
 
 describe("不灌水：轉帳、還款、對帳差額、投資都不進我用的、我付的", () => {
   it("一連串只有這幾種的事件之後，步和寶的我用的、我付的、收入都是 0", () => {
@@ -22,6 +22,33 @@ describe("不灌水：轉帳、還款、對帳差額、投資都不進我用的�
     for (const measure of ["use", "paid", "income", "spoilGiven", "spoilReceived"] as const) {
       expect(book.lines({ measure })).toEqual([]);
     }
+  });
+});
+
+describe("收入：從外面進來、歸自己的錢", () => {
+  it("薪水 30,000 進國泰：步的收入 30,000、國泰 +30,000、淨資產 +30,000；我用的、我付的、往來帳都 0", () => {
+    const k = kingdom();
+    k.income("2026-10-05", 步, 國泰, 30000);
+    const book = k.book();
+    expect(book.problems).toEqual([]);
+    expect(book.total({ measure: "income", person: 步 })).toBe(30000);
+    expect(book.total({ measure: "balance", where: { account: 國泰 } })).toBe(30000);
+    expect(book.total({ measure: "netWorth", person: 步 })).toBe(30000);
+    for (const measure of ["use", "paid", "tab"] as const) {
+      expect(book.total({ measure, person: 步 })).toBe(0);
+    }
+    expect(book.total({ measure: "income", person: 寶 })).toBe(0);
+  });
+
+  it("家樂福的回饋 50 進錢包、標籤「家樂福」：收入篩得出家樂福；沒寫帳戶的收入只算收入、不動任何帳戶", () => {
+    const k = kingdom();
+    k.record("2026-10-06", [{ type: "money", kind: "income", id: "m1" as EntryId, person: 步, account: 現金, amount: 50, tags: [家樂福] }]);
+    k.income("2026-10-07", 寶, undefined, 800, { by: 寶 });
+    const book = k.book();
+    expect(book.total({ measure: "income", person: 步, where: { tags: [家樂福] } })).toBe(50);
+    expect(book.total({ measure: "balance", where: { account: 現金 } })).toBe(50);
+    expect(book.total({ measure: "income", person: 寶 })).toBe(800);
+    expect(book.lines({ measure: "balance", person: 寶 })).toEqual([]);
   });
 });
 

@@ -24,12 +24,12 @@ const BATCH_LIMIT = 500;
 /** 確認框上給人看的：會刪什麼、不會刪什麼 */
 export const RESET_DELETES = [
   "你記的事件（包括標記刪除的）",
-  "主人有你的帳戶、罐子",
+  "主人有你的帳戶、罐子（包括跟別人共有的）",
   "標籤（標籤沒有主人，是整個王國共用的）",
   "你的固定花費、你的排序",
   "這台裝置上的離線資料",
 ] as const;
-export const RESET_KEEPS = ["王國", "你是誰（成員資料）", "別人記的事件、別人的帳戶"] as const;
+export const RESET_KEEPS = ["王國", "你是誰（成員資料）", "別人記的事件", "只屬於別人的帳戶、罐子"] as const;
 
 /**
  * 刪掉 me 在王國 k 裡的資料，回傳刪了幾份文件。
@@ -37,9 +37,11 @@ export const RESET_KEEPS = ["王國", "你是誰（成員資料）", "別人記�
  * 斷網時查詢會丟錯，什麼都不刪。
  */
 export async function resetMine(db: Firestore, k: string, me: PersonId): Promise<number> {
+  const kingdom = `kingdoms/${k}`;
+  // 先問一次伺服器：斷網時這裡就丟錯。不先問的話，斷網又有還沒送出的寫入時，下一行會一直等到有網路
+  await getDocFromServer(doc(db, kingdom));
   await waitForPendingWrites(db);
 
-  const kingdom = `kingdoms/${k}`;
   const mine = (name: string, fieldPath: string, op: "==" | "array-contains") =>
     getDocsFromServer(query(collection(db, kingdom, name), where(fieldPath, op, me)));
 

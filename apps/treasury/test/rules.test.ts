@@ -67,6 +67,22 @@ function account(id: string, owners: string[], kind = "bank"): DocumentData {
   return { id, name: id, kind, owners, currency: "TWD" };
 }
 
+/** 固定花費：每月 5 號從郵局付房租 */
+function recurring(id: string, owner: string): DocumentData {
+  return {
+    id,
+    owner,
+    name: "房租",
+    amount: 12000,
+    every: "month",
+    day: 5,
+    account: "post",
+    beneficiary: { kind: "person", person: owner },
+    jar: "daily",
+    tags: [],
+  };
+}
+
 /** 一則事件文件：預設是步記的、步幫步付 */
 function eventDoc(id: string, overrides: DocumentData = {}): DocumentData {
   return {
@@ -157,11 +173,15 @@ describe("登入了但不是成員", () => {
     await assertFails(batch.commit());
   });
 
-  it("寫不了事件、帳戶、參考資料", async () => {
+  it("寫不了事件、帳戶、參考資料、固定花費、排序", async () => {
     const db = as(路人的帳號);
     await assertFails(setDoc(doc(db, `${K}/events/a`), eventDoc("a")));
     await assertFails(setDoc(doc(db, `${K}/accounts/x`), account("x", [步])));
     await assertFails(setDoc(doc(db, `${K}/jars/x`), { id: "x", name: "x", owners: [步] }));
+    await assertFails(setDoc(doc(db, `${K}/people/${步}`), { id: 步, name: "路人" }));
+    await assertFails(setDoc(doc(db, `${K}/tags/x`), { id: "x", name: "x" }));
+    await assertFails(setDoc(doc(db, `${K}/recurring/x`), recurring("x", 步)));
+    await assertFails(setDoc(doc(db, `${K}/prefs/${步}`), { accounts: ["post"] }));
   });
 });
 
@@ -239,6 +259,9 @@ describe("步的事件", () => {
     await assertSucceeds(setDoc(doc(db, `${K}/events/a`), eventDoc("a", { title: "晚餐" })));
     await assertSucceeds(updateDoc(doc(db, `${K}/events/a`), { deleted: true, updatedAt: serverTimestamp() }));
     await assertFails(updateDoc(doc(db, `${K}/events/a`), { recordedAt: 1, updatedAt: serverTimestamp() }));
+    await assertFails(
+      updateDoc(doc(db, `${K}/events/a`), { recordedBy: 寶, participants: [步, 寶], updatedAt: serverTimestamp() }),
+    );
     await assertFails(updateDoc(doc(db, `${K}/events/a`), { title: "沒更新時間" }));
   });
 });
@@ -347,6 +370,35 @@ describe("參考資料", () => {
     await assertSucceeds(setDoc(doc(db, `${K}/jars/play`), { id: "play", name: "玩玩", owners: [步, 寶] }));
     await assertFails(setDoc(doc(db, `${K}/jars/x`), { id: "y", name: "x", owners: [步] }));
     await assertFails(setDoc(doc(db, `${K}/jars/x`), { id: "x", name: "x".repeat(41), owners: [步] }));
+  });
+});
+
+describe("固定花費、排序：只有本人", () => {
+  beforeEach(async () => {
+    await 寶加入();
+    await seed({
+      [`${K}/recurring/bao-rent`]: recurring("bao-rent", 寶),
+      [`${K}/prefs/${寶}`]: { accounts: ["bao-bank"] },
+    });
+  });
+
+  it("步建、讀、改得了自己的固定花費；不能寫成寶的、讀不到寶的", async () => {
+    const db = as(步的帳號);
+    await assertSucceeds(setDoc(doc(db, `${K}/recurring/rent`), recurring("rent", 步)));
+    await assertSucceeds(getDoc(doc(db, `${K}/recurring/rent`)));
+    await assertSucceeds(setDoc(doc(db, `${K}/recurring/rent`), { ...recurring("rent", 步), amount: 13000 }));
+    await assertFails(setDoc(doc(db, `${K}/recurring/rent`), recurring("rent", 寶)));
+    await assertFails(setDoc(doc(db, `${K}/recurring/x`), recurring("x", 寶)));
+    await assertFails(getDoc(doc(db, `${K}/recurring/bao-rent`)));
+    await assertFails(setDoc(doc(db, `${K}/recurring/bao-rent`), recurring("bao-rent", 步)));
+  });
+
+  it("步讀寫得了自己的排序；寶的讀不到、寫不了", async () => {
+    const db = as(步的帳號);
+    await assertSucceeds(setDoc(doc(db, `${K}/prefs/${步}`), { accounts: ["post"] }));
+    await assertSucceeds(getDoc(doc(db, `${K}/prefs/${步}`)));
+    await assertFails(getDoc(doc(db, `${K}/prefs/${寶}`)));
+    await assertFails(setDoc(doc(db, `${K}/prefs/${寶}`), { accounts: ["post"] }));
   });
 });
 
