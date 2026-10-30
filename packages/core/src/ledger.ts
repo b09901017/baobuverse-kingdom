@@ -1,6 +1,6 @@
 // 帳本裡面：把事件照時間排好，一筆一筆展開成「行」（book.ts 的 Line）。查詢只是把行篩出來加總。
 
-import type { Cause, Line } from "./book";
+import type { Cause, Line, Repay } from "./book";
 import { addMonths } from "./dates";
 import { debtBook, sameRef, type OpenDebt } from "./debts";
 import type {
@@ -25,6 +25,8 @@ import { checkForBook, type Problem } from "./validate";
 
 export interface Ledger {
   readonly lines: readonly Line[];
+  /** 別人先出的我用的那幾行，等著哪一筆要還的錢 */
+  readonly links: ReadonlyMap<Line, OpenDebt>;
   readonly debts: ReturnType<typeof debtBook>;
   readonly problems: readonly Problem[];
   /** 標籤合併過的換成合併後的那個 */
@@ -34,7 +36,7 @@ export interface Ledger {
 /** 一行裡跟「哪一筆」有關的欄位 */
 type Origin = Pick<Line, "date" | "event" | "entry" | "cause" | "amortized" | "tags"> & Partial<Pick<Line, "item">>;
 /** 一項來的行共用的欄位 */
-type ItemBase = Origin & Pick<Line, "payer" | "jar">;
+type ItemBase = Origin & Pick<Line, "payer" | "jar"> & Partial<Pick<Line, "account" | "repay">>;
 
 /** 一項的錢怎麼分：整項、朋友要還的（待收）、幫誰各分到多少 */
 interface Part {
@@ -66,6 +68,7 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
   const problems: Problem[] = [];
   const tag = tagResolver(catalog);
   const spent = new Map<string, Spent>();
+  const links = new Map<Line, OpenDebt>();
 
   for (const event of [...events].sort(byTime)) {
     if (event.status !== "confirmed") continue;
@@ -82,7 +85,7 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
       else if (entry.kind === "refund") refund(event, entry);
     }
   }
-  return { lines, debts, problems, tag };
+  return { lines, links, debts, problems, tag };
 
   function origin(event: Event, entry: EntryId, cause: Cause): Origin {
     return { date: event.date, event: event.id, entry, cause, amortized: false, tags: [] };
@@ -94,7 +97,14 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
     for (const item of entry.items) {
       const cause: Cause = item.cash === undefined ? "spend" : "giveMoney";
       const tags = unique([...entry.tags, ...item.tags].map(tag));
-      const base: ItemBase = { ...origin(event, entry.id, cause), item: item.id, payer, jar: item.jar, tags };
+      const base: ItemBase = {
+        ...origin(event, entry.id, cause),
+        item: item.id,
+        payer,
+        ...(entry.account === undefined ? {} : { account: entry.account }),
+        jar: item.jar,
+        tags,
+      };
       const receivable = item.receivable ?? 0;
       const ref = { event: event.id, entry: entry.id, item: item.id };
       const s: Spent = {
@@ -108,30 +118,36 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
         refunded: 0,
       };
       spent.set(key(ref), s);
-      itemLines(s, base, s.part, 1);
 
+      // 別人先出的那幾份：每一份等著哪一筆要還的錢（還了沒看它）
+      const waiting = new Map<PersonId, OpenDebt>();
       const date = event.date;
       if (entry.account !== undefined) {
         move(base, entry.account, -item.amount, payer);
-        if (othersCard) debts.add({ channel: "othersCard", ref, date, debtor: payer, account: entry.account, amount: item.amount });
+        if (othersCard) {
+          waiting.set(payer, debts.add({ channel: "othersCard", ref, date, debtor: payer, account: entry.account, amount: item.amount }));
+        }
       }
       if (receivable > 0) debts.add({ channel: "receivable", ref, date, creditor: payer, amount: receivable });
       for (const [person, amount] of s.part.shares) {
         if (item.cash?.into !== undefined) move(base, item.cash.into, amount, person);
-        if (person !== payer && !s.noRepay) debts.add({ channel: "tab", ref, date, debtor: person, creditor: payer, amount });
+        if (person !== payer && !s.noRepay) waiting.set(person, debts.add({ channel: "tab", ref, date, debtor: person, creditor: payer, amount }));
       }
+      itemLines(s, base, s.part, 1, waiting);
     }
   }
 
   /** 一項（或它的退款，sign −1）在我付的、我用的、收入、待收、往來帳、寵對方／被寵上的那幾行 */
-  function itemLines(s: Spent, base: ItemBase, part: Part, sign: 1 | -1): void {
+  function itemLines(s: Spent, base: ItemBase, part: Part, sign: 1 | -1, waiting: ReadonlyMap<PersonId, OpenDebt>): void {
     const payer = s.entry.payer;
     if (!s.othersCard) lines.push({ ...base, measure: "paid", person: payer, amount: sign * part.total });
     if (part.receivable > 0) lines.push({ ...base, measure: "receivable", person: payer, amount: sign * part.receivable });
     for (const [person, amount] of part.shares) {
+      const repay: Repay = person === payer ? "self" : s.noRepay ? "noRepay" : "repay";
+      const debt = waiting.get(person);
       if (s.item.cash !== undefined) lines.push({ ...base, measure: "income", person, amount: sign * amount });
-      else if (sign === 1) useLines(base, person, amount, s.item.amortize?.months);
-      else lines.push({ ...base, measure: "use", person, amount: -amount });
+      else if (sign === 1) useLines({ ...base, repay }, person, amount, s.item.amortize?.months, debt);
+      else use({ ...base, repay, measure: "use", person, amount: -amount }, debt);
       if (person === payer) continue;
       if (s.noRepay) {
         lines.push({ ...base, measure: "spoilGiven", person: payer, amount: sign * amount, counterpart: person });
@@ -144,14 +160,22 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
   }
 
   /** 我用的：按月攤的切成每個月一份，第一份在付錢那天 */
-  function useLines(base: ItemBase, person: PersonId, amount: number, months?: number): void {
+  function useLines(base: ItemBase, person: PersonId, amount: number, months: number | undefined, debt: OpenDebt | undefined): void {
     if (months === undefined) {
-      lines.push({ ...base, measure: "use", person, amount });
+      use({ ...base, measure: "use", person, amount }, debt);
       return;
     }
     splitMonthly(amount, months).forEach((part, i) => {
-      lines.push({ ...base, measure: "use", person, amount: part, date: addMonths(base.date, i), amortized: true });
+      use({ ...base, measure: "use", person, amount: part, date: addMonths(base.date, i), amortized: true }, debt);
     });
+  }
+
+  /** 我用的一行：別人先出的連到那一筆要還的錢，還了沒在查詢時照 to 那天拆（book.ts） */
+  function use(line: Line, debt: OpenDebt | undefined): void {
+    const settled = debt === undefined ? "none" : "outstanding";
+    const withSettled: Line = { ...line, settled };
+    lines.push(withSettled);
+    if (debt !== undefined) links.set(withSettled, debt);
   }
 
   /**
@@ -181,7 +205,12 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
       cause: "refund",
       amortized: s.item.amortize !== undefined,
     };
-    itemLines(s, base, part, -1);
+    const waiting = new Map<PersonId, OpenDebt>();
+    for (const person of part.shares.keys()) {
+      const debt = debts.find((d) => sameRef(d.ref, s.ref) && (d.channel === "othersCard" ? d.debtor === person : d.channel === "tab" && d.debtor === person));
+      if (debt !== undefined) waiting.set(person, debt);
+    }
+    itemLines(s, base, part, -1, waiting);
 
     const date = event.date;
     const same = (d: OpenDebt) => sameRef(d.ref, s.ref);

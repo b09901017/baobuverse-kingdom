@@ -1,6 +1,7 @@
 // 帳本：從事件算出所有數字（docs/adr/0001：事件存原樣，數字讀的時候才算）。
 // 這裡是介面與查詢；事件怎麼展開成一行一行在 ledger.ts。
 
+import { asOf, type OpenDebt } from "./debts";
 import { buildLedger } from "./ledger";
 import type {
   AccountId,
@@ -188,21 +189,55 @@ export interface Book {
 export function openBook(catalog: Catalog, events: readonly Event[]): Book {
   const ledger = buildLedger(catalog, events);
 
+  const expanded = new Map<string, readonly Line[]>();
+
+  /**
+   * 還了沒看的是 to 那天：別人先出的那幾行，照那一筆要還的錢到那天抵掉多少，依時間先後拆成已還、還欠兩段；
+   * 退款（負的）算在還欠。
+   */
+  function withSettled(to: LocalDate | undefined): readonly Line[] {
+    const cached = expanded.get(to ?? "");
+    if (cached !== undefined) return cached;
+    const left = new Map<OpenDebt, number>();
+    const out: Line[] = [];
+    for (const line of ledger.lines) {
+      const debt = ledger.links.get(line);
+      if (debt === undefined || line.amount < 0) {
+        out.push(line);
+        continue;
+      }
+      const available = left.get(debt) ?? asOf(debt, to).settled;
+      const repaid = Math.min(line.amount, available);
+      left.set(debt, available - repaid);
+      if (repaid > 0) out.push({ ...line, amount: repaid, settled: "repaid" });
+      if (line.amount > repaid) out.push({ ...line, amount: line.amount - repaid, settled: "outstanding" });
+    }
+    expanded.set(to ?? "", out);
+    return out;
+  }
+
   function select(query: Query): readonly Line[] {
     const w = query.where ?? {};
     const tags = w.tags?.map(ledger.tag) ?? [];
+    const without = w.withoutTags?.map(ledger.tag) ?? [];
     // 存量從第一天加到 to
     const from = stocks.has(query.measure) ? undefined : query.from;
-    return ledger.lines.filter(
+    return withSettled(query.to).filter(
       (line) =>
         line.measure === query.measure &&
         (query.person === undefined || line.person === query.person) &&
         (from === undefined || line.date >= from) &&
         (query.to === undefined || line.date <= query.to) &&
-        (w.cause === undefined || line.cause === w.cause) &&
+        (w.payer === undefined || line.payer === w.payer) &&
         (w.account === undefined || line.account === w.account) &&
         (w.jar === undefined || line.jar === w.jar) &&
-        tags.every((t) => line.tags.includes(t)),
+        (w.repay === undefined || line.repay === w.repay) &&
+        (w.amortized === undefined || line.amortized === w.amortized) &&
+        (w.cause === undefined || line.cause === w.cause) &&
+        (w.counterpart === undefined || line.counterpart === w.counterpart) &&
+        (w.settled === undefined || (line.settled ?? "none") === w.settled) &&
+        tags.every((t) => line.tags.includes(t)) &&
+        !without.some((t) => line.tags.includes(t)),
     );
   }
 
@@ -210,8 +245,9 @@ export function openBook(catalog: Catalog, events: readonly Event[]): Book {
     total: (query) => select(query).reduce((sum, line) => sum + line.amount, 0),
     breakdown: (query, by) => {
       const buckets = new Map<string, Amount>();
+      const dimension = typeof by === "object" ? { tag: ledger.tag(by.tag) } : by;
       for (const line of select(query)) {
-        const key = keyOf(line, by);
+        const key = keyOf(line, dimension);
         buckets.set(key, (buckets.get(key) ?? 0) + line.amount);
       }
       return [...buckets]

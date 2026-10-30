@@ -98,7 +98,7 @@ export function debtBook() {
     return result;
   }
 
-  return { add, settle, reduce, list };
+  return { add, settle, reduce, list, find: (match: (d: OpenDebt) => boolean) => all.find(match) };
 }
 
 /** 那一天（含）為止的金額與已抵的 */
