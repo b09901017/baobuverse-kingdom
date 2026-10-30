@@ -1,6 +1,6 @@
 # 01 新的 Firebase 專案
 
-Status: todo
+Status: done
 Blocked by: 無
 動工前先讀：`../spec.md`；`../HANDOFF.md`「每一段共同的規矩」；`docs/plan.md`「方向」（資料放在新的免費 Firebase 專案）；`docs/agents/lessons.md` 第七條（指令裡有 firebase 字樣會跳框）；
 skill `wizard`、`firebase-basics`、`firebase-auth-basics`。
@@ -38,4 +38,34 @@ skill `wizard`、`firebase-basics`、`firebase-auth-basics`。
 
 ## 做完時留下的
 
-（段做完填：實際的專案 ID、網頁設定放哪、使用者在精靈哪一步卡住過。）
+2026-10-30 段一。
+
+- **專案 ID：`baobu-kingdom`**（沒被用走，沒有尾碼；專案編號 941682816344）。建在國王日記同一個 Google 帳號底下（使用者選「同國王日記的帳號」）。
+- **跟 issue 寫的不一樣**：Firebase CLI 其實**已經登入**了，登入的就是擁有 `baobu-app` 的帳號，所以精靈沒有 `firebase login` 那步，只剩四步（建專案、Google 登入、資料庫、網頁 app）。
+  這台電腦**沒有全域的 `firebase` 指令**，都用 `npx -y firebase-tools@latest`（段一時是 15.34.2）。
+- **使用者卡住過的步驟**：沒有，四步一次跑完。精靈是一次性的，放在段一的 scratchpad，沒進 repo。
+- **段一只讀確認過的**（2026-10-30，`firebase-tools` 與 gcloud 的讀取，沒有寫入）：
+
+  | 判準 | 結果 |
+  |---|---|
+  | 方案 | 沒綁帳單（`billingEnabled: False`）＝ Spark |
+  | 資料庫 | `(default)`、Standard、`FIRESTORE_NATIVE`、位置 `asia-east1` |
+  | 規則 | 正式模式：`match /{document=**} { allow read, write: if false; }` |
+  | Google 登入 | `google.com` 的 `enabled = True` |
+  | 網頁 app | `treasury`，App ID `1:941682816344:web:5a5aae8b78d4e6e765212d`，沒有開 Hosting |
+  | `baobu-app` | 沒動：只在一開始 `projects:list` 列專案清單時出現在名單裡 |
+
+- **網頁設定**（公開的，可以進 repo；05 決定放 `apps/treasury` 的哪個設定檔，`firebase apps:sdkconfig WEB <App ID> --project baobu-kingdom` 可以再讀一次）：
+
+  ```json
+  {
+    "apiKey": "AIzaSyAmR2pMj3iH41mx8t6YpcoyABxjmXQJCuU",
+    "authDomain": "baobu-kingdom.firebaseapp.com",
+    "projectId": "baobu-kingdom",
+    "storageBucket": "baobu-kingdom.firebasestorage.app",
+    "messagingSenderId": "941682816344",
+    "appId": "1:941682816344:web:5a5aae8b78d4e6e765212d"
+  }
+  ```
+
+  `authDomain` 現在是預設的 `firebaseapp.com`；過目說 redirect 登入要用部署網域，05／06 改。
