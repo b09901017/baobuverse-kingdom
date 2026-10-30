@@ -1,0 +1,19 @@
+{
+  "name": "baobuverse-kingdom",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "test": "pnpm -r --if-present run test",
+    "build": "pnpm -r --if-present run build",
+    "verify": "pnpm run typecheck && pnpm run test && pnpm run build",
+    "deploy": "pnpm --filter @baobu/treasury run deploy"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

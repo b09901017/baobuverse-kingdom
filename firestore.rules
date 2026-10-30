@@ -1,0 +1,316 @@
+rules_version = '2';
+
+// 國庫的安全規則（docs/adr/0001「Firestore 上怎麼放」）。規則測試在 apps/treasury/test/rules.test.ts。
+//
+// ===============================================================
+// 資料的樣子（型別在 packages/core/src/model.ts）
+// ===============================================================
+//
+// 全部放在 kingdoms/{k} 底下；王國以外的路徑一律拒絕。
+//
+// kingdoms/{k}                  { founder: uid, createdAt: 伺服器時間 }，建了就不能改
+// kingdoms/{k}/members/{uid}    { person }：這個登入帳號是哪個人，建了就不能改
+// kingdoms/{k}/people/{p}       Person { id, name }
+// kingdoms/{k}/jars/{j}         Jar { id, name, owners, archived? }
+// kingdoms/{k}/tags/{t}         Tag { id, name, defaultJar?, mergedInto?, archived? }
+// kingdoms/{k}/accounts/{a}     Account { id, name, note?, kind, owners, currency, paidByOthers?, archived? }
+// kingdoms/{k}/recurring/{r}    Recurring（owner 是設定的人）
+// kingdoms/{k}/prefs/{p}        自己的排序 { accounts?, jars?, tags? }
+// kingdoms/{k}/events/{e}       Event ＋ participants（list）、updatedAt（伺服器時間）、deleted（bool）、v（1）
+//
+// 第一份成員文件：王國文件還不存在時，第一個登入的人在同一批寫入裡建王國（founder 寫自己）和自己的成員文件。
+// 之後王國文件已經在了，別人建不了（create 一個已經存在的文件會被當成 update，而王國不能 update）。
+//
+// 上線前的一鍵重置（issue 06）：canReset() 是 true 時，本人可以真的刪自己的資料（我記的事件、主人有我的帳戶與罐子、標籤、
+// 我的固定花費與排序）。王國、成員、王國裡的人永遠不能刪。上線時 canReset() 改成 false（跟 apps/treasury/src/launch.ts 一起切）。
+//
+// 規則只檢查欄位的種類、大小與「誰能動」；事件裡效果的內容（金額、品項、幫誰）在存之前由 core 的 validateEvent 檢查。
+// 記的人只能寫壞自己記的事件，寫不到別人的。
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 共用 ─────────────────────────────────────────────────
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function memberPath(k) {
+      return /databases/$(database)/documents/kingdoms/$(k)/members/$(request.auth.uid);
+    }
+
+    // 讀：這個登入帳號是王國的成員
+    function isMember(k) {
+      return signedIn() && exists(memberPath(k));
+    }
+
+    // 讀：我是哪個人
+    function me(k) {
+      return get(memberPath(k)).data.person;
+    }
+
+    // 寫：這一批寫完之後我是成員（建王國的那一批，成員文件是同一批建的）
+    function isMemberAfter(k) {
+      return signedIn() && existsAfter(memberPath(k));
+    }
+
+    function meAfter(k) {
+      return getAfter(memberPath(k)).data.person;
+    }
+
+    // 「已上線」開關的規則那一半：上線前 true，上線後 false（apps/treasury/test/launch.test.ts 檢查兩邊一致）
+    function canReset() {
+      return true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function shortString(s, maxLen) {
+      return s is string && s.size() >= 1 && s.size() <= maxLen;
+    }
+
+    function optionalString(data, field, maxLen) {
+      return !(field in data) || (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function optionalTrue(data, field) {
+      return !(field in data) || data[field] == true;
+    }
+
+    // 人的 ID 清單：1 到 maxSize 個、不重複、第一個是字串（規則不能逐一檢查清單裡的每一個）
+    function idList(list, maxSize) {
+      return list is list && list.size() >= 1 && list.size() <= maxSize
+        && list.toSet().size() == list.size()
+        && list[0] is string && list[0].size() <= 40;
+    }
+
+    function optionalIdList(data, field, maxSize) {
+      return !(field in data) || (data[field] is list && data[field].size() <= maxSize);
+    }
+
+    function unchanged(fields) {
+      return !incoming().diff(existing()).affectedKeys().hasAny(fields);
+    }
+
+    // ── 王國與成員 ───────────────────────────────────────────
+
+    match /kingdoms/{k} {
+      allow read: if isMember(k);
+      // 只有王國還不存在時才會走到 create；建的人寫自己
+      allow create: if signedIn()
+        && incoming().keys().hasOnly(['founder', 'createdAt'])
+        && incoming().founder == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update, delete: if false;
+
+      match /members/{uid} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        // 只有建王國的人能建自己的成員文件（第一份）；其他人加入是階段 6 的事
+        allow create: if signedIn() && request.auth.uid == uid
+          && getAfter(/databases/$(database)/documents/kingdoms/$(k)).data.founder == request.auth.uid
+          && incoming().keys().hasOnly(['person'])
+          && shortString(incoming().person, 40);
+        allow update, delete: if false;
+      }
+
+      // ── 參考資料：成員都讀得到（共付的事件兩邊都要認得） ──
+
+      function validPerson(p) {
+        let d = incoming();
+        return d.keys().hasOnly(['id', 'name'])
+          && d.id == p
+          && shortString(d.name, 40);
+      }
+
+      match /people/{p} {
+        allow read: if isMember(k);
+        allow create, update: if isMemberAfter(k) && validPerson(p);
+        allow delete: if false;
+      }
+
+      function validJar(j) {
+        let d = incoming();
+        return d.keys().hasAll(['id', 'name', 'owners'])
+          && d.keys().hasOnly(['id', 'name', 'owners', 'archived'])
+          && d.id == j
+          && shortString(d.name, 40)
+          && idList(d.owners, 2)
+          && optionalTrue(d, 'archived');
+      }
+
+      match /jars/{j} {
+        allow read: if isMember(k);
+        allow create: if isMemberAfter(k) && validJar(j);
+        allow update: if isMemberAfter(k) && validJar(j) && unchanged(['id']);
+        allow delete: if canReset() && isMember(k) && me(k) in existing().owners;
+      }
+
+      function validTag(t) {
+        let d = incoming();
+        return d.keys().hasAll(['id', 'name'])
+          && d.keys().hasOnly(['id', 'name', 'defaultJar', 'mergedInto', 'archived'])
+          && d.id == t
+          && shortString(d.name, 40)
+          && optionalString(d, 'defaultJar', 40)
+          && optionalString(d, 'mergedInto', 40)
+          && optionalTrue(d, 'archived');
+      }
+
+      match /tags/{t} {
+        allow read: if isMember(k);
+        allow create: if isMemberAfter(k) && validTag(t);
+        allow update: if isMemberAfter(k) && validTag(t) && unchanged(['id']);
+        // 標籤沒有主人：成員都能刪（上線前只有步）
+        allow delete: if canReset() && isMember(k);
+      }
+
+      // ── 帳戶：只有主人（owners）讀寫得到；共有的投資帳戶兩個人都可以 ──
+
+      function validAccount(a) {
+        let d = incoming();
+        return d.keys().hasAll(['id', 'name', 'kind', 'owners', 'currency'])
+          && d.keys().hasOnly(['id', 'name', 'note', 'kind', 'owners', 'currency', 'paidByOthers', 'archived'])
+          && d.id == a
+          && shortString(d.name, 40)
+          && optionalString(d, 'note', 200)
+          && d.kind in ['bank', 'cash', 'stored-value', 'credit-card', 'investment']
+          && idList(d.owners, 2)
+          && d.currency == 'TWD'
+          && optionalTrue(d, 'paidByOthers')
+          && optionalTrue(d, 'archived');
+      }
+
+      match /accounts/{a} {
+        allow read: if isMember(k) && me(k) in existing().owners;
+        // 自己要一直在主人裡：不能把帳戶整個送給別人
+        allow create: if isMemberAfter(k) && validAccount(a) && meAfter(k) in incoming().owners;
+        allow update: if isMemberAfter(k) && meAfter(k) in existing().owners
+          && validAccount(a) && meAfter(k) in incoming().owners
+          && unchanged(['id']);
+        allow delete: if canReset() && isMember(k) && me(k) in existing().owners;
+      }
+
+      // ── 固定花費、自己的排序：只有本人 ──
+
+      function validRecurring(r) {
+        let d = incoming();
+        return d.keys().hasAll(['id', 'owner', 'name', 'amount', 'every', 'day', 'account', 'beneficiary', 'jar', 'tags'])
+          && d.keys().hasOnly(['id', 'owner', 'name', 'amount', 'every', 'day', 'month', 'account', 'beneficiary', 'jar', 'tags', 'amortize', 'archived'])
+          && d.id == r
+          && shortString(d.name, 40)
+          && d.amount is int && d.amount > 0
+          && d.every in ['month', 'year']
+          && d.day is int && d.day >= 1 && d.day <= 31
+          && (!('month' in d) || (d.month is int && d.month >= 1 && d.month <= 12))
+          && shortString(d.account, 40)
+          && d.beneficiary is map
+          && shortString(d.jar, 40)
+          && d.tags is list && d.tags.size() <= 20
+          && (!('amortize' in d) || d.amortize is map)
+          && optionalTrue(d, 'archived');
+      }
+
+      match /recurring/{r} {
+        allow read: if isMember(k) && existing().owner == me(k);
+        allow create: if isMemberAfter(k) && validRecurring(r) && incoming().owner == meAfter(k);
+        allow update: if isMemberAfter(k) && existing().owner == meAfter(k)
+          && validRecurring(r) && incoming().owner == meAfter(k) && unchanged(['id']);
+        allow delete: if canReset() && isMember(k) && existing().owner == me(k);
+      }
+
+      match /prefs/{p} {
+        allow read: if isMember(k) && me(k) == p;
+        allow create, update: if isMemberAfter(k) && meAfter(k) == p
+          && incoming().keys().hasOnly(['accounts', 'jars', 'tags'])
+          && optionalIdList(incoming(), 'accounts', 200)
+          && optionalIdList(incoming(), 'jars', 100)
+          && optionalIdList(incoming(), 'tags', 500);
+        allow delete: if canReset() && isMember(k) && me(k) == p;
+      }
+
+      // ── 事件：參與者讀得到；記的人建、改；其他參與者只能改 doubts 裡自己那一格 ──
+
+      function validEvent(e) {
+        let d = incoming();
+        return d.keys().hasAll(['id', 'date', 'recordedBy', 'recordedAt', 'source', 'status', 'effects',
+                                'participants', 'updatedAt', 'deleted', 'v'])
+          && d.keys().hasOnly(['id', 'date', 'time', 'title', 'note', 'recordedBy', 'recordedAt', 'source', 'status',
+                               'externalIds', 'recurring', 'doubts', 'effects',
+                               'participants', 'updatedAt', 'deleted', 'v'])
+          && d.id == e
+          && d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && (!('time' in d) || (d.time is string && d.time.matches('^[0-9]{2}:[0-9]{2}$')))
+          && optionalString(d, 'title', 200)
+          && optionalString(d, 'note', 2000)
+          && d.recordedAt is int
+          && d.source in ['manual', 'voice', 'notification', 'recurring']
+          && d.status in ['confirmed', 'pending']
+          && optionalIdList(d, 'externalIds', 20)
+          && optionalString(d, 'recurring', 40)
+          && (!('doubts' in d) || (d.doubts is map && d.doubts.size() <= 10))
+          && d.effects is list && d.effects.size() >= 1 && d.effects.size() <= 50
+          && idList(d.participants, 10)
+          && d.updatedAt == request.time
+          && d.deleted is bool
+          && d.v == 1;
+      }
+
+      // 有疑問：只動 doubts 裡自己那一格，那一格是 { note?, at }
+      function onlyMyDoubt(person) {
+        let before = existing().get('doubts', {});
+        let after = incoming().get('doubts', {});
+        return after.diff(before).affectedKeys().hasOnly([person])
+          && (!(person in after) || (
+                after[person] is map
+                && after[person].keys().hasAll(['at'])
+                && after[person].keys().hasOnly(['note', 'at'])
+                && after[person].at is int
+                && optionalString(after[person], 'note', 500)));
+      }
+
+      match /events/{e} {
+        // 查詢要帶 where participants array-contains 我，規則才放行
+        allow read: if isMember(k) && me(k) in existing().participants;
+
+        allow create: if isMemberAfter(k) && validEvent(e)
+          && incoming().recordedBy == meAfter(k)
+          && meAfter(k) in incoming().participants
+          && incoming().deleted == false
+          && onlyMyDoubtOnCreate(meAfter(k));
+
+        // 記的人：改內容、標記刪除；誰記的、什麼時候記的不能改；別人的有疑問不能動
+        allow update: if isMemberAfter(k)
+          && existing().recordedBy == meAfter(k)
+          && validEvent(e)
+          && meAfter(k) in incoming().participants
+          && unchanged(['id', 'recordedBy', 'recordedAt'])
+          && onlyMyDoubt(meAfter(k));
+
+        // 其他參與者：只能改 doubts 裡自己那一格（寶要有成員文件才走得到，階段 6）
+        allow update: if isMemberAfter(k)
+          && existing().recordedBy != meAfter(k)
+          && meAfter(k) in existing().participants
+          && incoming().diff(existing()).affectedKeys().hasOnly(['doubts', 'updatedAt'])
+          && incoming().updatedAt == request.time
+          && onlyMyDoubt(meAfter(k));
+
+        // 平常刪除只做標記（deleted），文件留著；上線前重置時，記的人可以真的刪
+        allow delete: if canReset() && isMember(k) && existing().recordedBy == me(k);
+      }
+
+      function onlyMyDoubtOnCreate(person) {
+        let d = incoming();
+        return !('doubts' in d) || d.doubts.keys().hasOnly([person]);
+      }
+    }
+  }
+}

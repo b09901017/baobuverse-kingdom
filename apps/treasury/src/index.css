@@ -1,0 +1,57 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+}
+
+.note {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #b3261e;
+}
+
+.settings {
+  margin-top: 3rem;
+}
+
+.confirm {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 1rem;
+  border: 2px solid #b3261e;
+  border-radius: 0.5rem;
+}
+
+.confirm ul {
+  list-style: disc;
+  text-align: left;
+  padding-left: 1.5rem;
+}
+
+.danger {
+  background: #b3261e;
+  color: #fff;
+  border: none;
+  border-radius: 0.25rem;
+}
