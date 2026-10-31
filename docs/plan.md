@@ -78,7 +78,7 @@
 | 用途 | Skill |
 |---|---|
 | 工程流程 | Matt Pocock 整套（最新版） |
-| 讓 AI 看懂整份程式碼的關聯 | `graphify` |
+| 讓 AI 看懂整份程式碼的關聯 | `graphify` 負責宏觀架構與文件、CodeGraph 負責微觀程式碼變更與影響評估（使用者 2026-10-31：「讓 Graphify 負責宏觀架構與文件，讓 Codegraph 負責微觀程式碼變更與影響評估。兩者相輔相成」）；做法寫在 `ripple-check` |
 | 使用者自己的工作流程 | `claude-md`、`kickoff`（從上一個專案改寫成通用版） |
 | Firebase | 官方 `firebase/agent-skills` 裡用得到的六個 |
 | 設計 | `impeccable`（取代 `frontend-design`） |
@@ -168,7 +168,7 @@ AI 提的、使用者答「好」「照建議」「可以」的。錢的名詞�
 ### 怎麼蓋
 
 - 從零開始蓋靠：GLOSSARY 與 plan.md、`packages/core` 的介面用 `codebase-design`（設計兩次）、算錢的規則用 `tdd`、每一輪 `kickoff` → `matt-code-review`、難回頭的決定寫 ADR。
-- `graphify` 等階段 1 做完（有真的程式碼）才第一次跑，之後每個階段結束時 `--update`；第一次跑之前先把 Python 套件 `graphifyy` 升到最新版。
+- `graphify` 等階段 1 做完（有真的程式碼）才第一次跑，之後每個階段結束時 `--update`（怎麼更新見 `ripple-check`）。2026-10-31 套件升到 0.9.99、程式碼的圖建好了；含文件的第一次完整建圖還沒跑。
 
 ## 階段（2026-10-30 使用者看過、說「照這張表」；同一天整理時又照建議調了兩處：誰出／幫誰提早到 1、按月攤與幫朋友先付放進 3；之後可以再調整）
 
