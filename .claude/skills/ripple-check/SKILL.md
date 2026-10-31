@@ -42,6 +42,7 @@ description: 動到已經存在、別處在用的程式碼時「透視關聯」�
 
 1. 把缺陷寫成一句「在 X 的時候會 Y」，再找它在程式碼裡的形狀。
 2. 寫成 ast-grep 樣式：`$X` 代表一個節點、`$$$` 代表任意多個。例如 `ast-grep run -p 'Math.round($X)' -l ts packages apps`；`.tsx` 要另外跑一次 `-l tsx`。
+   **最多寫兩次樣式**：兩次都抓不到原本那一處（連已知有問題的地方都沒找到，代表樣式錯了），就改用第 3 步，不要一直調樣式。
 3. 缺陷不在形狀、在邏輯（例如「忘了排除封存的帳戶」）的時候：對同一個被誤用的函式跑 `codegraph callers`，再 grep 關鍵字。
 4. 每一處都要有結論：同一個缺陷 → 在這次範圍內的一起修，範圍外的照專案的規矩記下來（`kickoff`：HANDOFF 的「中途發現」）；不是 → 寫一句為什麼。
 
@@ -51,7 +52,7 @@ description: 動到已經存在、別處在用的程式碼時「透視關聯」�
 - **查**：中文可以直接問（要裝 `graphifyy[chinese]`）；結果被截斷時照提示加 `--budget N`。整體架構才讀 `graphify-out/GRAPH_REPORT.md`。
 - **圖是快照**：`GRAPH_REPORT.md` 寫了建圖時的 commit，跟 `git rev-parse HEAD` 差很多就先更新再查。
 - **更新圖**（階段結束時；改了很多程式碼、要用圖之前也可以）：
-  1. 程式碼：`GRAPHIFY_BACKEND=none graphify update .`（不用 LLM、不花額度；會用滿所有核心，小 repo 不到一分鐘）。
+  1. 程式碼：`GRAPHIFY_BACKEND=none GRAPHIFY_MAX_WORKERS=8 graphify update .`（不用 LLM、不花額度）。不設 `GRAPHIFY_MAX_WORKERS` 會用滿所有核心（使用者的電腦曾經過熱斷電）；小 repo 不到一分鐘，上千個檔的先跟使用者說。
   2. 私人資料夾的檢查網：`node .claude/skills/ripple-check/scripts/private-index-check.mjs`，列出目錄還沒寫到的檔（只印檔名）。每一份歸類後跟使用者說怎麼處理（見下一節）。
   3. 文件有改：`/graphify . --update`。這一步會讓模型讀文件、會花額度，大的時候先跟使用者說。
 - **不裝 Graphify 的常駐提醒**（`graphify claude install` 會寫進 CLAUDE.md 和 PreToolUse hook）：日常的程式碼問題交給 CodeGraph，兩個都要當「第一個查的」會互相打架。
@@ -82,4 +83,5 @@ description: 動到已經存在、別處在用的程式碼時「透視關聯」�
 - CodeGraph **沒有** structural search 或 CGQL：找同一個形狀用 ast-grep。`affected` 吃的是檔案，找符號的波及範圍用 `impact`。
 - 用 CLI，不接 CodeGraph 的 MCP：Windows 上它的背景程序有閃黑色視窗、吃記憶體的 issue；MCP 還得在每個帳號的設定資料夾各設一次。CLI 在每台電腦上都一樣。
 - 同名函式、`this.m()`、`require` 這類動態寫法，CodeGraph 可能連錯：`impact` 的清單是起點，不是保證。
+- **沒有型別檢查的專案（純 JS）**：漏改的呼叫端不會在驗證時變紅，最後一道只剩測試。`impact`／`callers` 的清單要再用 grep 函式名對一次，兩邊不一樣的逐一看。
 - 檔案用了 tree-sitter 不認得的語法（例如 `export type *`），兩個工具會警告「沒有產生符號」；跨檔的呼叫通常還是找得到，要確認就對那個檔裡的符號跑一次 `callers`。
