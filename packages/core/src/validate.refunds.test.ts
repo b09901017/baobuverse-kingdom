@@ -301,6 +301,21 @@ describe("改原本那筆：已退的部分不能失效", () => {
     expect(帳本沒問題(k, 改過)).toEqual([]);
   });
 
+  it("明寫退回寶媽卡的那筆，原本那筆改成別的帳戶：擋（寶媽卡只能退回刷它的那筆，不然餘額多出來、還欠的沒變）", () => {
+    const k = kingdom();
+    const e = k.spend(D, { payer: 寶, account: 寶媽卡, amount: 1000, for: 寶 }, { by: 寶 });
+    k.refund("2026-10-25", itemOf(e), 300, 寶媽卡, { by: 寶 });
+    expect(check(k, 改(e, { account: 寶的銀行 }))).toEqual(["refunded-item-changed"]);
+    expect(check(k, 改(e, { tags: [家樂福] }))).toEqual([]);
+  });
+
+  it("明寫退到自己另一個帳戶的那筆，原本那筆改帳戶：可以（錢就是進那個帳戶）", () => {
+    const k = kingdom();
+    const e = k.spend(D, 一般);
+    k.refund("2026-10-25", itemOf(e), 300, 郵局);
+    expect(check(k, 改(e, { account: 郵局 }))).toEqual([]);
+  });
+
   it("沒有退款的那筆：想怎麼改都可以（只看一般的檢查）", () => {
     const k = kingdom();
     const e = k.spend(D, 一般);

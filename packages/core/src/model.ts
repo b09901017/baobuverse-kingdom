@@ -275,7 +275,7 @@ export interface Refund extends MoneyBase {
   readonly kind: "refund";
   readonly target: ItemRef;
   readonly amount: Amount;
-  /** 錢退回哪個帳戶；沒寫就是原本那一筆的帳戶 */
+  /** 錢退回哪個帳戶；沒寫就是原本那一筆的帳戶（原本那筆改帳戶時跟著走）。退到別的帳戶才寫 */
   readonly account?: AccountId;
 }
 

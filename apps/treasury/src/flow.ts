@@ -19,7 +19,7 @@ import {
   type Refund,
   type Transfer,
 } from "@baobu/core";
-import { balanceText } from "./accounts";
+import { accountsMoved, balanceText } from "./accounts";
 import { dayLabel, money, signedMoney } from "./format";
 import { refundNote, refundTargetAt } from "./refund";
 
@@ -107,19 +107,7 @@ function firstReconciliations(events: readonly Event[]): ReadonlySet<string> {
 
 /** 有篩帳戶時，這一筆有沒有動到那個帳戶 */
 function touches(m: MoneyEffect, ctx: Context): boolean {
-  if (ctx.account === undefined) return true;
-  switch (m.kind) {
-    case "expense":
-    case "income":
-    case "reconciliation":
-      return m.account === ctx.account;
-    case "transfer":
-      return m.from === ctx.account || m.to === ctx.account;
-    case "refund":
-      return (m.account ?? refundTargetAt(ctx.events, m.target)?.expense.account) === ctx.account;
-    case "repayment":
-      return false;
-  }
+  return ctx.account === undefined || accountsMoved(m, ctx.events).includes(ctx.account);
 }
 
 function rowOf(event: Event, m: MoneyEffect, ctx: Context): FlowRow | null {

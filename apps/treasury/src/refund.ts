@@ -100,7 +100,7 @@ function orderProblem(form: RefundForm, original: Event, recordedAt: number): st
   return `退款要排在原本那筆（${dayLabel(original.date)}${original.time === undefined ? "" : ` ${original.time}`}）之後`;
 }
 
-/** 這則事件打得開退款的表單嗎：一則一筆退款。舊的沒寫帳戶：就是原本那筆的帳戶 */
+/** 這則事件打得開退款的表單嗎：一則一筆退款。沒寫帳戶：就是原本那筆的帳戶 */
 export function refundFormOf(event: Event, target?: RefundTarget | null): RefundForm | null {
   const [m, ...rest] = event.effects;
   if (m?.kind !== "refund" || rest.length > 0) return null;
@@ -114,7 +114,9 @@ export function buildRefund(form: RefundForm, target: RefundTarget, ctx: BuildCo
   if (!amount.ok) throw new Error(amount.error); // 畫面存之前先 checkRefundForm
   const was = ctx.existing?.effects[0]?.kind === "refund" ? ctx.existing.effects[0] : undefined;
   const { account: _account, ...entry } = was ?? { type: "money" as const, id: entryId, kind: "refund" as const, target: target.ref };
-  const refund: Refund = { ...entry, amount: amount.value, ...(form.account === "" ? {} : { account: form.account }) };
+  // 退回原本那個帳戶就不寫：原本那筆之後改帳戶時，退款跟著走，兩個帳戶的餘額才對
+  const elsewhere = form.account !== "" && form.account !== target.expense.account;
+  const refund: Refund = { ...entry, amount: amount.value, ...(elsewhere ? { account: form.account } : {}) };
   const title = ctx.existing === undefined ? target.title : ctx.existing.title;
   return { ...eventBase({ ...form, title: title ?? "" }, ctx), effects: [refund] };
 }

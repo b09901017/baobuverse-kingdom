@@ -100,6 +100,31 @@ describe("退款：沖回原本那一項，不算收入", () => {
     ]);
   });
 
+  it("共付那一項分好幾次全退：跟一次全退一樣，每個數字都回到 0（每次的零頭不會累積）", () => {
+    for (const parts of [[333, 667], [1, 1, 998], [501, 499]]) {
+      const k = kingdom();
+      const e = k.spend("2026-10-10", { payer: 步, amount: 1000, for: "共" });
+      for (const amount of parts) k.refund("2026-10-12", itemOf(e), amount);
+      const book = k.book();
+      expect(book.problems).toEqual([]);
+      expect(book.total({ measure: "use", person: 步 })).toBe(0);
+      expect(book.total({ measure: "use", person: 寶 })).toBe(0);
+      expect(book.total({ measure: "paid", person: 步 })).toBe(0);
+      expect(book.total({ measure: "tab", person: 步 })).toBe(0);
+      expect(book.debts({ channel: "tab", outstandingOnly: true })).toEqual([]);
+    }
+  });
+
+  it("共付 1,001（步 501、寶 500）分兩次全退：步、寶各沖回自己那一份", () => {
+    const k = kingdom();
+    const e = k.spend("2026-10-10", { payer: 步, amount: 1001, for: "共" });
+    k.refund("2026-10-12", itemOf(e), 500);
+    k.refund("2026-10-13", itemOf(e), 501);
+    const book = k.book();
+    expect(book.total({ measure: "use", person: 步 })).toBe(0);
+    expect(book.total({ measure: "use", person: 寶 })).toBe(0);
+  });
+
   it("寶已經還清之後才退款：多還的部分變成步欠寶", () => {
     const k = kingdom();
     const e = k.spend("2026-10-10", { payer: 步, amount: 650, for: 寶 });

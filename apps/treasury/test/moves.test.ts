@@ -452,6 +452,44 @@ describe("退款 · 帳本", () => {
     expect(b.total({ measure: "paid", person: 步 })).toBe(1_001 - 101);
     expect(b.total({ measure: "tab", person: 步, where: { counterpart: 寶 } })).toBe(500 - 50);
   });
+  describe("改原本那筆的帳戶", () => {
+    const editLunch = (account: AccountId, paid = lunch) => buildExpense({ ...(formOf(paid) as RecordForm), account }, { id: "別的" as EventId, me: 步, now: 9_000, existing: paid });
+    const swap = (events: readonly Event[], next: Event) => events.map((e) => (e.id === next.id ? next : e));
+
+    it("退回原本那個帳戶的：不寫帳戶，跟著原本那筆走（改了之後兩個帳戶的餘額都對）", () => {
+      const before = [...start, opening(假錢包, 2_000), lunch, refund({ account: 假銀行.id })];
+      expect((before.at(-1)?.effects[0] as Refund).account).toBeUndefined();
+      const moved = editLunch(假錢包.id);
+      expect(validateEvent(moved, catalog, before)).toEqual([]);
+      const after = swap(before, moved);
+      expect(balance(after, 假銀行)).toBe(5_000);
+      expect(balance(after, 假錢包)).toBe(2_000 - 1_000 + 300);
+      expect(worth(after)).toBe(worth(before));
+    });
+    it("退到別的帳戶的：寫帳戶，原本那筆怎麼改，錢都在那個帳戶", () => {
+      const before = [...start, opening(假錢包, 2_000), lunch, refund({ account: 假錢包.id })];
+      expect((before.at(-1)?.effects[0] as Refund).account).toBe(假錢包.id);
+      const after = swap(before, editLunch(假信用卡.id));
+      expect(balance(after, 假銀行)).toBe(5_000);
+      expect(balance(after, 假錢包)).toBe(2_300);
+      expect(balance(after, 假信用卡)).toBe(-1_000);
+    });
+    it("刷寶媽卡全退、再把原本那筆改成寶的銀行：寶媽卡、寶的銀行、寶的淨資產都回到 0", () => {
+      const card = expense({ person: 寶, helped: 寶, account: 假媽媽卡.id, amount: "1000" }, "媽媽卡");
+      const back = refund({ amount: "1000", account: 假媽媽卡.id }, "退卡", refundTargetOf(card)!);
+      const before = [card, back];
+      const moved = buildExpense({ ...(formOf(card) as RecordForm), account: 寶的銀行.id }, { id: "別的" as EventId, me: 步, now: 9_000, existing: card });
+      expect(validateEvent(moved, catalog, before)).toEqual([]);
+      const after = swap(before, moved);
+      expect(balance(after, 假媽媽卡)).toBe(0);
+      expect(balance(after, 寶的銀行)).toBe(0);
+      expect(worth(after, 寶)).toBe(0);
+    });
+    it("表單打開時帶的還是實際退回的帳戶（畫面不會變成不知道）", () => {
+      expect(refundFormOf(refund({ account: 假銀行.id }), lunchTarget)).toMatchObject({ account: 假銀行.id });
+      expect(refundFormOf(refund({ account: 假錢包.id }), lunchTarget)).toMatchObject({ account: 假錢包.id });
+    });
+  });
   it("原本那筆不知道帳戶：退款也不動任何帳戶的餘額", () => {
     const unknown = expense({ account: "" }, "不知道");
     const target = refundTargetOf(unknown)!;
@@ -466,7 +504,7 @@ describe("退款 · 帳本", () => {
     const paid = lunch.effects[0] as Expense;
     expect(e.effects).toHaveLength(1);
     expect(m.target).toEqual({ event: lunch.id, entry: paid.id, item: paid.items[0]?.id });
-    expect(m).toMatchObject({ kind: "refund", amount: 300, account: 假銀行.id });
+    expect(m).toMatchObject({ kind: "refund", amount: 300 });
     expect(validateEvent(e, catalog, [lunch])).toEqual([]);
   });
   it("沒有名稱的那筆：退款也沒有名稱", () => {
@@ -529,7 +567,7 @@ describe("退款 · 表單與約束", () => {
   });
   it("改一筆：ID、誰記的、記的時間、指回的那一項都留著；名稱不動", () => {
     const was = refund({ amount: "300" });
-    const form = refundFormOf(was) as RefundForm;
+    const form = refundFormOf(was, lunchTarget) as RefundForm;
     expect(form).toEqual({ amount: "300", account: 假銀行.id, date: "2026-10-25", time: "09:00" });
     const next = buildRefund({ ...form, amount: "400", account: 假錢包.id, time: "" }, lunchTarget, { id: "別的" as EventId, me: 寶, now: 9_999, existing: was });
     expect(next).toMatchObject({ id: was.id, recordedBy: 步, recordedAt: 2_000, title: "假午餐" });
@@ -539,14 +577,9 @@ describe("退款 · 表單與約束", () => {
   it("改一筆：原本那筆後來改了名稱，退款存的名稱不跟著變；一筆的 ID 不是預設的也留著", () => {
     const was: Event = { ...refund(), effects: [{ ...(refund().effects[0] as Refund), id: "老" as EntryId }] };
     const renamed = { ...lunchTarget, title: "假的新名稱" };
-    const next = buildRefund(refundFormOf(was) as RefundForm, renamed, { id: "別的" as EventId, me: 步, now: 9_999, existing: was });
+    const next = buildRefund(refundFormOf(was, renamed) as RefundForm, renamed, { id: "別的" as EventId, me: 步, now: 9_999, existing: was });
     expect(next.title).toBe("假午餐");
     expect(next.effects[0]?.id).toBe("老");
-  });
-  it("舊的退款沒寫帳戶：表單帶原本那筆的帳戶", () => {
-    const was = refund();
-    const { account: _account, ...bare } = was.effects[0] as Refund;
-    expect(refundFormOf({ ...was, effects: [bare] }, lunchTarget)).toMatchObject({ account: 假銀行.id });
   });
   it("不是一筆退款的打不開", () => {
     expect(refundFormOf(lunch)).toBeNull();

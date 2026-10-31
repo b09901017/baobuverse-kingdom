@@ -43,7 +43,7 @@ export type ProblemCode =
   | "refund-target" // 退款指到不存在的品項（或直接給錢的那一項），或排在原本那筆之前（帳本找不到它）
   | "refund-too-big" // 退款超過那一項還沒退的（同一則裡好幾筆退同一項，加起來算）
   | "refund-account" // 退回的帳戶不是原本那筆誰出的人的（或是投資帳戶、別筆的寶媽卡）
-  | "refunded-item-changed" // 這筆已經有退款，這樣改會讓退款失效：被退的品項不見、金額比已退的少、排到退款之後、誰出或幫誰變了（要改就先刪退款）
+  | "refunded-item-changed" // 這筆已經有退款，這樣改會讓退款失效：被退的品項不見、金額比已退的少、排到退款之後、誰出或幫誰變了、明寫退回寶媽卡卻改成別的帳戶（要改就先刪退款）
   | "allocation-invalid"; // 手動指定的還款指到不存在的、不是這一種要還的錢，或指定的加起來比還款多
 
 export interface Problem {
@@ -189,6 +189,12 @@ function check(event: Event, catalog: Catalog, strict: boolean, events?: readonl
       const was = before === undefined ? undefined : expenseIn(before, entry);
       const now = expenseIn(event, entry);
       if (was !== undefined && now !== undefined && whoChanged(was, now)) add("refunded-item-changed", entry);
+    }
+    // 退款明寫的帳戶要還對得上原本那筆：寶媽卡只能退回刷它的那筆（改成別的帳戶，寶媽卡的餘額會多出來、還欠的沒變）
+    for (const { refund } of refunds) {
+      const into = refund.account === undefined ? undefined : accounts.get(refund.account);
+      const now = expenseIn(event, refund.target.entry);
+      if (into !== undefined && now !== undefined && !refundAccountOk(into, now)) add("refunded-item-changed", refund.target.entry);
     }
   }
 

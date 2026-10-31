@@ -1,6 +1,6 @@
 // 帳戶頁的純函式（issue 04）。不用模擬器。資料都是假的。
 
-import { openBook, type Account, type AccountId, type Catalog, type EntryId, type Event, type EventId, type ItemId, type JarId, type PersonId } from "@baobu/core";
+import { openBook, type Account, type AccountId, type Catalog, type EntryId, type Event, type EventId, type Expense, type ItemId, type JarId, type PersonId } from "@baobu/core";
 import { describe, expect, it } from "vitest";
 import {
   balanceText,
@@ -109,6 +109,19 @@ describe("卡片牆的順序", () => {
     expect(counts.get(假銀行.id)).toBe(1);
     expect(counts.get(假錢包.id)).toBe(1);
     expect(counts.get(假幣.id)).toBeUndefined();
+  });
+  it("退款算用過：沒寫帳戶的算原本那筆的帳戶（跟帳本、流水頁同一個算法）", () => {
+    const paid = spend("1", 假卡);
+    const m = paid.effects[0] as Expense;
+    const target = { event: paid.id, entry: m.id, item: m.items[0]?.id as ItemId };
+    const refund = (n: string, account?: Account): Event => ({
+      ...base(n),
+      effects: [{ ...entry, kind: "refund", target, amount: 10, ...(account === undefined ? {} : { account: account.id }) }],
+    });
+    expect(usageCounts([paid, refund("2")]).get(假卡.id)).toBe(2);
+    const toWallet = usageCounts([paid, refund("3", 假錢包)]);
+    expect(toWallet.get(假卡.id)).toBe(1);
+    expect(toWallet.get(假錢包.id)).toBe(1);
   });
   it("拖過：照存的，用得多也不會跑到前面", () => {
     const events = [spend("1", 假卡), spend("2", 假卡)];

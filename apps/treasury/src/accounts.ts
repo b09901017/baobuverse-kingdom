@@ -10,11 +10,13 @@ import type {
   Event,
   EventId,
   LocalDate,
+  MoneyEffect,
   Person,
   PersonId,
 } from "@baobu/core";
 import { daysBetween, money } from "./format";
 import { isPresetEvent } from "./presets";
+import { refundTargetAt } from "./refund";
 import type { Changes } from "./store";
 
 export const KIND_LABEL: Readonly<Record<AccountKind, string>> = {
@@ -38,31 +40,31 @@ export function othersAccounts(catalog: Catalog, me: PersonId): readonly Account
   return catalog.accounts.filter((a) => !a.owners.includes(me));
 }
 
+/** 這一筆動到哪些帳戶（卡片牆的次數、流水頁的篩選都看這個）。沒寫帳戶的退款動到原本那筆的帳戶，跟帳本同一個算法 */
+export function accountsMoved(m: MoneyEffect, events: readonly Event[]): readonly AccountId[] {
+  const known = (ids: readonly (AccountId | undefined)[]) => ids.filter((id) => id !== undefined);
+  switch (m.kind) {
+    case "expense":
+    case "income":
+    case "reconciliation":
+      return known([m.account]);
+    case "refund":
+      return known([m.account ?? refundTargetAt(events, m.target)?.expense.account]);
+    case "transfer":
+      return [m.from, m.to];
+    case "repayment":
+      return known([m.from, m.to].map((side) => (side.kind === "outside" ? undefined : side.account)));
+  }
+}
+
 /** 每個帳戶用過幾次：對帳不算（那是看餘額，不是用它），套用預設寫的也不算 */
 export function usageCounts(events: readonly Event[]): ReadonlyMap<AccountId, number> {
   const counts = new Map<AccountId, number>();
-  const use = (id: AccountId | undefined) => {
-    if (id !== undefined) counts.set(id, (counts.get(id) ?? 0) + 1);
-  };
   for (const event of events) {
     if (event.status !== "confirmed" || isPresetEvent(event.id)) continue;
     for (const m of event.effects) {
-      switch (m.kind) {
-        case "expense":
-        case "income":
-        case "refund":
-          use(m.account);
-          break;
-        case "transfer":
-          use(m.from);
-          use(m.to);
-          break;
-        case "repayment":
-          for (const side of [m.from, m.to]) if (side.kind !== "outside") use(side.account);
-          break;
-        case "reconciliation":
-          break;
-      }
+      if (m.kind === "reconciliation") continue;
+      for (const id of accountsMoved(m, events)) counts.set(id, (counts.get(id) ?? 0) + 1);
     }
   }
   return counts;

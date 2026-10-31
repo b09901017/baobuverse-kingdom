@@ -199,20 +199,23 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
 
   /**
    * 退款：照原本那一項的分法按比例沖回（零頭算誰出），算在退款那天、不攤。
+   * 分好幾次退時，每一次是「退到現在該沖的」減「之前沖過的」：零頭不會累積，全部退完每一份剛好回到 0。
    * 要還的那幾筆跟著變少；已經還超過的，多的部分當成還款再抵別筆（往來帳抵不完變成反方向的一筆）。
    */
   function refund(event: Event, entry: Refund): void {
     const s = spent.get(key(entry.target));
     if (s === undefined) return;
-    s.refunded += entry.amount;
     const payer = s.entry.payer;
     const weights: (readonly [PersonId | "receivable", number])[] = [...s.part.shares];
     if (s.part.receivable > 0) weights.push(["receivable", s.part.receivable]);
-    const split = splitByWeights(entry.amount, weights, payer);
+    const before = splitByWeights(s.refunded, weights, payer);
+    s.refunded += entry.amount;
+    const after = splitByWeights(s.refunded, weights, payer);
+    const owed = (k: PersonId | "receivable") => (after.get(k) ?? 0) - (before.get(k) ?? 0);
     const part: Part = {
       total: entry.amount,
-      receivable: split.get("receivable") ?? 0,
-      shares: nonZero(new Map([...s.part.shares.keys()].map((p) => [p, split.get(p) ?? 0]))),
+      receivable: owed("receivable"),
+      shares: nonZero(new Map([...s.part.shares.keys()].map((p) => [p, owed(p)]))),
     };
     // 退款的行指到退款這一則；原本那一項的罐子、標籤、誰出、帳戶照舊
     const { item: _original, ...rest } = s.base;
