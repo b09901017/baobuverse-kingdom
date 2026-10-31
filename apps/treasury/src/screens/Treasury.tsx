@@ -8,7 +8,9 @@ import { watchCatalog, watchEvents, watchPrefs, watchPresets, type Prefs } from 
 import { AccountScreen, NewAccountScreen } from "./AccountScreen";
 import { AccountsScreen } from "./AccountsScreen";
 import { FlowScreen } from "./FlowScreen";
+import { ReconcileScreen } from "./ReconcileForm";
 import { EditRecordScreen, RecordScreen } from "./RecordScreen";
+import { RefundScreen } from "./RefundForm";
 import { SettingsScreen } from "./SettingsScreen";
 
 /** 登入之後每一頁都要的：資料（都是即時的）和在頁面之間移動 */
@@ -108,7 +110,7 @@ export function Treasury({ me, session, onError }: { me: PersonId; session: Sess
           {notice}
         </p>
       )}
-      {route.name !== "record" && route.name !== "edit" && (
+      {route.name !== "record" && route.name !== "edit" && route.name !== "reconcile" && route.name !== "refund" && (
         <nav className="tabs" aria-label="分頁">
           <Tab label="帳戶" route={{ name: "accounts" }} current={route} />
           <Tab label="流水" route={{ name: "flow" }} current={route} />
@@ -134,6 +136,10 @@ function Page({ route, screen }: { route: Route; screen: Screen }) {
       return <RecordScreen screen={screen} />;
     case "edit":
       return <EditRecordScreen key={route.event} id={route.event} screen={screen} />;
+    case "refund":
+      return <RefundScreen key={route.event} id={route.event} screen={screen} />;
+    case "reconcile":
+      return <ReconcileScreen key={route.account} id={route.account} screen={screen} />;
     case "account":
       return <AccountScreen key={route.id} id={route.id} screen={screen} />;
     case "newAccount":

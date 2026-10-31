@@ -8,13 +8,15 @@ export type Route =
   | { readonly name: "settings" }
   | { readonly name: "account"; readonly id: AccountId }
   | { readonly name: "newAccount"; readonly owner?: PersonId }
+  | { readonly name: "reconcile"; readonly account: AccountId }
   | { readonly name: "record" }
-  | { readonly name: "edit"; readonly event: EventId };
+  | { readonly name: "edit"; readonly event: EventId }
+  | { readonly name: "refund"; readonly event: EventId };
 
 export function parseRoute(hash: string): Route {
   const [path = "", search = ""] = hash.replace(/^#\/?/, "").split("?");
   const params = new URLSearchParams(search);
-  const [page, id] = path.split("/");
+  const [page, id, sub] = path.split("/");
   switch (page) {
     case "flow": {
       const account = params.get("account");
@@ -23,9 +25,11 @@ export function parseRoute(hash: string): Route {
     case "settings":
       return { name: "settings" };
     case "record":
-      return id === undefined || id === "" ? { name: "record" } : { name: "edit", event: decodeURIComponent(id) as EventId };
+      if (id === undefined || id === "") return { name: "record" };
+      return { name: sub === "refund" ? "refund" : "edit", event: decodeURIComponent(id) as EventId };
     case "account": {
       if (id === undefined || id === "") return { name: "accounts" };
+      if (sub === "reconcile") return { name: "reconcile", account: decodeURIComponent(id) as AccountId };
       if (id !== "new") return { name: "account", id: decodeURIComponent(id) as AccountId };
       const owner = params.get("owner");
       return owner === null ? { name: "newAccount" } : { name: "newAccount", owner: owner as PersonId };
@@ -47,9 +51,13 @@ export function routeHash(route: Route): string {
       return `#/account/${encodeURIComponent(route.id)}`;
     case "newAccount":
       return route.owner === undefined ? "#/account/new" : `#/account/new?owner=${encodeURIComponent(route.owner)}`;
+    case "reconcile":
+      return `#/account/${encodeURIComponent(route.account)}/reconcile`;
     case "record":
       return "#/record";
     case "edit":
       return `#/record/${encodeURIComponent(route.event)}`;
+    case "refund":
+      return `#/record/${encodeURIComponent(route.event)}/refund`;
   }
 }

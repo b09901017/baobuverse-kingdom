@@ -100,7 +100,7 @@ export function lastAccount(catalog: Catalog, events: readonly Event[], kind: Re
   return options.find((a) => a.kind === "cash")?.id ?? "";
 }
 
-function newestFirst(events: readonly Event[]): readonly Event[] {
+export function newestFirst(events: readonly Event[]): readonly Event[] {
   return [...events].filter((e) => e.status === "confirmed").sort((a, b) => b.recordedAt - a.recordedAt);
 }
 
@@ -264,8 +264,8 @@ function amountOf(form: RecordForm): number {
   return amount.value;
 }
 
-/** 事件的共同部分。名稱、時間空了要把欄位拿掉，不能留舊的 */
-function eventBase(form: RecordForm, ctx: BuildContext): Omit<Event, "effects"> {
+/** 事件的共同部分。名稱、時間空了要把欄位拿掉，不能留舊的。轉帳、對帳、退款的表單也用這個 */
+export function eventBase(form: Pick<RecordForm, "title" | "date" | "time">, ctx: BuildContext): Omit<Event, "effects"> {
   const { effects: _effects, title: _title, time: _time, ...kept } = ctx.existing ?? {
     id: ctx.id,
     date: form.date,

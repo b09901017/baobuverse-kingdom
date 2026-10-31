@@ -1,10 +1,12 @@
-import { blockersOfDelete, type EventId, type Tag, type TagId } from "@baobu/core";
+import { blockersOfDelete, type Event, type EventId, type Tag, type TagId } from "@baobu/core";
 import { useState, type FormEvent, type KeyboardEvent } from "react";
 import { KIND_LABEL, meFirst, wallOrder } from "../accounts";
 import { Choice } from "../components/Choice";
+import { DeleteArea, ErrorList, RecordHead, RecordTabs, WhenFields } from "../components/RecordParts";
 import { KINGDOM_ID, db } from "../firebase";
 import { dayLabel, money } from "../format";
 import { problemTexts } from "../problems";
+import { reconcileFormOf } from "../reconcile";
 import {
   accountOptions,
   checkRecordForm,
@@ -20,18 +22,45 @@ import {
   withPerson,
   type Helped,
   type RecordForm,
-  type RecordKind,
 } from "../record";
-import { deleteEvent, save } from "../store";
+import { refundFormOf, refundTargetAt } from "../refund";
+import { save } from "../store";
+import { defaultTransfer, transferFormOf, type TransferForm as TransferValues } from "../transfer";
+import { ReconcileForm, canReconcile } from "./ReconcileForm";
+import { RefundForm, RefundSection } from "./RefundForm";
+import { TransferForm } from "./TransferForm";
 import type { Screen } from "./Treasury";
 
-/** 記一筆（新的）。改一筆用 EditRecordScreen，表單是同一個 */
+/** 三個分頁共用的（切分頁時留著） */
+type Carried = Pick<RecordForm, "amount" | "title" | "date" | "time">;
+const carriedOf = ({ amount, title, date, time }: Carried): Carried => ({ amount, title, date, time });
+
+/** 記一筆（新的）：支出、收入同一個表單，轉帳另一個。改一筆用 EditRecordScreen，表單是同一個 */
 export function RecordScreen({ screen }: { screen: Screen }) {
   const { me, catalog, events } = screen;
-  return <Form key="new" screen={screen} initial={defaultForm("expense", { me, catalog, events, now: new Date() })} />;
+  const [start, setStart] = useState<{ readonly transfer: boolean; readonly kind: RecordForm["kind"]; readonly carried?: Carried }>({ transfer: false, kind: "expense" });
+  const ctx = { me, catalog, events, now: new Date() };
+  if (start.transfer) {
+    const initial: TransferValues = { ...defaultTransfer(ctx), ...start.carried };
+    return (
+      <TransferForm
+        screen={screen}
+        initial={initial}
+        onTab={(tab, form) => tab !== "transfer" && setStart({ transfer: false, kind: tab, carried: carriedOf(form) })}
+      />
+    );
+  }
+  return (
+    <Form
+      key="new"
+      screen={screen}
+      initial={{ ...defaultForm(start.kind, ctx), ...start.carried }}
+      onTransfer={(form) => setStart({ transfer: true, kind: form.kind, carried: carriedOf(form) })}
+    />
+  );
 }
 
-/** 改一筆：只有記的人能改；表單表達不了的（拆過品項的）先不打開，不要假裝改得了 */
+/** 改一筆：只有記的人能改；表單表達不了的（拆過品項的）先不打開，不要假裝改得了。每一種一筆打開自己的表單 */
 export function EditRecordScreen({ id, screen }: { id: EventId; screen: Screen }) {
   const { me, catalog, events, back } = screen;
   const event = events.find((e) => e.id === id);
@@ -54,11 +83,12 @@ export function EditRecordScreen({ id, screen }: { id: EventId; screen: Screen }
       <>
         {leave}
         <p>這筆是{who}記的，只有記的人能改。</p>
+        <RefundSection event={event} screen={screen} />
       </>
     );
   }
-  const initial = formOf(event);
-  if (initial === null) {
+  const form = editorOf(event, screen);
+  if (form === null) {
     return (
       <>
         {leave}
@@ -66,17 +96,43 @@ export function EditRecordScreen({ id, screen }: { id: EventId; screen: Screen }
       </>
     );
   }
-  return <Form key={id} screen={screen} initial={initial} editing={id} />;
+  return form;
 }
 
-function Form({ screen, initial, editing }: { screen: Screen; initial: RecordForm; editing?: EventId }) {
+/** 這一則打開哪個表單；打不開是 null */
+function editorOf(event: Event, screen: Screen) {
+  const { me, catalog, events } = screen;
+  const id = event.id;
+  const m = event.effects[0];
+  switch (m?.kind) {
+    case "transfer": {
+      const initial = transferFormOf(event);
+      return initial === null ? null : <TransferForm key={id} screen={screen} initial={initial} editing={id} />;
+    }
+    case "reconciliation": {
+      const account = catalog.accounts.find((a) => a.id === m.account);
+      const initial = account === undefined ? null : reconcileFormOf(event, account);
+      return account === undefined || initial === null || !canReconcile(account, me) ? null : <ReconcileForm key={id} screen={screen} account={account} initial={initial} editing={id} />;
+    }
+    case "refund": {
+      const target = refundTargetAt(events, m.target);
+      const initial = refundFormOf(event, target);
+      return target === null || initial === null ? null : <RefundForm key={id} screen={screen} target={target} initial={initial} editing={id} />;
+    }
+    default: {
+      const initial = formOf(event);
+      return initial === null ? null : <Form key={id} screen={screen} initial={initial} editing={id} />;
+    }
+  }
+}
+
+function Form({ screen, initial, editing, onTransfer }: { screen: Screen; initial: RecordForm; editing?: EventId; onTransfer?: (form: RecordForm) => void }) {
   const { me, catalog, events, prefs, back, notify, fail } = screen;
   const [form, setForm] = useState(initial);
   const [newTags, setNewTags] = useState<readonly Tag[]>([]);
   const [tagName, setTagName] = useState("");
   const [expanded, setExpanded] = useState(false);
   const [errors, setErrors] = useState<readonly string[]>([]);
-  const [confirming, setConfirming] = useState(false);
 
   const existing = editing === undefined ? undefined : events.find((e) => e.id === editing);
   const refunds = editing === undefined ? [] : blockersOfDelete(editing, events);
@@ -137,38 +193,18 @@ function Form({ screen, initial, editing }: { screen: Screen; initial: RecordFor
     back();
   };
 
-  const remove = () => {
-    if (editing === undefined) return;
-    const result = deleteEvent(db, KINGDOM_ID, editing, events);
-    if (!result.ok) {
-      setErrors(problemTexts(result.problems));
-      return;
-    }
-    result.written.catch((err: Error) => fail(`這一筆沒有刪到：${err.message}`));
-    notify("刪掉了");
-    back();
-  };
-
   return (
     <form onSubmit={submit} className="form record">
-      <div className="record-head">
-        <button type="button" className="plain back" onClick={back}>
-          ← {editing === undefined ? "取消" : "返回"}
-        </button>
-        <h2>{editing === undefined ? "記一筆" : "改這一筆"}</h2>
-      </div>
+      <RecordHead title={editing === undefined ? "記一筆" : "改這一筆"} editing={editing !== undefined} onBack={back} />
 
       {editing === undefined && (
-        <Choice<RecordKind>
-          label="種類"
+        <RecordTabs
           value={form.kind}
-          options={[
-            { value: "expense", label: "支出" },
-            { value: "income", label: "收入" },
-          ]}
-          onChange={(kind) => setForm((f) => withKind(f, kind, { me, catalog, events, now: now() }))}
+          onChange={(tab) => (tab === "transfer" ? onTransfer?.(form) : setForm((f) => withKind(f, tab, { me, catalog, events, now: now() })))}
         />
       )}
+
+      {existing?.effects[0]?.kind === "expense" && <RefundSection event={existing} screen={screen} />}
 
       <label>
         金額
@@ -249,24 +285,9 @@ function Form({ screen, initial, editing }: { screen: Screen; initial: RecordFor
         )}
       </fieldset>
 
-      <div className="when">
-        <label>
-          日期
-          <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
-        </label>
-        <label>
-          時間
-          <input type="time" value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))} />
-        </label>
-      </div>
+      <WhenFields date={form.date} time={form.time} onChange={(change) => setForm((f) => ({ ...f, ...change }))} />
 
-      {errors.length > 0 && (
-        <ul className="errors" role="alert">
-          {errors.map((error) => (
-            <li key={error}>{error}</li>
-          ))}
-        </ul>
-      )}
+      <ErrorList errors={errors} />
 
       <button type="submit" className="primary save-bar">
         {editing === undefined ? "記下來" : "存"}
@@ -277,24 +298,8 @@ function Form({ screen, initial, editing }: { screen: Screen; initial: RecordFor
           <p className="muted hint">
             這筆有退款（{refunds.map((r) => `${dayLabel(r.date)} ${money(r.amount)} 元`).join("、")}），刪了退款會跟著失效。要刪這筆，先刪退款。
           </p>
-        ) : confirming ? (
-          <div className="confirm" role="alertdialog" aria-label="確定要刪掉這筆嗎">
-            <p>
-              <strong>確定要刪掉這筆嗎？</strong>
-            </p>
-            <div className="confirm-actions">
-              <button type="button" onClick={() => setConfirming(false)}>
-                取消
-              </button>
-              <button type="button" className="danger" onClick={remove}>
-                確定刪掉
-              </button>
-            </div>
-          </div>
         ) : (
-          <button type="button" className="quiet" onClick={() => setConfirming(true)}>
-            刪掉這筆
-          </button>
+          <DeleteArea id={editing} what="這筆" screen={screen} onError={setErrors} />
         ))}
     </form>
   );

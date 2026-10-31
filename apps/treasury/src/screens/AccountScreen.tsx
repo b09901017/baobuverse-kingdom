@@ -20,6 +20,7 @@ import { dateOf, money } from "../format";
 import { problemTexts } from "../problems";
 import { routeHash } from "../route";
 import { save, saveAccountNote } from "../store";
+import { canReconcile } from "./ReconcileForm";
 import type { Screen } from "./Treasury";
 
 /** 帳戶詳情：改名、備註、封存。別人的帳戶（步幫寶建的）沒有餘額、沒有備註 */
@@ -95,6 +96,11 @@ export function AccountScreen({ id, screen }: { id: AccountId; screen: Screen })
           ))}
           {reconcile && !account.archived && <span className="card-stale">{reconcile}</span>}
         </section>
+      )}
+      {canReconcile(account, me) && (
+        <a className="button" href={routeHash({ name: "reconcile", account: id })}>
+          對帳
+        </a>
       )}
       <dl className="facts">
         <dt>種類</dt>

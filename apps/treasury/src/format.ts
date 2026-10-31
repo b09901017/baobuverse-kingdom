@@ -10,6 +10,11 @@ export function money(n: number): string {
   return n < 0 ? `−${text}` : text;
 }
 
+/** +1,234、−1,234、0：有方向的數字（差額、收入） */
+export function signedMoney(n: number): string {
+  return n > 0 ? `+${money(n)}` : money(n);
+}
+
 /** 這一刻當地是哪一天 */
 export function dateOf(now: Date): LocalDate {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;

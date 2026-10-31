@@ -3,9 +3,10 @@ import { useState } from "react";
 import { balanceText, myAccounts, reconcileNote, sharesOf, wallOrder } from "../accounts";
 import { AccountWall, type CardView } from "../components/AccountWall";
 import { KINGDOM_ID, db } from "../firebase";
-import { dateOf, money } from "../format";
+import { dateOf, dayLabel, money, signedMoney } from "../format";
 import { LAUNCHED } from "../launch";
 import { unsettled } from "../problems";
+import { diffRows } from "../reconcile";
 import { routeHash } from "../route";
 import { saveAccountOrder } from "../store";
 import { ApplyPresets } from "./SettingsScreen";
@@ -38,6 +39,7 @@ export function AccountsScreen({ screen }: { screen: Screen }) {
   const active = order.filter((a) => !a.archived);
   const archived = order.filter((a) => a.archived);
   const problems = unsettled(book.problems, events);
+  const diffs = diffRows(book, catalog, me);
 
   return (
     <>
@@ -73,6 +75,26 @@ export function AccountsScreen({ screen }: { screen: Screen }) {
         <details className="fold">
           <summary>封存的帳戶（{archived.length}）</summary>
           <AccountWall cards={archived.map(view)} onOpen={(id) => go({ name: "account", id })} />
+        </details>
+      )}
+
+      {diffs.rows.length > 0 && (
+        <details className="fold">
+          <summary>
+            對帳差額（不算支出也不算收入）合計 {signedMoney(diffs.total)} 元
+          </summary>
+          <ul className="rows diffs">
+            {diffs.rows.map((row) => (
+              <li key={`${row.event}/${row.entry}`}>
+                <a className="row" href={routeHash({ name: "edit", event: row.event })}>
+                  <span>
+                    {dayLabel(row.date)} {row.account}
+                  </span>
+                  <span className="flow-amount reconcile">{signedMoney(row.amount)}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
         </details>
       )}
 

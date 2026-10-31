@@ -449,7 +449,7 @@ describe("改一筆", () => {
 
 describe("流水頁", () => {
   const spent = (id: string, f: Partial<RecordForm>) => buildExpense(form(f), { ...ctx, id: id as EventId });
-  const days = (events: readonly Event[], filter = {}) => flowDays(events, catalog, 步, filter);
+  const days = (events: readonly Event[], filter = {}) => flowDays(events, catalog, openBook(catalog, events), 步, filter);
 
   it("依日期倒排，同一天一組，新的在上面（時間 → 記下來的時間）", () => {
     const events = [
@@ -493,9 +493,8 @@ describe("流水頁", () => {
     const events = [spent("a", { account: 假銀行.id }), spent("b", { account: 假錢包.id }), spent("c", {})];
     expect(days(events, { account: 假銀行.id })[0]?.rows.map((r) => r.event)).toEqual(["a"]);
   });
-  it("轉帳、對帳這一支還不列（06 接）；收件匣裡的不列", () => {
-    const transfer = { ...spent("t", {}), effects: [{ type: "money", id: "m1", kind: "transfer", from: "a", to: "b", amount: 1 }] } as unknown as Event;
+  it("收件匣裡的不列（轉帳、對帳、退款的列在 moves.test.ts）", () => {
     const pending: Event = { ...spent("p", {}), status: "pending" };
-    expect(days([transfer, pending])).toEqual([]);
+    expect(days([pending])).toEqual([]);
   });
 });

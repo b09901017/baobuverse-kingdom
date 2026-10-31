@@ -622,8 +622,100 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
-.flow-amount.in {
+.flow-amount.income,
+.flow-amount.refund {
   color: var(--kind-cash);
+}
+
+/* 轉帳、對帳不是支出也不是收入：字小一點、不用強調的顏色 */
+.flow-amount.transfer,
+.flow-amount.opening {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.flow-amount.reconcile {
+  color: var(--warn);
+  font-size: 0.875rem;
+}
+
+.flow-row.transfer .flow-title,
+.flow-row.opening .flow-title,
+.flow-row.reconcile .flow-title {
+  color: var(--muted);
+}
+
+.flow-refunded {
+  color: var(--kind-cash);
+}
+
+/* 退款那一列指回原本那筆：一整列是另一個連結，所以放在列的下面 */
+.flow-origin {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.day .rows li:last-child .flow-origin {
+  border-bottom: none;
+}
+
+.day .rows li:has(.flow-origin) .row {
+  min-height: var(--tap);
+  border-bottom: none;
+}
+
+/* ── 對帳、退款 ── */
+
+.preview {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.625rem;
+  background: var(--accent-soft);
+  overflow-wrap: anywhere;
+}
+
+.preview.off {
+  background: none;
+  border: 1px solid var(--warn);
+  color: var(--warn);
+}
+
+.refund-of {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  overflow-wrap: anywhere;
+}
+
+.refund-of a {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+}
+
+.refund-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.refund-section li a {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+}
+
+.diffs {
+  padding-bottom: 0.5rem;
+}
+
+.diffs li:last-child .row {
+  border-bottom: none;
 }
 
 /* ── 設定 ── */
