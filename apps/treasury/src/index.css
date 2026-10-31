@@ -260,10 +260,15 @@ button:disabled {
 }
 
 .tab-record {
-  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  border-radius: 0.625rem;
   background: var(--accent);
   color: var(--on-accent);
   font-weight: 600;
+  text-decoration: none;
 }
 
 /* ── 帳戶頁 ── */
@@ -513,6 +518,112 @@ select {
   border-color: var(--accent);
   background: var(--accent-soft);
   font-weight: 600;
+}
+
+/* ── 記一筆 ── */
+
+.record {
+  max-width: 34rem;
+}
+
+.record-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.record-head .back {
+  align-self: center;
+}
+
+.form input.amount {
+  font-size: 1.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 必填的只有金額：不用捲到最下面才按得到 */
+.save-bar {
+  position: sticky;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  z-index: 5;
+  box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 0.18);
+}
+
+.add-tag {
+  margin-top: 0.5rem;
+  flex-wrap: nowrap !important;
+}
+
+.when {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.when label {
+  min-width: 0;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ── 流水 ── */
+
+.filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.25rem 0.25rem 0.25rem 0.75rem;
+  border-radius: 0.625rem;
+  background: var(--accent-soft);
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.day h3 {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.day .rows {
+  padding: 0 0.875rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.day .rows li:last-child .row {
+  border-bottom: none;
+}
+
+.flow-row {
+  padding: 0.5rem 0;
+}
+
+.flow-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.flow-sub {
+  font-size: 0.8125rem;
+}
+
+.flow-amount {
+  flex: none;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.flow-amount.in {
+  color: var(--kind-cash);
 }
 
 /* ── 設定 ── */

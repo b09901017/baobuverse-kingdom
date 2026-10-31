@@ -7,6 +7,8 @@ import { parseRoute, routeHash, type Route } from "../route";
 import { watchCatalog, watchEvents, watchPrefs, watchPresets, type Prefs } from "../store";
 import { AccountScreen, NewAccountScreen } from "./AccountScreen";
 import { AccountsScreen } from "./AccountsScreen";
+import { FlowScreen } from "./FlowScreen";
+import { EditRecordScreen, RecordScreen } from "./RecordScreen";
 import { SettingsScreen } from "./SettingsScreen";
 
 /** 登入之後每一頁都要的：資料（都是即時的）和在頁面之間移動 */
@@ -106,14 +108,16 @@ export function Treasury({ me, session, onError }: { me: PersonId; session: Sess
           {notice}
         </p>
       )}
-      <nav className="tabs" aria-label="分頁">
-        <Tab label="帳戶" route={{ name: "accounts" }} current={route} />
-        <Tab label="流水" route={{ name: "flow" }} current={route} />
-        <button type="button" className="tab-record" disabled>
-          記一筆
-        </button>
-        <Tab label="設定" route={{ name: "settings" }} current={route} />
-      </nav>
+      {route.name !== "record" && route.name !== "edit" && (
+        <nav className="tabs" aria-label="分頁">
+          <Tab label="帳戶" route={{ name: "accounts" }} current={route} />
+          <Tab label="流水" route={{ name: "flow" }} current={route} />
+          <a className="tab-record" href={routeHash({ name: "record" })}>
+            記一筆
+          </a>
+          <Tab label="設定" route={{ name: "settings" }} current={route} />
+        </nav>
+      )}
     </div>
   );
 }
@@ -123,9 +127,13 @@ function Page({ route, screen }: { route: Route; screen: Screen }) {
     case "accounts":
       return <AccountsScreen screen={screen} />;
     case "flow":
-      return <p className="muted">流水頁還沒做</p>;
+      return <FlowScreen account={route.account} screen={screen} />;
     case "settings":
       return <SettingsScreen screen={screen} />;
+    case "record":
+      return <RecordScreen screen={screen} />;
+    case "edit":
+      return <EditRecordScreen key={route.event} id={route.event} screen={screen} />;
     case "account":
       return <AccountScreen key={route.id} id={route.id} screen={screen} />;
     case "newAccount":

@@ -1,13 +1,15 @@
 // 畫面在哪一頁（放在網址的 # 後面）：手機的返回鍵、重新整理都對，也不會碰到 service worker 攔網址（lessons 第十一條）。
 
-import type { AccountId, PersonId } from "@baobu/core";
+import type { AccountId, EventId, PersonId } from "@baobu/core";
 
 export type Route =
   | { readonly name: "accounts" }
   | { readonly name: "flow"; readonly account?: AccountId }
   | { readonly name: "settings" }
   | { readonly name: "account"; readonly id: AccountId }
-  | { readonly name: "newAccount"; readonly owner?: PersonId };
+  | { readonly name: "newAccount"; readonly owner?: PersonId }
+  | { readonly name: "record" }
+  | { readonly name: "edit"; readonly event: EventId };
 
 export function parseRoute(hash: string): Route {
   const [path = "", search = ""] = hash.replace(/^#\/?/, "").split("?");
@@ -20,6 +22,8 @@ export function parseRoute(hash: string): Route {
     }
     case "settings":
       return { name: "settings" };
+    case "record":
+      return id === undefined || id === "" ? { name: "record" } : { name: "edit", event: decodeURIComponent(id) as EventId };
     case "account": {
       if (id === undefined || id === "") return { name: "accounts" };
       if (id !== "new") return { name: "account", id: decodeURIComponent(id) as AccountId };
@@ -43,5 +47,9 @@ export function routeHash(route: Route): string {
       return `#/account/${encodeURIComponent(route.id)}`;
     case "newAccount":
       return route.owner === undefined ? "#/account/new" : `#/account/new?owner=${encodeURIComponent(route.owner)}`;
+    case "record":
+      return "#/record";
+    case "edit":
+      return `#/record/${encodeURIComponent(route.event)}`;
   }
 }

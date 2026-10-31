@@ -20,5 +20,6 @@ export type {
 export type { Problem, ProblemCode, RefundRecord } from "./validate";
 
 export { openBook } from "./book";
+export { byTime } from "./dates";
 export { blockersOfDelete, participantsOf, refundsOf, validateEvent } from "./validate";
 export { splitEvenly } from "./split";

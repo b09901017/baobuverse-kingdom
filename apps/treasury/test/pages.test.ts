@@ -15,6 +15,8 @@ describe("網址", () => {
     { name: "account", id: "a b/c" as AccountId },
     { name: "newAccount" },
     { name: "newAccount", owner: "bao" as PersonId },
+    { name: "record" },
+    { name: "edit", event: "a b/c" as EventId },
   ])("存得進去、讀得回來：%j", (route) => {
     expect(parseRoute(routeHash(route))).toEqual(route);
   });

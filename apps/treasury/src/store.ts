@@ -2,12 +2,14 @@
 // 每個函式都吃一個 Firestore，app 傳 firebase.ts 的 db，測試傳模擬器的。
 
 import {
+  blockersOfDelete,
   participantsOf,
   validateEvent,
   type Account,
   type AccountId,
   type Catalog,
   type Event,
+  type EventId,
   type Jar,
   type JarId,
   type Person,
@@ -25,6 +27,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where,
   writeBatch,
   type DocumentData,
@@ -125,6 +128,15 @@ export function save(
   }
   if (changes.prefs !== undefined) batch.set(prefsDoc(db, k, changes.prefs.of), changes.prefs.set, { merge: true });
   return { ok: true, written: batch.commit() };
+}
+
+/**
+ * 刪掉一則事件：只做標記（ADR 0001），文件與參與者留著，updatedAt 更新（對方的裝置才收得到「它被刪了」）。
+ * 有退款指著它就不刪：刪了帳本找不到原本那一項，退款整則不算；要先刪退款。
+ */
+export function deleteEvent(db: Firestore, k: string, id: EventId, events: readonly Event[]): SaveResult {
+  if (blockersOfDelete(id, events).length > 0) return { ok: false, problems: [{ event: id, code: "refunded-item-changed" }] };
+  return { ok: true, written: updateDoc(doc(db, kingdomPath(k), "events", id), { deleted: true, updatedAt: serverTimestamp() }) };
 }
 
 function mergeCatalog(catalog: Catalog, changes: Changes): Catalog {
