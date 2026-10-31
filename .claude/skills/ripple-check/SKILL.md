@@ -70,11 +70,14 @@ description: 動到已經存在、別處在用的程式碼時「透視關聯」�
 
 ## 第一次在一個專案設定
 
+範本在這支 skill 的 `templates/`：先複製，再照專案改（專案特有的資料夾、私人檔、不是 app 的輪）。
+
 1. 每台電腦裝一次（版本照客廳 `skills/README.md`）：`npm i -g @colbymchenry/codegraph @ast-grep/cli`、`codegraph telemetry off`、`python -m pip install -U "graphifyy[chinese]"`。
-2. `.gitignore` 加 `graphify-out/`、`.codegraph/`；寫 `codegraph.json`、`.graphifyignore`、私人資料夾的 `README.md`（照上一節）。
-3. 建索引：`codegraph init --yes`、`GRAPHIFY_BACKEND=none graphify update .`。
-4. 第一次完整建圖（含文件）：`/graphify .`。會花額度，先跟使用者說。
-5. 專案的 `CLAUDE.md` 加一行指到這支，`.claude/project.json` 的 `skills` 加 `ripple-check`。
+2. `templates/codegraph.json` → 專案根目錄 `codegraph.json`；`templates/graphifyignore` → `.graphifyignore`；`templates/local-README.md` → `.local/README.md`（已經有就照它補）；`templates/claude-md-line.md` 裡的那一行貼進專案 `CLAUDE.md`、兩行貼進 `.gitignore`。
+3. 驗證掃描範圍：graphify 用 `python -I -c` 呼叫 `graphify.detect.detect(Path('.'))` 看會讀哪些檔（私人資料夾只能有目錄列的、複本與金鑰不能出現）；CodeGraph 建完看 `codegraph files --max-depth 2`。
+4. 建索引：`codegraph init --yes`、`GRAPHIFY_BACKEND=none GRAPHIFY_MAX_WORKERS=8 graphify update .`。
+5. 第一次完整建圖（含文件）：`/graphify .`。會花額度，先跟使用者說；語意分析的 subagent 同時最多兩個。
+6. `.claude/project.json` 的 `skills` 加 `ripple-check`、`graphify`，跑客廳的同步。
 
 雲端 session 沒有裝這些工具，也沒有 `graphify-out/`：CodeGraph 用 `npx -y @colbymchenry/codegraph@<版本> init --yes` 建索引，之後每個指令前面都加 `npx -y @colbymchenry/codegraph@<版本>`；ast-grep 用 `npx -y @ast-grep/cli@<版本>`；Graphify 的圖跳過，用 grep 讀文件。
 
