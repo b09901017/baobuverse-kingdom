@@ -1,7 +1,7 @@
 // 帳本裡面：把事件照時間排好，一筆一筆展開成「行」（book.ts 的 Line）。查詢只是把行篩出來加總。
 
 import type { Cause, Line, Repay } from "./book";
-import { addMonths } from "./dates";
+import { addMonths, byTime } from "./dates";
 import { debtBook, sameRef, type OpenDebt } from "./debts";
 import type {
   Account,
@@ -390,15 +390,4 @@ function nonZero<K>(m: Map<K, number>): Map<K, number> {
 
 function unique<T>(xs: readonly T[]): T[] {
   return [...new Set(xs)];
-}
-
-/** 事件的先後：日期 → 時間（沒寫的排前面）→ 記下來的時間 → ID */
-export function byTime(a: Event, b: Event): number {
-  return (
-    compare(a.date, b.date) || compare(a.time ?? "", b.time ?? "") || a.recordedAt - b.recordedAt || compare(a.id, b.id)
-  );
-}
-
-function compare(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

@@ -1,6 +1,17 @@
-// 當地日期 `YYYY-MM-DD` 的加減。只用字串與整數，不經過 Date（不會被時區影響）。
+// 當地日期 `YYYY-MM-DD` 的加減、事件的先後。只用字串與整數，不經過 Date（不會被時區影響）。
 
-import type { LocalDate } from "./model";
+import type { Event, LocalDate } from "./model";
+
+/** 事件的先後：日期 → 時間（沒寫的排前面）→ 記下來的時間 → ID */
+export function byTime(a: Event, b: Event): number {
+  return (
+    compare(a.date, b.date) || compare(a.time ?? "", b.time ?? "") || a.recordedAt - b.recordedAt || compare(a.id, b.id)
+  );
+}
+
+function compare(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
 
 /** 往後 n 個月的同一天；那個月沒有這天就用月底（1/31 → 2/28） */
 export function addMonths(date: LocalDate, n: number): LocalDate {

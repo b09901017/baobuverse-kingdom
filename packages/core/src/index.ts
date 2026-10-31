@@ -17,8 +17,8 @@ export type {
   Settled,
   Where,
 } from "./book";
-export type { Problem, ProblemCode } from "./validate";
+export type { Problem, ProblemCode, RefundRecord } from "./validate";
 
 export { openBook } from "./book";
-export { participantsOf, validateEvent } from "./validate";
+export { blockersOfDelete, participantsOf, refundsOf, validateEvent } from "./validate";
 export { splitEvenly } from "./split";
