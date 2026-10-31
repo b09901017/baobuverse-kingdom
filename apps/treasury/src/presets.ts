@@ -21,6 +21,9 @@ import type { Changes } from "./store";
 /** 日常罐的 ID：沒選罐子就算日常。05 沒有日常時也用它建，先記一筆再套用才不會有兩個日常 */
 export const DAILY_JAR = "daily" as JarId;
 
+/** 這則事件是不是套用預設時寫的（ID 固定是 preset- 開頭）：卡片牆「最常用的」不算它，那不是使用者用過 */
+export const isPresetEvent = (id: EventId): boolean => id.startsWith("preset-");
+
 /** 帳戶（現在只有台幣，幣別不用寫），加上要變成第一次對帳的餘額、要存進自己 prefs 的備註（只有匯入的人自己的帳戶才有這兩個） */
 export interface PresetAccount extends Omit<Account, "currency" | "archived"> {
   /** 現在的餘額；信用卡是欠的，用負數 */
