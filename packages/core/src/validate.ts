@@ -54,7 +54,7 @@ export function validateEvent(event: Event, catalog: Catalog, events?: readonly 
 }
 
 /**
- * openBook 用的檢查：只看事件本身。看不到的參考資料（寶的帳本裡步的帳戶）不算問題；
+ * openBook 用的檢查：只看事件本身。查不到的參考資料（帳本裡沒有的帳戶）不算問題；
  * 要對照別則事件的（退款）在帳本照時間算的時候處理；手動指定的還款指錯了就當成沒指定（錢照樣算）。
  */
 export function checkForBook(event: Event, catalog: Catalog): readonly Problem[] {

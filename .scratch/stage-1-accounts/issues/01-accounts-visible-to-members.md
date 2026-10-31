@@ -1,6 +1,6 @@
 # 01 帳戶互相看得到、步可以幫寶建帳戶、備註搬到自己的文件
 
-Status: todo
+Status: done
 Blocked by: 無
 
 動工前先讀：`../spec.md`「談定的」；`docs/adr/0001-events-as-source-numbers-at-read.md`；`firestore.rules` 的帳戶與 prefs；`apps/treasury/src/store.ts` 的 `watchCatalog`；`apps/treasury/src/reset.ts`；`apps/treasury/test/rules.test.ts` 的「帳戶」；`packages/core/src/test-kit.ts`；階段 0 HANDOFF「中途發現 · 段三」。
@@ -37,5 +37,50 @@ core 要繼續容忍看不到的帳戶（封存之外也可能查不到），不
 - 一鍵重置會不會去刪寶的帳戶？（查詢、規則都只動主人有我的）重置後寶的帳戶還在，再建一次同 ID 的帳戶會不會被拒絕？
 - 改排序時備註會不會被蓋掉？改備註時排序呢？（`store.test.ts`）
 - `Account.note` 拿掉之後，型別檢查、測試、畫面都沒有殘留？
+
+## 做完時留下的
+
+2026-10-31 段一。
+
+**給 04、05 用的介面（`apps/treasury/src/store.ts`）**
+
+| 函式 | 做什麼 |
+|---|---|
+| `watchCatalog(db, k, onChange, onError)` | 拿掉了 `me`：帳戶查全部（`Catalog.accounts` 有寶的）。**卡片牆、淨資產要自己篩**：`owners` 有我、`person: me` |
+| `watchPrefs(db, k, me, onChange, onError)` | 自己的排序與備註；還沒存過收到 `{}` |
+| `saveAccountOrder(db, k, me, order)` | 改卡片牆的排序，備註不動 |
+| `saveAccountNote(db, k, me, account, note)` | 改一個帳戶的備註，空字串就拿掉那一格，排序與別格不動 |
+| `Prefs` | `{ accounts?, jars?, tags?, accountNotes? }` |
+
+**判準的結果**
+
+| 判準 | 結果 |
+|---|---|
+| 寶（成員）讀得到步帳戶的名字、種類？沒登入、不是成員呢？ | 讀得到；後者讀不到、寫不了（`rules.test.ts`「帳戶」） |
+| 帳戶文件存得進 `note`、`balance`？ | 都被拒絕 |
+| 步讀得到寶的 `prefs`？ | 拒絕，寫也拒絕 |
+| 步記「寶刷寶媽卡 3,000，幫寶，冥想罐」 | 寶的我付的 0、冥想罐 3,000、寶媽卡還欠 3,000；步的我用的、我付的、淨資產、餘額、往來帳都 0（`book.accounts.test.ts`） |
+| 步記「寶刷寶的信用卡」 | 參與者有寶；`person: 步` 的餘額、淨資產沒有混進寶的帳戶 |
+| 步用寶的帳戶當自己的誰出 | `account-not-payers` 還擋著 |
+| 一鍵重置會去刪寶的帳戶嗎？重建同 ID 呢？ | 不會（查詢與規則都只動主人有我的，寶的帳戶內容一字不變）；同 ID 再建不會被拒絕 |
+| 改排序、改備註互相蓋掉？ | 不會（`store.test.ts`，兩個方向都驗） |
+| `Account.note` 有殘留？ | 沒有，只剩 `Event.note`、`Doubt.note`，型別檢查過 |
+
+**測試第一次就綠的，故意弄壞看會不會紅（lessons 第十條）**：core 新加的 4 支第一次就綠，因為 core 本來就算得對。
+
+| 弄壞什麼 | 紅了幾支 |
+|---|---|
+| `spend` 的寶媽卡判斷永遠 false | 10（含新的「步記寶刷寶媽卡」） |
+| `holder` 永遠回傳記的人 | **一開始 0 支**：沒有測試涵蓋「步幫寶對帳」，補了「步幫寶記寶的銀行對帳 800」後紅 1 支 |
+| `checkForBook` 也用嚴格檢查（不再容忍查不到的帳戶） | 3 |
+| 規則：帳戶誰都讀得到 | 3 |
+| 規則：別人的 `prefs` 也讀得到 | 1 |
+| 規則：備註不檢查是 map | 1 |
+| 規則：帳戶誰都刪得掉 | 2 |
+| `saveAccountOrder` 不用 merge | 1 |
+
+**比 issue 多做的**：驗證頁（`App.tsx`）的帳戶清單加了 `owners` 有我的篩選。`Catalog` 現在有寶的帳戶，不篩的話驗證頁會列出寶的帳戶和算出來的數字；04 會整頁換掉。
+
+**改到的註解**：`Catalog`、`test-kit` 的 `catalog`、`寶的catalog`、`checkForBook`、`mover` 的「看不到的帳戶」改成「查不到的帳戶」（現在是沒同步到或之後收緊的情況，不是寶的帳本本來就沒有）。`validate.test.ts`、`book.views.test.ts` 的測試名稱還叫「看不到的帳戶」，意思對（參考資料裡沒有），沒動。
 
 ## Comments

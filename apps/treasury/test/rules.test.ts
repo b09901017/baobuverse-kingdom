@@ -326,39 +326,44 @@ describe("步幫步付", () => {
   });
 });
 
+// 幫對方記時要選得到對方的帳戶（使用者 2026-10-31「照建議改」）：名字、種類成員互相看得到，餘額不存在帳戶文件，備註在 prefs
 describe("帳戶", () => {
-  it("只有主人讀寫得到", async () => {
+  it("成員讀得到每一個帳戶的名字、種類（包括對方的）", async () => {
     await 寶加入();
-    const 步db = as(步的帳號);
-    const 寶db = as(寶的帳號);
-    await assertSucceeds(getDoc(doc(步db, `${K}/accounts/post`)));
-    await assertFails(getDoc(doc(寶db, `${K}/accounts/post`)));
-    await assertFails(getDoc(doc(步db, `${K}/accounts/bao-bank`)));
-    await assertFails(setDoc(doc(寶db, `${K}/accounts/post`), account("post", [寶])));
-  });
-
-  it("共有的投資帳戶兩個人都可以", async () => {
-    await 寶加入();
+    const 步讀寶的 = await assertSucceeds(getDoc(doc(as(步的帳號), `${K}/accounts/bao-bank`)));
+    if (步讀寶的.get("kind") !== "bank") throw new Error("步讀到的種類不對");
+    await assertSucceeds(getDoc(doc(as(寶的帳號), `${K}/accounts/post`)));
     await assertSucceeds(getDoc(doc(as(步的帳號), `${K}/accounts/crypto`)));
     await assertSucceeds(getDoc(doc(as(寶的帳號), `${K}/accounts/crypto`)));
   });
 
-  it("查詢要帶主人；結果只有自己的", async () => {
-    const db = as(步的帳號);
-    const mine = await assertSucceeds(
-      getDocs(query(collection(db, `${K}/accounts`), where("owners", "array-contains", 步))),
-    );
-    if (mine.size !== 2) throw new Error(`查到 ${mine.size} 個帳戶`);
-    await assertFails(getDocs(collection(db, `${K}/accounts`)));
+  it("查詢不用帶主人：步查得到全部的帳戶", async () => {
+    const all = await assertSucceeds(getDocs(collection(as(步的帳號), `${K}/accounts`)));
+    if (all.size !== 3) throw new Error(`查到 ${all.size} 個帳戶`);
   });
 
-  it("建帳戶時自己要在主人裡；不能把帳戶整個送人；形狀要對", async () => {
+  it("沒登入、不是成員：讀不到、寫不了（對方的帳戶也一樣）", async () => {
+    for (const db of [沒登入(), as(路人的帳號)]) {
+      await assertFails(getDoc(doc(db, `${K}/accounts/bao-bank`)));
+      await assertFails(getDocs(collection(db, `${K}/accounts`)));
+      await assertFails(setDoc(doc(db, `${K}/accounts/x`), account("x", [寶])));
+    }
+  });
+
+  it("寶搬過來之前，步可以幫寶建帳戶、改名字（階段 6 寶有帳號時收緊）", async () => {
+    const db = as(步的帳號);
+    await assertSucceeds(setDoc(doc(db, `${K}/accounts/bao-mom`), { ...account("bao-mom", [寶], "credit-card"), paidByOthers: true }));
+    await assertSucceeds(setDoc(doc(db, `${K}/accounts/bao-bank`), { ...account("bao-bank", [寶]), name: "改過的名字" }));
+  });
+
+  it("帳戶文件存不進餘額、備註；形狀要對", async () => {
     const db = as(步的帳號);
     await assertSucceeds(setDoc(doc(db, `${K}/accounts/x`), account("x", [步])));
-    await assertFails(setDoc(doc(db, `${K}/accounts/y`), account("y", [寶])));
-    await assertFails(setDoc(doc(db, `${K}/accounts/x`), account("x", [寶])));
-    await assertFails(setDoc(doc(db, `${K}/accounts/z`), { ...account("z", [步]), currency: "USD" }));
     await assertFails(setDoc(doc(db, `${K}/accounts/z`), { ...account("z", [步]), balance: 100 }));
+    await assertFails(setDoc(doc(db, `${K}/accounts/z`), { ...account("z", [步]), note: "這個拿來存款" }));
+    await assertFails(setDoc(doc(db, `${K}/accounts/x`), { ...account("x", [步]), note: "這個拿來存款" }));
+    await assertFails(setDoc(doc(db, `${K}/accounts/z`), { ...account("z", [步]), currency: "USD" }));
+    await assertFails(setDoc(doc(db, `${K}/accounts/z`), { ...account("z", [步]), id: "別的" }));
   });
 });
 
@@ -373,12 +378,12 @@ describe("參考資料", () => {
   });
 });
 
-describe("固定花費、排序：只有本人", () => {
+describe("固定花費、排序、帳戶備註：只有本人", () => {
   beforeEach(async () => {
     await 寶加入();
     await seed({
       [`${K}/recurring/bao-rent`]: recurring("bao-rent", 寶),
-      [`${K}/prefs/${寶}`]: { accounts: ["bao-bank"] },
+      [`${K}/prefs/${寶}`]: { accounts: ["bao-bank"], accountNotes: { "bao-bank": "假備註乙" } },
     });
   });
 
@@ -399,6 +404,22 @@ describe("固定花費、排序：只有本人", () => {
     await assertSucceeds(getDoc(doc(db, `${K}/prefs/${步}`)));
     await assertFails(getDoc(doc(db, `${K}/prefs/${寶}`)));
     await assertFails(setDoc(doc(db, `${K}/prefs/${寶}`), { accounts: ["post"] }));
+  });
+
+  it("步存得了自己的帳戶備註（共有帳戶每個人有自己的）；寶的備註讀不到、寫不了", async () => {
+    const db = as(步的帳號);
+    const 我的 = doc(db, `${K}/prefs/${步}`);
+    await assertSucceeds(setDoc(我的, { accountNotes: { post: "假備註甲", crypto: "步自己寫的" } }));
+    const 讀回來 = await assertSucceeds(getDoc(我的));
+    if (讀回來.get("accountNotes.post") !== "假備註甲") throw new Error("備註沒存到");
+    await assertFails(setDoc(doc(db, `${K}/prefs/${寶}`), { accountNotes: { "bao-bank": "步改的" } }));
+    await assertSucceeds(getDoc(doc(as(寶的帳號), `${K}/prefs/${寶}`)));
+  });
+
+  it("排序文件的形狀要對：備註要是 map、不能有多的欄位", async () => {
+    const db = as(步的帳號);
+    await assertFails(setDoc(doc(db, `${K}/prefs/${步}`), { accountNotes: "不是 map" }));
+    await assertFails(setDoc(doc(db, `${K}/prefs/${步}`), { extra: 1 }));
   });
 });
 
@@ -438,6 +459,12 @@ describe("一鍵重置（上線前）", () => {
     for (const path of ["events/bao", "accounts/bao-bank", "jars/meditate", "recurring/bao-rent", `prefs/${寶}`]) {
       await assertFails(deleteDoc(doc(db, `${K}/${path}`)));
     }
+  });
+
+  it("重置後寶的帳戶還在：再建一次同 ID 的帳戶不會被拒絕（套用預設要覆蓋）", async () => {
+    const db = as(步的帳號);
+    await assertFails(deleteDoc(doc(db, `${K}/accounts/bao-bank`)));
+    await assertSucceeds(setDoc(doc(db, `${K}/accounts/bao-bank`), account("bao-bank", [寶])));
   });
 
   it("王國、成員、王國裡的人永遠刪不掉", async () => {

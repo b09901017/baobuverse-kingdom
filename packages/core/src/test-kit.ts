@@ -66,7 +66,7 @@ const tags = [
   { id: 小七舊, name: "7-11", mergedInto: 小七 },
 ];
 
-/** 看得到所有帳戶的參考資料（測試用；app 裡每個人只看得到自己的帳戶） */
+/** 看得到所有帳戶的參考資料（app 裡也是：成員互相看得到帳戶的名字、種類） */
 export const catalog: Catalog = {
   people,
   accounts: [
@@ -82,7 +82,7 @@ export const catalog: Catalog = {
   tags,
 };
 
-/** 寶的帳本看得到的：寶自己的帳戶和共有的，沒有步的 */
+/** 查不到步的帳戶時（core 要容忍）：只有寶自己的帳戶和共有的 */
 export const 寶的catalog: Catalog = {
   ...catalog,
   accounts: catalog.accounts.filter((a) => a.owners.includes(寶)),

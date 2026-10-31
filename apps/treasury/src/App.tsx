@@ -97,7 +97,7 @@ function Treasury({ me, onError }: { me: PersonId; onError: (message: string) =>
   const [events, setEvents] = useState<readonly Event[]>();
   const [offline, setOffline] = useState(false);
 
-  useEffect(() => watchCatalog(db, KINGDOM_ID, me, setCatalog, (e) => onError(e.message)), [me, onError]);
+  useEffect(() => watchCatalog(db, KINGDOM_ID, setCatalog, (e) => onError(e.message)), [onError]);
   useEffect(
     () =>
       watchEvents(
@@ -115,6 +115,9 @@ function Treasury({ me, onError }: { me: PersonId; onError: (message: string) =>
 
   const book = useMemo(() => (catalog && events ? openBook(catalog, events) : undefined), [catalog, events]);
   if (!catalog || !events || !book) return <p>載入中…</p>;
+
+  // catalog 有成員所有的帳戶；這裡只列自己的（對方的餘額不顯示）
+  const myAccounts = catalog.accounts.filter((account) => account.owners.includes(me));
 
   const addTest = () => {
     const account: Account = {
@@ -160,9 +163,9 @@ function Treasury({ me, onError }: { me: PersonId; onError: (message: string) =>
         建一個測試帳戶與一筆測試支出（120 元）
       </button>
       <h2>帳戶</h2>
-      {catalog.accounts.length === 0 && <p>還沒有帳戶</p>}
+      {myAccounts.length === 0 && <p>還沒有帳戶</p>}
       <ul>
-        {catalog.accounts.map((account) => (
+        {myAccounts.map((account) => (
           <li key={account.id}>
             {account.name}：{book.total({ measure: "balance", where: { account: account.id } }).toLocaleString("zh-TW")} 元
           </li>

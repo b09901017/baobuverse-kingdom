@@ -1,9 +1,16 @@
 // 帳戶：信用卡、轉帳、寶媽卡、投資、對帳。
 
 import { describe, expect, it } from "vitest";
-import type { EntryId } from "./index";
+import type { AccountId, Catalog, EntryId } from "./index";
+import { participantsOf, validateEvent } from "./index";
 import { 恆等式 } from "./identity.test-kit";
-import { expense, kingdom, 人, 信用卡, 冥想, 加密貨幣, 家樂福, 寶, 寶媽, 寶媽卡, 寶的catalog, 寶的銀行, 朋友, 步, 現金, 郵局, 國泰 } from "./test-kit";
+import { catalog, expense, kingdom, 人, 信用卡, 冥想, 加密貨幣, 家樂福, 寶, 寶媽, 寶媽卡, 寶的catalog, 寶的銀行, 朋友, 步, 現金, 郵局, 國泰 } from "./test-kit";
+
+const 寶的信用卡 = "bao-card" as AccountId;
+const 看得到寶的信用卡: Catalog = {
+  ...catalog,
+  accounts: [...catalog.accounts, { id: 寶的信用卡, name: "寶的信用卡", kind: "credit-card", owners: [寶], currency: "TWD" }],
+};
 
 describe("不灌水：轉帳、還款、對帳差額、投資都不進我用的、我付的", () => {
   it("一連串只有這幾種的事件之後，步和寶的我用的、我付的、收入都是 0", () => {
@@ -155,6 +162,59 @@ describe("對帳", () => {
     const book = k.book();
     expect(book.total({ measure: "reconcileDiff", person: 步 })).toBe(-50);
     expect(book.total({ measure: "balance", where: { account: 現金 } })).toBe(1050);
+  });
+});
+
+describe("步的帳本看得到寶的帳戶（幫對方記時要選得到，使用者 2026-10-31）", () => {
+  it("步記「寶刷寶媽卡 3,000，幫寶，冥想罐」：寶的我付的不多算、冥想罐算到、寶媽卡還欠 3,000；步的我用的、我付的、淨資產都不動", () => {
+    const k = kingdom();
+    const e = k.spend("2026-10-01", { payer: 寶, account: 寶媽卡, amount: 3000, for: 寶, jar: 冥想 });
+    const book = k.book();
+    expect(book.problems).toEqual([]);
+    expect(validateEvent(e, catalog)).toEqual([]);
+    expect(book.total({ measure: "paid", person: 寶 })).toBe(0);
+    expect(book.total({ measure: "use", person: 寶, where: { jar: 冥想 } })).toBe(3000);
+    expect(book.debts({ channel: "othersCard", account: 寶媽卡, outstandingOnly: true })).toMatchObject([{ debtor: 寶, outstanding: 3000 }]);
+    expect(book.total({ measure: "netWorth", person: 寶 })).toBe(0);
+    for (const measure of ["use", "paid", "netWorth", "balance", "tab"] as const) {
+      expect(book.total({ measure, person: 步 })).toBe(0);
+    }
+  });
+
+  it("步記「寶刷寶的信用卡 500」：參與者有寶；步的餘額、淨資產不會混進寶的帳戶；寶的帳戶自己算自己的", () => {
+    const k = kingdom();
+    k.reconcile("2026-10-01", 郵局, 2000);
+    const e = k.spend("2026-10-02", { payer: 寶, account: 寶的信用卡, amount: 500, for: 寶 });
+    const book = k.book(看得到寶的信用卡);
+    expect(validateEvent(e, 看得到寶的信用卡)).toEqual([]);
+    expect(participantsOf(e, 看得到寶的信用卡)).toEqual([寶, 步]);
+    expect(book.total({ measure: "balance", person: 步 })).toBe(2000);
+    expect(book.total({ measure: "netWorth", person: 步 })).toBe(2000);
+    expect(book.total({ measure: "balance", person: 寶, where: { account: 寶的信用卡 } })).toBe(-500);
+    expect(book.total({ measure: "netWorth", person: 寶 })).toBe(-500);
+  });
+
+  it("步幫寶記寶的銀行對帳 800：餘額算寶的，不混進步的餘額、淨資產", () => {
+    const k = kingdom();
+    k.reconcile("2026-10-01", 寶的銀行, 800);
+    const book = k.book();
+    expect(book.total({ measure: "balance", person: 寶, where: { account: 寶的銀行 } })).toBe(800);
+    expect(book.total({ measure: "balance", person: 步 })).toBe(0);
+    expect(book.total({ measure: "netWorth", person: 步 })).toBe(0);
+  });
+
+  it("步不能用寶的帳戶當自己的誰出（account-not-payers 還擋著）", () => {
+    const e = kingdom().spend("2026-10-01", { payer: 步, account: 寶的銀行, amount: 100, for: 步 });
+    expect(validateEvent(e, catalog).map((p) => p.code)).toEqual(["account-not-payers"]);
+  });
+
+  it("看不到的帳戶照樣容忍：同一則「寶刷寶媽卡」在沒有寶媽卡的參考資料裡，帳本不算問題、步的數字一樣", () => {
+    const k = kingdom();
+    k.spend("2026-10-01", { payer: 寶, account: 寶媽卡, amount: 3000, for: 寶, jar: 冥想 });
+    const book = k.book({ ...catalog, accounts: catalog.accounts.filter((a) => a.owners.includes(步)) });
+    expect(book.problems).toEqual([]);
+    expect(book.total({ measure: "use", person: 步 })).toBe(0);
+    expect(book.total({ measure: "netWorth", person: 步 })).toBe(0);
   });
 });
 

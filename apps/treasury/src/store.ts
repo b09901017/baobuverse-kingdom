@@ -5,21 +5,26 @@ import {
   participantsOf,
   validateEvent,
   type Account,
+  type AccountId,
   type Catalog,
   type Event,
   type Jar,
+  type JarId,
   type Person,
   type PersonId,
   type Problem,
   type Tag,
+  type TagId,
 } from "@baobu/core";
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   onSnapshot,
   query,
   serverTimestamp,
+  setDoc,
   where,
   writeBatch,
   type DocumentData,
@@ -131,11 +136,10 @@ function mergeCatalog(catalog: Catalog, changes: Changes): Catalog {
   };
 }
 
-/** 監聽參考資料：王國裡的人、罐子、標籤，和我是主人的帳戶 */
+/** 監聽參考資料：王國裡的人、罐子、標籤、帳戶（成員互相看得到帳戶的名字、種類；卡片牆只顯示自己的，由畫面篩） */
 export function watchCatalog(
   db: Firestore,
   k: string,
-  me: PersonId,
   onChange: (catalog: Catalog) => void,
   onError: (error: Error) => void,
 ): () => void {
@@ -155,10 +159,43 @@ export function watchCatalog(
     listen("people", collection(db, kingdomPath(k), "people")),
     listen("jars", collection(db, kingdomPath(k), "jars")),
     listen("tags", collection(db, kingdomPath(k), "tags")),
-    // 規則只讓主人讀帳戶：查詢要帶 owners array-contains 我
-    listen("accounts", query(collection(db, kingdomPath(k), "accounts"), where("owners", "array-contains", me))),
+    listen("accounts", collection(db, kingdomPath(k), "accounts")),
   ];
   return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
+}
+
+/** 自己的排序與帳戶備註（只有本人讀寫）。key 是帳戶 ID；共有帳戶每個人有自己的備註 */
+export interface Prefs {
+  readonly accounts?: readonly AccountId[];
+  readonly jars?: readonly JarId[];
+  readonly tags?: readonly TagId[];
+  readonly accountNotes?: Readonly<Record<string, string>>;
+}
+
+const prefsDoc = (db: Firestore, k: string, me: PersonId) => doc(db, kingdomPath(k), "prefs", me);
+
+/** 監聽自己的排序與備註；還沒存過就是空的 */
+export function watchPrefs(
+  db: Firestore,
+  k: string,
+  me: PersonId,
+  onChange: (prefs: Prefs) => void,
+  onError: (error: Error) => void,
+): () => void {
+  return onSnapshot(prefsDoc(db, k, me), (snap) => onChange((snap.data() ?? {}) as Prefs), onError);
+}
+
+// 排序、備註在同一份文件：只寫要改的那一格（merge），不然會互相蓋掉。
+// 斷網時回傳的 Promise 會一直等，畫面不要等它（離線快取已經看得到）
+
+/** 改卡片牆的排序 */
+export function saveAccountOrder(db: Firestore, k: string, me: PersonId, order: readonly AccountId[]): Promise<void> {
+  return setDoc(prefsDoc(db, k, me), { accounts: order }, { merge: true });
+}
+
+/** 改一個帳戶的備註；空字串就是拿掉那一格 */
+export function saveAccountNote(db: Firestore, k: string, me: PersonId, account: AccountId, note: string): Promise<void> {
+  return setDoc(prefsDoc(db, k, me), { accountNotes: { [account]: note === "" ? deleteField() : note } }, { merge: true });
 }
 
 /**

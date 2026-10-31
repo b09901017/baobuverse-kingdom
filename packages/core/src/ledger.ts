@@ -347,7 +347,7 @@ export function buildLedger(catalog: Catalog, events: readonly Event[]): Ledger 
 
   /**
    * 轉帳是誰在搬錢（共有的投資帳戶那一邊算這個人投入、拿出）：另一邊帳戶的主人；
-   * 另一邊看不到（寶的帳本裡步的郵局）或也是共有的，就是記的人（記的人一定看得到自己用的帳戶）。
+   * 另一邊查不到或也是共有的，就是記的人（記的人一定查得到自己用的帳戶）。
    */
   function mover(event: Event, from: AccountId, to: AccountId): PersonId {
     for (const id of [from, to]) {

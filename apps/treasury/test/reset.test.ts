@@ -3,7 +3,7 @@
 
 import type { PersonId } from "@baobu/core";
 import type { RulesTestEnvironment } from "@firebase/rules-unit-testing";
-import { collection, disableNetwork, doc, getDocs, serverTimestamp, setDoc, type DocumentData } from "firebase/firestore";
+import { collection, disableNetwork, doc, getDoc, getDocs, serverTimestamp, setDoc, type DocumentData } from "firebase/firestore";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { resetMine } from "../src/reset";
 import { asFirestore, startEmulator } from "./emulator";
@@ -99,6 +99,15 @@ describe("一鍵重置", () => {
         `prefs/${寶}`,
       ].sort(),
     );
+  });
+
+  it("開放讀取之後，重置也不會去動只屬於寶的帳戶：寶的帳戶內容一字不變", async () => {
+    await resetMine(步的(), K, 步);
+    let baoBank: DocumentData | undefined;
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      baoBank = (await getDoc(doc(asFirestore(ctx.firestore()), `kingdoms/${K}/accounts/bao-bank`))).data();
+    });
+    expect(baoBank).toEqual({ id: "bao-bank", owners: [寶] });
   });
 
   it("再按一次：沒有東西可刪", async () => {
