@@ -46,6 +46,7 @@ Status: accepted（2026-10-30，階段 0 段二）
 | `kingdoms/{k}/jars/{jarId}`、`tags/{tagId}` | `Jar`、`Tag` | 成員（共付的事件兩邊都要認得罐子和標籤） |
 | `kingdoms/{k}/recurring/{recurringId}` | `Recurring` | `owner` |
 | `kingdoms/{k}/prefs/{personId}` | 自己的排序（帳戶卡片、罐子、標籤）與帳戶備註（`accountNotes`：帳戶 ID → 字串，共有帳戶每個人有自己的） | 本人 |
+| `kingdoms/{k}/presets/{personId}` | 自己匯入的預設資料（帳戶含實際餘額與備註、罐子、標籤、投入；形狀在 `apps/treasury/src/presets.ts`）。資料不能進公開 repo、也不能打包進網站，又要重置後按一下就回來，所以放這裡 | 本人；不能刪（一鍵重置也不刪） |
 | `kingdoms/{k}/events/{eventId}` | 整則 `Event`（效果、品項都在裡面）＋下面四個欄位 | 讀：參與者；建、改：記的人；其他參與者只能改 `doubts.{自己}` |
 
 事件文件比 `Event` 多四個欄位，是儲存那一層的（core 不知道）：

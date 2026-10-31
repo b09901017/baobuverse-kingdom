@@ -31,6 +31,7 @@ import {
   type Firestore,
   type Query,
 } from "firebase/firestore";
+import { presetChanges, type Presets } from "./presets";
 
 /** 事件文件的形狀版本：Event 的形狀改了就加一 */
 const EVENT_VERSION = 1;
@@ -88,6 +89,8 @@ export interface Changes {
   readonly jars?: readonly Jar[];
   readonly tags?: readonly Tag[];
   readonly events?: readonly Event[];
+  /** 自己的排序與備註：只動有給的欄位、有給的那幾格備註 */
+  readonly prefs?: { readonly of: PersonId; readonly set: Prefs };
 }
 
 export type SaveResult =
@@ -120,6 +123,7 @@ export function save(
   for (const event of changes.events ?? []) {
     batch.set(doc(db, kingdomPath(k), "events", event.id), toEventDoc(event, catalog, current.events));
   }
+  if (changes.prefs !== undefined) batch.set(prefsDoc(db, k, changes.prefs.of), changes.prefs.set, { merge: true });
   return { ok: true, written: batch.commit() };
 }
 
@@ -196,6 +200,44 @@ export function saveAccountOrder(db: Firestore, k: string, me: PersonId, order: 
 /** 改一個帳戶的備註；空字串就是拿掉那一格 */
 export function saveAccountNote(db: Firestore, k: string, me: PersonId, account: AccountId, note: string): Promise<void> {
   return setDoc(prefsDoc(db, k, me), { accountNotes: { [account]: note === "" ? deleteField() : note } }, { merge: true });
+}
+
+const presetsDoc = (db: Firestore, k: string, me: PersonId) => doc(db, kingdomPath(k), "presets", me);
+
+/** 監聽自己匯入的預設資料；還沒匯入是 null */
+export function watchPresets(
+  db: Firestore,
+  k: string,
+  me: PersonId,
+  onChange: (presets: Presets | null) => void,
+  onError: (error: Error) => void,
+): () => void {
+  return onSnapshot(presetsDoc(db, k, me), (snap) => onChange(snap.exists() ? (snap.data() as Presets) : null), onError);
+}
+
+/** 匯入：把 parsePresets 過了的內容存起來（裡面有實際餘額，只有本人讀得到；一鍵重置不刪）。還沒套用，數字不會變 */
+export function savePresets(db: Firestore, k: string, me: PersonId, presets: Presets): Promise<void> {
+  return setDoc(presetsDoc(db, k, me), presets);
+}
+
+/**
+ * 套用預設（同一批，全部成功或全部失敗）。ID 固定，已經套用過的話第二次的 recordedAt 不同，規則整批拒絕，
+ * 所以按兩次、兩台裝置都按都不會變兩倍；written 會丟白話的錯誤，畫面要接住。斷網時 written 會一直等，畫面不要等它。
+ */
+export function applyPresets(
+  db: Firestore,
+  k: string,
+  me: PersonId,
+  presets: Presets,
+  current: { readonly catalog: Catalog; readonly events: readonly Event[] },
+  now: number,
+): SaveResult {
+  const result = save(db, k, presetChanges(presets, me, now), current);
+  if (!result.ok) return result;
+  const written = result.written.catch((e: { readonly code?: string }) => {
+    throw e.code === "permission-denied" ? new Error("套用不了：可能已經套用過了（這台或另一台裝置），雲端的資料沒有變動。") : e;
+  });
+  return { ok: true, written };
 }
 
 /**

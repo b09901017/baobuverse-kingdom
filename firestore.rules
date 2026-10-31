@@ -16,6 +16,7 @@ rules_version = '2';
 // kingdoms/{k}/accounts/{a}     Account { id, name, kind, owners, currency, paidByOthers?, archived? }（餘額不存，備註在 prefs）
 // kingdoms/{k}/recurring/{r}    Recurring（owner 是設定的人）
 // kingdoms/{k}/prefs/{p}        自己的排序與帳戶備註 { accounts?, jars?, tags?, accountNotes? }
+// kingdoms/{k}/presets/{p}      自己匯入的預設資料 { asOf, accounts, jars, tags, transfers }（型別在 apps/treasury/src/presets.ts）
 // kingdoms/{k}/events/{e}       Event ＋ participants（list）、updatedAt（伺服器時間）、deleted（bool）、v（1）
 //
 // 第一份成員文件：王國文件還不存在時，第一個登入的人在同一批寫入裡建王國（founder 寫自己）和自己的成員文件。
@@ -233,6 +234,21 @@ service cloud.firestore {
           && optionalIdList(incoming(), 'tags', 500)
           && (!('accountNotes' in incoming()) || (incoming().accountNotes is map && incoming().accountNotes.size() <= 200));
         allow delete: if canReset() && isMember(k) && me(k) == p;
+      }
+
+      // ── 預設資料：匯入一次（裡面有實際餘額，只有本人）；重置不刪，重置後才套用得回來 ──
+
+      match /presets/{p} {
+        allow read: if isMember(k) && me(k) == p;
+        allow create, update: if isMemberAfter(k) && meAfter(k) == p
+          && incoming().keys().hasAll(['asOf', 'accounts', 'jars', 'tags', 'transfers'])
+          && incoming().keys().hasOnly(['asOf', 'accounts', 'jars', 'tags', 'transfers'])
+          && incoming().asOf is string
+          && incoming().accounts is list
+          && incoming().jars is list
+          && incoming().tags is list
+          && incoming().transfers is list;
+        allow delete: if false;
       }
 
       // ── 事件：參與者讀得到；記的人建、改；其他參與者只能改 doubts 裡自己那一格 ──

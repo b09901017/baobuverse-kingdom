@@ -1,6 +1,6 @@
 # 03 預設資料：匯入一次、重置後一鍵套用
 
-Status: todo
+Status: done
 Blocked by: 01
 
 動工前先讀：`../spec.md`；01「做完時留下的」；`apps/treasury/src/reset.ts`、`test/reset.test.ts`；`store.ts` 的 `save`；`firestore.rules`；`.local/kingdom-accounts.md`（真實資料，**內容不寫進 repo**，指令輸出也不要印金額，見 lessons 第五條）；ADR 0001；階段 0 HANDOFF「中途發現 · 段四、段五」的重置。
@@ -41,5 +41,85 @@ Blocked by: 01
 - 寶讀得到步的 `presets` 嗎？重置會刪掉 `presets` 嗎？
 - 檔案格式錯（少欄位、金額不是整數、投資帳戶有餘額、主人沒有人、轉帳兩邊不同人）會擋下來、什麼都不寫嗎？
 - `git grep` 真實金額與 `.local` 裡獨有的標籤名（`docs/plan.md` 或 `spec.md` 原話已經有的那幾個不算）：repo 裡有嗎？（用 spawnSync 在程式裡比、只印筆數，lessons 第五條）
+
+## 做完時留下的
+
+2026-10-31 段一。純函式在 `apps/treasury/src/presets.ts`，存讀在 `store.ts`；測試 `test/presets.test.ts`（純函式）、`test/presets.store.test.ts`（模擬器）。
+
+**給 04 用的介面**
+
+| 東西 | 做什麼 |
+|---|---|
+| `parsePresets(raw, me, people)` | 選檔之後用：`JSON.parse` 的結果丟進來，回傳 `{ ok: true, presets }` 或 `{ ok: false, errors }`（一條一句話，哪一列、什麼問題，全部列出來）。**比 issue 多兩個參數**：`me` 判斷哪些帳戶能有餘額，`people` 判斷主人是不是王國裡的人。`JSON.parse` 丟的錯 04 要自己接 |
+| `savePresets(db, k, me, presets)` | 匯入：存起來，還沒套用，數字不會變 |
+| `watchPresets(db, k, me, onChange, onError)` | 還沒匯入收到 `null`。「套用預設」要不要出現：`!LAUNCHED`、沒有任何自己的帳戶、這裡不是 `null` |
+| `applyPresets(db, k, me, presets, { catalog, events }, Date.now())` | 套用。回傳跟 `save` 一樣的 `SaveResult`；`written` 被規則拒絕時，錯誤訊息已經是白話（「可能已經套用過了」），畫面直接顯示。斷網時 `written` 會一直等，畫面不要等 |
+| `DAILY_JAR` | 日常罐的 ID。05 沒有日常時用它建 |
+
+**檔案的形狀**（完整的型別見 `Presets`）：
+
+```json
+{
+  "asOf": "2026-10-01",
+  "accounts": [{ "id": "a-bank", "name": "假銀行", "kind": "bank", "owners": ["bu"], "note": "假備註", "balance": 22222 }],
+  "jars": [{ "id": "daily", "name": "日常", "owners": ["bu", "bao"] }],
+  "tags": [{ "id": "t-1", "name": "假標籤" }],
+  "transfers": [{ "from": "a-bank", "to": "shared", "amount": 4000 }]
+}
+```
+
+**補定的**（issue 沒寫，照之前說的判斷）
+
+| 情況 | 決定 | 理由 |
+|---|---|---|
+| 事件的日期 | 檔案的 `asOf`（填數字的那天），`recordedAt` 才用 `now` | 那些數字就是那天的。晚幾天才套用時，之後補記那幾天的支出會正確地扣掉；卡片的「N 天沒對帳」也是真的。`asOf` 當天補記的支出排在初始餘額之後（初始餘額沒寫時間） |
+| 事件的 ID | 投入 `preset-transfer-{第幾筆}`，初始餘額 `preset-opening-{帳戶 ID}` | issue 要固定；不用在檔案多寫一欄 |
+| 事件的名稱 | 投入「投入」、對帳「初始餘額」 | 流水頁（05、06）才有字可以顯示 |
+| 幣別 | 檔案不用寫，寫進帳戶文件時補 `TWD` | 現在只有台幣 |
+| 不認得的欄位 | 擋下來 | 打錯字（`balence`）不會被默默丟掉、餘額就不見了 |
+| 信用卡的餘額寫成正的 | 擋下來 | issue 說信用卡是負數；寫反的話欠款變存款，淨資產差兩倍 |
+| 標籤帶 `defaultJar` | 擋下來 | 使用者說預設的標籤都不帶 |
+| 檔案沒有備註 | prefs 不寫 `accountNotes` 這一格 | merge 時空的 map 會把原本的備註蓋掉（測試先紅過） |
+| `.local/kingdom-presets.json` 怎麼產生 | `.local/make-kingdom-presets.mjs`（`node .local/make-kingdom-presets.mjs`，只印筆數） | 裡面有真實名稱的 ID 對照，所以放 `.local`。改了 `kingdom-accounts.md` 重跑就好 |
+
+**判準的結果**
+
+| 判準 | 結果 |
+|---|---|
+| 重置後按套用，餘額、各自投入是檔案寫的嗎 | 是（模擬器走完存、讀、重置、再套用） |
+| 步的淨資產 | 自己帳戶加起來＋自己投入的；寶投入的不算；寶的帳戶負的那段算在寶身上 |
+| 初始餘額的參與者 | 只有步；寶讀那份文件被拒絕、讀得到的事件裡沒有步的實際餘額 |
+| 寶的帳戶、共有帳戶寫了餘額 | 擋下來（備註也是） |
+| 投入算支出嗎 | 我用的、我付的、收入都是 0 |
+| 第一次對帳算差額嗎 | 0 筆 |
+| 連按兩次、兩台都按 | 第二次整批拒絕，`written` 丟白話的錯，事件數不變、數字不變 |
+| 寶讀得到步的 `presets`？重置會刪嗎 | 讀不到；不會（`remaining()` 有查 `presets`，規則也不讓刪） |
+| 檔案格式錯 | 少欄位、金額不是整數、投資帳戶有餘額、主人沒有人、轉帳兩邊不同人都擋下來；`parsePresets` 是純函式，什麼都不寫 |
+
+**真實資料驗過**：`.local/kingdom-presets.json` 產生了、**沒有匯入**。用一支暫時的測試（驗完刪掉、沒 commit，斷言只比 true/false，輸出不印金額）驗了：過得了 `parsePresets` 與 core 檢查；每個帳戶的餘額、步和寶的投入、步的淨資產都是檔案寫的；寶的淨資產 0、差額 0 筆；初始餘額的參與者只有步。把餘額的比較故意改錯，那支會紅。`git check-ignore` 確認兩個檔都不進版控。
+
+**repo 裡有沒有真實資料**（程式裡比對、只印筆數）：
+
+| 比什麼 | 結果 |
+|---|---|
+| 真實金額 | 位數長的 0 個檔。位數短的數字只有巧合（skill 文件、階段 0 測試本來就有的數字）；這一輪新寫的假金額都沒撞到 |
+| `kingdom-accounts.md` 每一格的名字、備註（含寶的） | **第一次抓到兩個**：我在 01 的備註測試順手抄了兩個真實備註（lessons 第十二條）。改成假的，重做了還沒推的那兩個 commit，分支歷史裡 0 筆 |
+| 其餘只在 `.local` 有的字 | 兩個常見的詞：階段 0 就寫在 `test-kit`、`GLOSSARY` 當例子，比真實清單早，不是抄來的，沒動 |
+
+**故意弄壞看會不會紅（lessons 第十條）**：15 種，14 種紅。
+
+| 弄壞什麼 | 紅了幾支 |
+|---|---|
+| 規則：預設資料本人刪得掉 | 1 |
+| 重置也刪預設資料（規則也放行） | 4 |
+| 規則：別人的讀得到／寫得了 | 3／1 |
+| 規則：沒有 `hasOnly`／`accounts` 不檢查清單／`asOf` 不檢查字串 | 1／1／1 |
+| 規則：沒有 `hasAll` | **0**：等價，少了欄位時後面的 `is list` 本來就拒絕。這份規則一貫有寫，留著 |
+| 第一次對帳排在投入之前 | 6 |
+| 帳戶文件留著餘額與備註／沒有補幣別 | 8／7 |
+| `applyPresets` 不接錯誤 | 1 |
+| `recordedAt` 不跟著 `now` | 3 |
+| `save` 寫 prefs 不 merge | 1 |
+| 存之前不檢查 core | 3（多紅的那支是前一支的寫入沒等完就結束、漏到下一支，只有弄壞時才會發生） |
 
 ## Comments

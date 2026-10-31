@@ -423,6 +423,61 @@ describe("固定花費、排序、帳戶備註：只有本人", () => {
   });
 });
 
+describe("預設資料：只有本人，不能刪", () => {
+  const 預設 = (overrides: DocumentData = {}): DocumentData => ({
+    asOf: "2026-10-01",
+    accounts: [{ ...account("post", [步]), balance: 100 }],
+    jars: [],
+    tags: [],
+    transfers: [],
+    ...overrides,
+  });
+
+  beforeEach(async () => {
+    await 寶加入();
+    await seed({ [`${K}/presets/${寶}`]: 預設() });
+  });
+
+  it("步讀寫得了自己的；寶的讀不到、寫不了（裡面有實際餘額）", async () => {
+    const db = as(步的帳號);
+    await assertSucceeds(setDoc(doc(db, `${K}/presets/${步}`), 預設()));
+    await assertSucceeds(getDoc(doc(db, `${K}/presets/${步}`)));
+    await assertSucceeds(setDoc(doc(db, `${K}/presets/${步}`), 預設({ asOf: "2026-10-02" })));
+    await assertFails(getDoc(doc(db, `${K}/presets/${寶}`)));
+    await assertFails(setDoc(doc(db, `${K}/presets/${寶}`), 預設()));
+    await assertFails(getDocs(collection(db, `${K}/presets`)));
+  });
+
+  it("寶讀不到步的", async () => {
+    await seed({ [`${K}/presets/${步}`]: 預設() });
+    await assertFails(getDoc(doc(as(寶的帳號), `${K}/presets/${步}`)));
+  });
+
+  it("沒登入、不是成員：讀不到、寫不了", async () => {
+    await seed({ [`${K}/presets/${步}`]: 預設() });
+    for (const db of [沒登入(), as(路人的帳號)]) {
+      await assertFails(getDoc(doc(db, `${K}/presets/${步}`)));
+      await assertFails(setDoc(doc(db, `${K}/presets/${步}`), 預設()));
+    }
+  });
+
+  it("誰都刪不掉（重置也不刪，重置後才套用得回來）", async () => {
+    await seed({ [`${K}/presets/${步}`]: 預設() });
+    await assertFails(deleteDoc(doc(as(步的帳號), `${K}/presets/${步}`)));
+    await assertFails(deleteDoc(doc(as(寶的帳號), `${K}/presets/${寶}`)));
+  });
+
+  it("形狀要對：清單都有、沒有多的欄位", async () => {
+    const db = as(步的帳號);
+    const path = `${K}/presets/${步}`;
+    await assertFails(setDoc(doc(db, path), 預設({ extra: 1 })));
+    await assertFails(setDoc(doc(db, path), 預設({ accounts: "x" })));
+    await assertFails(setDoc(doc(db, path), 預設({ asOf: 20261001 })));
+    const { tags: _tags, ...少了標籤 } = 預設();
+    await assertFails(setDoc(doc(db, path), 少了標籤));
+  });
+});
+
 // 上線前（firestore.rules 的 canReset() 是 true）：本人可以真的刪自己的資料。上線後 canReset() 是 false，這一段要改成全部拒絕。
 describe("一鍵重置（上線前）", () => {
   beforeEach(async () => {

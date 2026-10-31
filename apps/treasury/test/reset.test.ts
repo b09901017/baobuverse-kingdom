@@ -43,6 +43,8 @@ const seedDocs: Record<string, DocumentData> = {
   "recurring/bao-rent": { id: "bao-rent", owner: 寶 },
   [`prefs/${步}`]: { accounts: ["post"] },
   [`prefs/${寶}`]: { accounts: ["bao-bank"] },
+  [`presets/${步}`]: { asOf: "2026-10-01", accounts: [], jars: [], tags: [], transfers: [] },
+  [`presets/${寶}`]: { asOf: "2026-10-01", accounts: [], jars: [], tags: [], transfers: [] },
 };
 
 let env: RulesTestEnvironment;
@@ -70,7 +72,7 @@ async function remaining(): Promise<string[]> {
   const paths: string[] = [];
   await env.withSecurityRulesDisabled(async (ctx) => {
     const db = asFirestore(ctx.firestore());
-    for (const name of ["members", "people", "events", "accounts", "jars", "tags", "recurring", "prefs"]) {
+    for (const name of ["members", "people", "events", "accounts", "jars", "tags", "recurring", "prefs", "presets"]) {
       const snap = await getDocs(collection(db, `kingdoms/${K}/${name}`));
       paths.push(...snap.docs.map((d) => `${name}/${d.id}`));
     }
@@ -97,6 +99,9 @@ describe("一鍵重置", () => {
         "jars/meditate",
         "recurring/bao-rent",
         `prefs/${寶}`,
+        // 預設資料不刪：重置後要按一下就回來
+        `presets/${步}`,
+        `presets/${寶}`,
       ].sort(),
     );
   });
