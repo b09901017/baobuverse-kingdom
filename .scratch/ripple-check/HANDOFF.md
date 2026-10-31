@@ -12,6 +12,10 @@
 |---|---|---|---|
 | 一 | 裝 CodeGraph 1.6.2、ast-grep 0.51.0，graphifyy 升到 0.9.99（加 `[chinese]`）；寫 `.local/README.md` 目錄、`.graphifyignore`、`codegraph.json`；建 CodeGraph 索引與 graphify 的程式碼圖；每個指令在這個 repo 實際跑過；客廳新增 `ripple-check` skill、改 `kickoff`、更新 graphify skill，同步回來；`CLAUDE.md`、`env-notes.md`、`plan.md` 各補一兩行 | high | 做完（2026-10-31） |
 | 二 | graphify 第一次完整建圖（含文件的語意分析），照 `ripple-check` 驗收 | medium | 還沒做：等換帳號或週額度重置（段一結束時週額度 91%） |
+| 三 | 套用到上一個專案 `baobao-wellness-clinic-scheduler`（見「段三：上一個專案」） | high | 還沒做：使用者 2026-10-31 要做，週額度 93% 交給之後 |
+| 四 | VM 裝工具（見「段四：VM」） | medium | 還沒做：開 VM 要花錢，等下一次「出門」用 VM 時順便做 |
+
+段一合進 main：PR #18（`3399ad2`）。之後在同一條線上補了三條 skill（ast-grep 最多試兩次、`GRAPHIFY_MAX_WORKERS`、純 JS 專案要再用 grep 對一次）。
 
 ## 使用者已經決定的
 
@@ -38,6 +42,38 @@
 ## 中途發現
 
 - 客廳的 `devbox.mjs` 會把 `graphify-out/` 搬到 VM，但 `.codegraph/` 沒有搬，VM 也還沒裝這幾個工具。之後要在 VM 上用時，照 `ripple-check`「第一次在一個專案設定」第 1、3 步做（`.codegraph/` 在 VM 上重建就好，不用搬）。
+
+## 段三：上一個專案（`C:\Users\DELL\Desktop\baobao-wellness-clinic-scheduler`）
+
+使用者 2026-10-31：「那個專案目前應該是大型專案了吧，也已經開始投入使用了，所以之後有甚麼要優化或是調整的感覺就很需要這次的這些東西」。
+
+段一結束時只看了外觀（沒改任何東西）：
+
+| 看到的 | 為什麼重要 |
+|---|---|
+| 1,463 個 git 檔、481 個 JS 檔、**0 個 TS 檔** | 沒有型別檢查：漏改的呼叫端不會在驗證時變紅，`ripple-check` 在這裡比在王國更重要。CodeGraph 對 CommonJS `require`、同名函式容易連錯（它的 open issue 大多是這類），清單一定要再用 grep 對 |
+| 有 `functions/`（Cloud Functions）、`tests/`、`tests-e2e/`、`scripts/` | 是好幾個套件；`codegraph affected` 的測試樣式可能要 `--filter` 指到 `tests/`、`tests-e2e/` |
+| `graphify-out/` 有 **499 MB**，是舊版 graphify 建的 | 先看 `graph.json` 的 `graphify_version`；跟 0.9.99 差太多就整個重建，不要在舊的上面 `--update`。客廳的 `devbox.mjs` 會把它 tar 到 VM，500 MB 每次出門都要搬 |
+| 沒有 `.claude/project.json`（有 `skills-lock.json`），根目錄 `CLAUDE.md` 沒提 graphify | 它的 skill 不是從客廳同步的。要用 `ripple-check`：先看 `legacy-to-home` 那一輪怎麼決定上一個專案的 skill（`.scratch/legacy-to-home/`、客廳 `docs/project-config.md`），照那個方式加，不要自己發明第二種同步法 |
+| `keys/`（已 gitignore） | 兩個工具都照 `.gitignore`，但 `.graphifyignore`、`codegraph.json` 還是明寫排除，多一層保險 |
+| `.local/` 已經有 `README.md`，還有 `references/`、`知識庫/`、`pii-scan/`、`tools/`、`claude-memory/`（69 份） | **`references/` 規矩是不讀**（lessons 第五條的例子）：一定排除、不能進圖、目錄也只寫一行「不讀」。先讀現有的 `README.md`，照 `ripple-check`「掃哪些、不掃哪些」補每個檔「是什麼、什麼時候讀」；`知識庫/` 可能是 research 那一類，要分類前先問使用者 |
+| 正在給人用（正式資料） | 這幾個工具只讀不寫，但驗證時不要碰正式的 Firebase；照那個專案 `CLAUDE.md` 的規矩 |
+
+建議順序：
+
+1. 讀那個專案的 `CLAUDE.md`、`docs/agents/lessons.md`（有的話）、`.local/README.md`；`git status` 確認分支乾淨（段一看到在 `claude/availability-sheet-chart-no`）。
+2. 從那個專案的 main 開分支。寫 `codegraph.json`、`.graphifyignore`、`.gitignore` 加 `.codegraph/`。
+3. `codegraph init --yes`（1,400 多個檔，先跟使用者說；第一次在王國跑了 2 分鐘，大部分是初次設定）。
+4. **先驗證值不值得**：挑那個專案最近幾個修 bug 的 commit，對改到的函式跑 `codegraph impact`／`callers`，看清單跟實際要改的地方對不對得上、漏了什麼、多了什麼。把結果寫下來（lessons 第八條：原始清單要留）。對不上很多就跟使用者說，不要硬裝。
+5. 值得的話：加 `ripple-check`（照第 1 步查到的同步方式）、`CLAUDE.md` 加一行；graphify 照段二的方式重建（`GRAPHIFY_MAX_WORKERS=8`；含文件的語意分析很花額度，先問）。
+6. 開 PR，照那個專案的合併規定。
+
+## 段四：VM
+
+- 客廳的 `vm/README.md` 記 VM 怎麼開、怎麼裝東西；`tools/devbox.mjs` 管出門與回家（先讀 `docs/agents/lessons.md` 第一條，不要亂按「回家」）。
+- 要裝的：`npm i -g @colbymchenry/codegraph@1.6.2 @ast-grep/cli@0.51.0`、`codegraph telemetry off`、`python3 -m pip install -U "graphifyy[chinese]==0.9.99"`，每個專案 `codegraph init --yes`（`.codegraph/` 在 VM 上重建，不用從家裡搬）。
+- 裝完把步驟補進客廳的 `vm/README.md`，`docs/env-notes.md` 的 VM 那一列改成「裝好」。
+- VM 是 Linux：可以順便試 CodeGraph 的 MCP（skill 的「坑」裡寫的 Windows 問題在 Linux 上不一定有），試的結果寫回 skill。
 
 ## 段二的開場
 
