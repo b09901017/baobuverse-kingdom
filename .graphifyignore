@@ -1,0 +1,21 @@
+# graphify 不掃的東西（.gitignore 裡的 node_modules、dist 本來就不掃）。
+# 規則與為什麼：.claude/skills/ripple-check/SKILL.md
+
+# 別的 repo 的複本、上游授權檔：不是這個專案自己的東西
+.claude/skills/
+docs/licenses/
+.scratch/*/probes/
+
+# 不是這個 app 的輪（工具、客廳）：查 app 的架構時只是雜訊。之後開這類的輪，順手加一行
+.scratch/claude-home-workflow/
+.scratch/legacy-to-home/
+.scratch/tooling-leftovers/
+.scratch/guard-judge/
+
+# .local：預設不進圖，只放回目錄、research/、產生預設資料的程式（清單在 .local/README.md）
+!.local/
+.local/*
+!.local/README.md
+!.local/research/
+!.local/make-kingdom-presets.mjs
+!.local/kingdom-presets.json

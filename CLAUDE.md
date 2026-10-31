@@ -45,3 +45,4 @@ Issue 以 Markdown 放在 `.scratch/<slug>/`，不用 GitHub Issues。見 `docs/
 - skill 放 `.claude/skills/` 並 commit：雲端 session 不讀 `~/.claude/skills/`。這裡是複本，改 skill 改客廳的正本再同步回來。怎麼同步、Playwright 與 MCP 的坑見 `docs/env-notes.md`。
 - 東西分三層：所有專案共用的工具在「客廳」私人 repo；這個專案的私人資料（記憶、交接開場）在 `.local/`（gitignore，另一個私人 repo）；登入備份與金鑰不進任何 repo。
 - 之前的 session 一再犯的坑在 `docs/agents/lessons.md`，動工前掃一遍。
+- 動到已經存在、別處在用的程式碼之前，以及修完 bug 之後，照 `ripple-check` skill 查牽連、找同一個形狀的缺陷（CodeGraph、ast-grep；文件與決定查 graphify 的圖）。

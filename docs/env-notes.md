@@ -127,3 +127,19 @@ E2E 測試是另一回事：等開始寫 app 時，像上一個專案一樣裝 `
 
 **帳號的 plugin 會同步進雲端 session**，repo 的 `.claude/settings.json` 關不掉它們
 （`syncClaudeAiPlugins: false` 放在 repo 檔案裡會被忽略）。要在 claude.ai 的設定裡關。
+
+---
+
+## 透視關聯的工具（CodeGraph、ast-grep、graphify）
+
+做法在 `ripple-check` skill；這裡只記每台電腦的狀態。版本照客廳的 `skills/README.md`。
+
+| 在哪 | 狀態 |
+|---|---|
+| 家裡 Windows | 2026-10-31 裝好：npm 全域 `@colbymchenry/codegraph`、`@ast-grep/cli`（匿名統計已關）、`graphifyy[chinese]`。`.codegraph/` 與 `graphify-out/` 的程式碼部分建好了；含文件的完整圖還沒建 |
+| VM | 還沒裝 |
+| 雲端 session | 沒裝，照 `ripple-check` 用 `npx` |
+
+- 掃描範圍：graphify 看 [`.graphifyignore`](../.graphifyignore)、CodeGraph 看 [`codegraph.json`](../codegraph.json)；`.local/` 只放回 `.local/README.md` 列的那幾個。
+- CodeGraph 只用 CLI、不接 MCP（理由見 skill 的「坑」），所以沒有寫進 `.mcp.json`，也沒有背景程序。
+- `ast-grep` 的 npm postinstall 被 npm 的 allow-scripts 擋下，`ast-grep --version` 照樣能跑，不用理它。
