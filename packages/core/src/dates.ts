@@ -2,8 +2,11 @@
 
 import type { Event, LocalDate } from "./model";
 
+/** 排先後要看的欄位：還沒存的一筆（預覽、表單）也能比 */
+type Timed = Pick<Event, "id" | "date" | "time" | "recordedAt">;
+
 /** 事件的先後：日期 → 時間（沒寫的排前面）→ 記下來的時間 → ID */
-export function byTime(a: Event, b: Event): number {
+export function byTime(a: Timed, b: Timed): number {
   return (
     compare(a.date, b.date) || compare(a.time ?? "", b.time ?? "") || a.recordedAt - b.recordedAt || compare(a.id, b.id)
   );

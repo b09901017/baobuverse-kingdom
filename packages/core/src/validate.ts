@@ -159,7 +159,7 @@ function check(event: Event, catalog: Catalog, strict: boolean, events?: readonl
         if (into !== undefined && !refundAccountOk(into, target.expense)) add("refund-account", at);
         // 同一則裡好幾筆退同一項：加起來算
         const k = itemKey(entry.target);
-        const total = (refundedHere.get(k) ?? refundedBefore(events, entry.target, event.id)) + entry.amount;
+        const total = (refundedHere.get(k) ?? refundedElsewhere(events, entry.target, event.id)) + entry.amount;
         refundedHere.set(k, total);
         if (total > target.item.amount) add("refund-too-big", at);
         break;
@@ -180,7 +180,7 @@ function check(event: Event, catalog: Catalog, strict: boolean, events?: readonl
     if (event.status !== "confirmed" || refunds.some((r) => byTime(event, r.event) >= 0)) add("refunded-item-changed");
     for (const ref of new Map(refunds.map(({ refund }) => [itemKey(refund.target), refund.target])).values()) {
       const item = expenseIn(event, ref.entry)?.items.find((i) => i.id === ref.item);
-      if (item === undefined || item.cash !== undefined || item.amount < refundedBefore(all, ref, event.id)) {
+      if (item === undefined || item.cash !== undefined || item.amount < refundedElsewhere(all, ref, event.id)) {
         add("refunded-item-changed", ref.entry, ref.item);
       }
     }
@@ -361,7 +361,7 @@ export function blockersOfDelete(eventId: EventId, events: readonly Event[]): re
 }
 
 /** 別則事件已經退了這一項多少 */
-function refundedBefore(events: readonly Event[], ref: ItemRef, except: EventId): number {
+function refundedElsewhere(events: readonly Event[], ref: ItemRef, except: EventId): number {
   return refundsOf(events, ref)
     .filter((r) => r.event !== except)
     .reduce((sum, r) => sum + r.amount, 0);

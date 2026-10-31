@@ -5,7 +5,6 @@ import type {
   Account,
   AccountId,
   Amount,
-  EntryId,
   Event,
   EventId,
   Jar,
@@ -16,6 +15,7 @@ import type {
   Tag,
   Transfer,
 } from "@baobu/core";
+import { ENTRY_ID } from "./event-form";
 import type { Changes } from "./store";
 
 /** 日常罐的 ID：沒選罐子就算日常。05 沒有日常時也用它建，先記一筆再套用才不會有兩個日常 */
@@ -53,7 +53,8 @@ export type ParseResult =
   | { readonly ok: false; readonly errors: readonly string[] };
 
 const ACCOUNT_KINDS: readonly unknown[] = ["bank", "cash", "stored-value", "credit-card", "investment"];
-const NOTE_MAX = 200;
+/** 帳戶備註最多幾個字（檔案與畫面同一個） */
+export const NOTE_MAX = 200;
 
 type Row = Readonly<Record<string, unknown>>;
 
@@ -182,7 +183,7 @@ export function presetChanges(presets: Presets, me: PersonId, now: number): Chan
     status: "confirmed",
     effects: [effect],
   });
-  const entry = { type: "money", id: "m1" as EntryId } as const;
+  const entry = { type: "money", id: ENTRY_ID } as const;
 
   const transfers = presets.transfers.map((t, i) =>
     event(`preset-transfer-${i}`, "投入", now + i, { ...entry, kind: "transfer", from: t.from, to: t.to, amount: t.amount }),

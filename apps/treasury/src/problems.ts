@@ -28,10 +28,6 @@ const TEXT: Readonly<Record<ProblemCode, string>> = {
   "allocation-invalid": "指定要抵的那一筆不對",
 };
 
-export function problemText(code: ProblemCode): string {
-  return TEXT[code];
-}
-
 /** 一批問題的白話，重複的只留一句 */
 export function problemTexts(problems: readonly Problem[]): readonly string[] {
   return [...new Set(problems.map((p) => TEXT[p.code]))];

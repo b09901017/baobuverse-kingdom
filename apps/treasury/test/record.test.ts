@@ -1,7 +1,8 @@
 // 記一筆與流水頁的純函式（issue 05）。不用模擬器。資料都是假的。
 
-import { openBook, validateEvent, type Account, type AccountId, type Catalog, type EntryId, type Event, type EventId, type ItemId, type JarId, type PersonId, type Tag, type TagId } from "@baobu/core";
+import { openBook, validateEvent, type Account, type AccountId, type Catalog, type EntryId, type Event, type EventId, type Expense, type ItemId, type JarId, type PersonId, type Tag, type TagId } from "@baobu/core";
 import { describe, expect, it } from "vitest";
+import { parseAmount, soleEntry, whenErrors } from "../src/event-form";
 import { flowDays } from "../src/flow";
 import { DAILY_JAR } from "../src/presets";
 import {
@@ -12,10 +13,8 @@ import {
   checkRecordForm,
   defaultForm,
   formOf,
-  isRefunded,
   jarOptions,
   lastAccount,
-  parseAmount,
   rankTags,
   recordChanges,
   tagFromName,
@@ -98,6 +97,19 @@ describe("金額", () => {
   it("整數、千分位可以", () => {
     expect(parseAmount(" 120 ")).toEqual({ ok: true, value: 120 });
     expect(parseAmount("1,001")).toEqual({ ok: true, value: 1_001 });
+  });
+  it("日期、時間：四個表單共用的檢查", () => {
+    expect(whenErrors({ date: "2026-10-20", time: "" })).toEqual([]);
+    expect(whenErrors({ date: "2026-10-20", time: "12:00" })).toEqual([]);
+    expect(whenErrors({ date: "", time: "12:00" })).toEqual(["要填日期"]);
+    expect(whenErrors({ date: "2026-10-20", time: "12" })).toEqual(["時間的格式不對"]);
+  });
+  it("一則一筆、而且種類對得上才拿得到那一筆", () => {
+    const paid = buildExpense(form(), ctx);
+    expect(soleEntry(paid, "expense")).toBe(paid.effects[0]);
+    expect(soleEntry(paid, "income")).toBeUndefined();
+    const m = paid.effects[0] as Expense;
+    expect(soleEntry({ ...paid, effects: [m, m] }, "expense")).toBeUndefined();
   });
   it("表單：只有金額是必填的；清掉日期、時間格式錯才擋", () => {
     expect(checkRecordForm(form())).toEqual([]);
@@ -184,6 +196,19 @@ describe("標籤", () => {
   it("收入、整筆的、品項的都算用過；同一則不重複算", () => {
     const income = buildIncome(form({ kind: "income", tags: ["丙" as TagId] }), ctx);
     expect(ids(rankTags(tags, [income], order))[0]).toBe("丙");
+
+    const paid = buildExpense(form(), ctx);
+    const m = paid.effects[0] as Expense;
+    const withTags = (id: string, entry: readonly string[], item: readonly string[]): Event => ({
+      ...paid,
+      id: id as EventId,
+      effects: [{ ...m, tags: entry as TagId[], items: m.items.map((i) => ({ ...i, tags: item as TagId[] })) }],
+    });
+    expect(ids(rankTags(tags, [withTags("品項", [], ["丙"])], order))[0]).toBe("丙");
+    // 丙這一則整筆、品項都有（只算一次），乙用了兩則；重複算的話兩個都是 2 次，丙會因為排在前面而贏
+    const 丙在前 = ["丙", "乙", "甲"] as unknown as TagId[];
+    const events = [withTags("兩邊", ["丙"], ["丙"]), withTags("一", ["乙"], []), withTags("二", ["乙"], [])];
+    expect(ids(rankTags(tags, events, 丙在前))).toEqual(["乙", "丙", "甲"]);
   });
   it("封存的、併進別的不列；這一筆正在用的要列", () => {
     const list = [tag("甲"), tag("舊", { archived: true }), tag("併", { mergedInto: "甲" as TagId })];
@@ -430,10 +455,6 @@ describe("改一筆", () => {
     const all = [paid, refund];
     const codes = (f: Partial<RecordForm>) => validateEvent(edit(paid, f), catalog, all).map((p) => p.code);
 
-    it("查得到它有退款；沒退款的沒有", () => {
-      expect(isRefunded(paid.id, all)).toBe(true);
-      expect(isRefunded(paid.id, [paid])).toBe(false);
-    });
     it("改名稱、罐子、標籤、同一個人的帳戶可以", () => {
       expect(codes({ title: "新名稱", jar: 玩玩.id, tags: ["假吃吃" as TagId], account: 假錢包.id })).toEqual([]);
     });

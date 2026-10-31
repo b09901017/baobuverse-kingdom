@@ -1,7 +1,7 @@
 import type { Account, EventId } from "@baobu/core";
 import { useState, type FormEvent } from "react";
-import { KIND_LABEL, wallOrder } from "../accounts";
-import { DeleteArea, ErrorList, RecordHead, RecordTabs, WhenFields, storeEvent, type RecordTab } from "../components/RecordParts";
+import { accountLabel, wallOrder } from "../accounts";
+import { DeleteArea, ErrorList, RecordHead, RecordTabs, WhenFields, storeChanges, type RecordTab } from "../components/RecordParts";
 import { buildTransfer, checkTransferForm, defaultTransfer, sourceOptions, targetOptions, transferGroups, withSource, type TransferForm as Form } from "../transfer";
 import type { Screen } from "./Treasury";
 
@@ -22,7 +22,7 @@ export function TransferForm({ screen, initial, editing, onTab }: { screen: Scre
     setErrors(found);
     if (found.length > 0) return;
     const event = buildTransfer(form, { id: crypto.randomUUID() as EventId, me, now: Date.now(), ...(existing === undefined ? {} : { existing }) });
-    const problems = storeEvent(screen, event, editing === undefined ? "轉好了" : "改好了");
+    const problems = storeChanges(screen, { events: [event] }, editing === undefined ? "轉好了" : "改好了");
     setErrors(problems);
     if (problems.length > 0) return;
     // 萬一沒有上一頁可回（直接開這個網址）：新的一筆留下空的表單，才不會同一筆存兩次
@@ -83,7 +83,7 @@ function Groups({ groups }: { groups: readonly { readonly label: string; readonl
         <optgroup key={group.label} label={group.label}>
           {group.accounts.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.name}（{KIND_LABEL[a.kind]}）{a.archived ? "（封存了）" : ""}
+              {accountLabel(a)}
             </option>
           ))}
         </optgroup>

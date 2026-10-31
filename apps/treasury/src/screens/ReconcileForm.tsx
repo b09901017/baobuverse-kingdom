@@ -1,8 +1,8 @@
 import type { Account, AccountId, EventId } from "@baobu/core";
 import { useState, type FormEvent } from "react";
 import { balanceText } from "../accounts";
-import { DeleteArea, ErrorList, RecordHead, WhenFields, storeEvent } from "../components/RecordParts";
-import { buildReconciliation, checkReconcileForm, defaultReconcile, reconcilePreview, type ReconcileForm as Form } from "../reconcile";
+import { BackButton, DeleteArea, ErrorList, RecordHead, WhenFields, storeChanges } from "../components/RecordParts";
+import { buildReconciliation, canReconcile, checkReconcileForm, defaultReconcile, reconcilePreview, type ReconcileForm as Form } from "../reconcile";
 import type { Screen } from "./Treasury";
 
 /** 對帳（新的）：從帳戶詳情進來。投資帳戶不對帳；別人的帳戶沒有餘額，也不對帳 */
@@ -12,18 +12,13 @@ export function ReconcileScreen({ id, screen }: { id: AccountId; screen: Screen 
   if (account === undefined || !canReconcile(account, me)) {
     return (
       <>
-        <button type="button" className="plain back" onClick={back}>
-          ← 返回
-        </button>
+        <BackButton onBack={back} />
         <p>這個帳戶不能對帳。</p>
       </>
     );
   }
   return <ReconcileForm screen={screen} account={account} initial={defaultReconcile(id, new Date())} />;
 }
-
-/** 看得到餘額的（主人有我）、不是投資的帳戶才對帳 */
-export const canReconcile = (account: Account, me: Screen["me"]): boolean => account.owners.includes(me) && account.kind !== "investment";
 
 export function ReconcileForm({ screen, account, initial, editing }: { screen: Screen; account: Account; initial: Form; editing?: EventId }) {
   const { me, catalog, events, book, back } = screen;
@@ -41,7 +36,7 @@ export function ReconcileForm({ screen, account, initial, editing }: { screen: S
     setErrors(found);
     if (found.length > 0) return;
     const event = buildReconciliation(form, account, { id: crypto.randomUUID() as EventId, me, now: Date.now(), ...(existing === undefined ? {} : { existing }) });
-    const problems = storeEvent(screen, event, editing === undefined ? "對好了" : "改好了");
+    const problems = storeChanges(screen, { events: [event] }, editing === undefined ? "對好了" : "改好了");
     setErrors(problems);
     if (problems.length > 0) return;
     back();

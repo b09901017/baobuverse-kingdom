@@ -3,8 +3,11 @@
 import { openBook, type Account, type AccountId, type Catalog, type EntryId, type Event, type EventId, type Expense, type ItemId, type JarId, type PersonId } from "@baobu/core";
 import { describe, expect, it } from "vitest";
 import {
+  accountLabel,
+  accountName,
   balanceText,
   checkAccountForm,
+  checkAccountText,
   lastReconciled,
   moved,
   myAccounts,
@@ -80,6 +83,23 @@ const move = (n: string, from: Account, to: Account, amount: number, recordedBy 
   ...base(n),
   recordedBy,
   effects: [{ ...entry, kind: "transfer", from: from.id, to: to.id, amount }],
+});
+
+describe("帳戶的字", () => {
+  it("選單上的字：名字、種類；封存的標出來", () => {
+    expect(accountLabel(假銀行)).toBe("假銀行（銀行）");
+    expect(accountLabel({ ...假銀行, archived: true })).toBe("假銀行（銀行）（封存了）");
+  });
+  it("名字：參考資料裡沒有時也有字", () => {
+    expect(accountName(假銀行.id, catalog)).toBe("假銀行");
+    expect(accountName(id("沒有"), catalog)).toBe("查不到的帳戶");
+  });
+  it("改帳戶的檢查：名字、備註，跟新增同一套", () => {
+    expect(checkAccountText({ name: " 假 ", note: "" })).toEqual([]);
+    expect(checkAccountText({ name: " ", note: "" })).toEqual(["要取一個名字"]);
+    expect(checkAccountText({ name: "假".repeat(41), note: "" })).toEqual(["名字最多 40 字"]);
+    expect(checkAccountText({ name: "假", note: "假".repeat(201) })).toEqual(["備註最多 200 字"]);
+  });
 });
 
 describe("誰的帳戶", () => {
@@ -263,7 +283,6 @@ describe("新增帳戶", () => {
   });
   it("存進去的物件沒有 undefined（Firestore 不收）", () => {
     const changes = newAccountChanges(form({ balance: "1", note: "假備註" }), ctx);
-    expect(JSON.stringify(changes)).toBe(JSON.stringify(JSON.parse(JSON.stringify(changes))));
     const hasUndefined = (x: unknown): boolean =>
       x === undefined || (typeof x === "object" && x !== null && Object.values(x).some(hasUndefined));
     expect(hasUndefined(changes)).toBe(false);

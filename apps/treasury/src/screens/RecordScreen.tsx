@@ -1,12 +1,10 @@
 import { blockersOfDelete, type Event, type EventId, type Tag, type TagId } from "@baobu/core";
 import { useState, type FormEvent, type KeyboardEvent } from "react";
-import { KIND_LABEL, meFirst, wallOrder } from "../accounts";
+import { accountLabel, meFirst, wallOrder } from "../accounts";
 import { Choice } from "../components/Choice";
-import { DeleteArea, ErrorList, RecordHead, RecordTabs, WhenFields } from "../components/RecordParts";
-import { KINGDOM_ID, db } from "../firebase";
+import { BackButton, DeleteArea, ErrorList, RecordHead, RecordTabs, WhenFields, storeChanges } from "../components/RecordParts";
 import { dayLabel, money } from "../format";
-import { problemTexts } from "../problems";
-import { reconcileFormOf } from "../reconcile";
+import { canReconcile, reconcileFormOf } from "../reconcile";
 import {
   accountOptions,
   checkRecordForm,
@@ -24,9 +22,8 @@ import {
   type RecordForm,
 } from "../record";
 import { refundFormOf, refundTargetAt } from "../refund";
-import { save } from "../store";
 import { defaultTransfer, transferFormOf, type TransferForm as TransferValues } from "../transfer";
-import { ReconcileForm, canReconcile } from "./ReconcileForm";
+import { ReconcileForm } from "./ReconcileForm";
 import { RefundForm, RefundSection } from "./RefundForm";
 import { TransferForm } from "./TransferForm";
 import type { Screen } from "./Treasury";
@@ -64,15 +61,10 @@ export function RecordScreen({ screen }: { screen: Screen }) {
 export function EditRecordScreen({ id, screen }: { id: EventId; screen: Screen }) {
   const { me, catalog, events, back } = screen;
   const event = events.find((e) => e.id === id);
-  const leave = (
-    <button type="button" className="plain back" onClick={back}>
-      ← 返回
-    </button>
-  );
   if (event === undefined) {
     return (
       <>
-        {leave}
+        <BackButton onBack={back} />
         <p>找不到這一筆（可能已經刪掉了）。</p>
       </>
     );
@@ -81,7 +73,7 @@ export function EditRecordScreen({ id, screen }: { id: EventId; screen: Screen }
     const who = catalog.people.find((p) => p.id === event.recordedBy)?.name ?? event.recordedBy;
     return (
       <>
-        {leave}
+        <BackButton onBack={back} />
         <p>這筆是{who}記的，只有記的人能改。</p>
         <RefundSection event={event} screen={screen} />
       </>
@@ -91,7 +83,7 @@ export function EditRecordScreen({ id, screen }: { id: EventId; screen: Screen }
   if (form === null) {
     return (
       <>
-        {leave}
+        <BackButton onBack={back} />
         <p>這一則現在的表單改不了。</p>
       </>
     );
@@ -127,7 +119,7 @@ function editorOf(event: Event, screen: Screen) {
 }
 
 function Form({ screen, initial, editing, onTransfer }: { screen: Screen; initial: RecordForm; editing?: EventId; onTransfer?: (form: RecordForm) => void }) {
-  const { me, catalog, events, prefs, back, notify, fail } = screen;
+  const { me, catalog, events, prefs, back } = screen;
   const [form, setForm] = useState(initial);
   const [newTags, setNewTags] = useState<readonly Tag[]>([]);
   const [tagName, setTagName] = useState("");
@@ -180,14 +172,9 @@ function Form({ screen, initial, editing, onTransfer }: { screen: Screen; initia
       newTags,
       ...(existing === undefined ? {} : { existing }),
     });
-    const result = save(db, KINGDOM_ID, changes, { catalog, events });
-    if (!result.ok) {
-      setErrors(problemTexts(result.problems));
-      return;
-    }
-    // 不等網路：離線時也馬上看到，恢復網路後才同步
-    result.written.catch((err: Error) => fail(`這一筆沒有存到：${err.message}`));
-    notify(editing === undefined ? "記好了" : "改好了");
+    const problems = storeChanges(screen, changes, editing === undefined ? "記好了" : "改好了");
+    setErrors(problems);
+    if (problems.length > 0) return;
     // 萬一沒有上一頁可回（直接開這個網址）：新的一筆留下空的表單，才不會同一筆存兩次
     if (editing === undefined) setForm(defaultForm(form.kind, { me, catalog, events, now: now() }));
     back();
@@ -238,7 +225,7 @@ function Form({ screen, initial, editing, onTransfer }: { screen: Screen; initia
           <option value="">不知道</option>
           {accounts.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.name}（{KIND_LABEL[a.kind]}）{a.archived ? "（封存了）" : ""}
+              {accountLabel(a)}
             </option>
           ))}
         </select>

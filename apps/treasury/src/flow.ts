@@ -19,7 +19,7 @@ import {
   type Refund,
   type Transfer,
 } from "@baobu/core";
-import { accountsMoved, balanceText } from "./accounts";
+import { accountName, accountsMoved, balanceText } from "./accounts";
 import { dayLabel, money, signedMoney } from "./format";
 import { refundNote, refundTargetAt } from "./refund";
 
@@ -127,7 +127,6 @@ function rowOf(event: Event, m: MoneyEffect, ctx: Context): FlowRow | null {
 }
 
 const accountOf = (id: AccountId | undefined, catalog: Catalog): Account | undefined => catalog.accounts.find((a) => a.id === id);
-const nameOf = (id: AccountId | undefined, catalog: Catalog): string => accountOf(id, catalog)?.name ?? "看不到的帳戶";
 const personOf = (catalog: Catalog) => (id: PersonId) => catalog.people.find((p) => p.id === id)?.name ?? id;
 
 function withOptional<T extends object>(row: T, extra: { readonly account?: string | undefined; readonly who?: string | undefined; readonly refunded?: string | undefined }): T & { readonly account?: string; readonly who?: string; readonly refunded?: string } {
@@ -174,7 +173,7 @@ function transferRow(event: Event, m: Transfer, ctx: Context): FlowRow {
   const mine = from?.owners.includes(me) === true || to?.owners.includes(me) === true;
   return withOptional(
     { event: event.id, entry: m.id, kind: "transfer" as const, title: event.title ?? "轉帳", amount, amountText: account === undefined ? money(amount) : signedMoney(amount) },
-    { account: `${nameOf(m.from, catalog)} → ${nameOf(m.to, catalog)}`, who: !mine && owner !== undefined ? `${personOf(catalog)(owner)}自己轉` : undefined },
+    { account: `${accountName(m.from, catalog)} → ${accountName(m.to, catalog)}`, who: !mine && owner !== undefined ? `${personOf(catalog)(owner)}自己轉` : undefined },
   );
 }
 
@@ -183,7 +182,7 @@ function reconcileRow(event: Event, m: Reconciliation, ctx: Context): FlowRow {
   const account = accountOf(m.account, ctx.catalog);
   const actual = account === undefined ? `${money(m.actual)} 元` : balanceText(account, m.actual);
   const base = { event: event.id, entry: m.id };
-  const name = nameOf(m.account, ctx.catalog);
+  const name = accountName(m.account, ctx.catalog);
   if (ctx.openings.has(key(event.id, m.id))) return { ...base, kind: "opening", title: "初始餘額", amount: m.actual, amountText: actual, account: name };
   const diff = ctx.diffs.get(key(event.id, m.id)) ?? 0;
   return { ...base, kind: "reconcile", title: "對帳", amount: diff, amountText: diff === 0 ? "沒有差額" : `差 ${signedMoney(diff)}`, account: `${name} · 實際 ${actual}` };
@@ -198,7 +197,7 @@ function refundRow(event: Event, m: Refund, ctx: Context): FlowRow {
   const into = m.account ?? target?.expense.account;
   const row = withOptional(
     { event: event.id, entry: m.id, kind: "refund" as const, title: name === undefined ? "退款" : `退款：${name}`, amount: m.amount, amountText: signedMoney(m.amount) },
-    { account: into === undefined ? undefined : `退回 ${nameOf(into, catalog)}`, who: target === null ? undefined : whoPaid(target.expense, personOf(catalog), me) },
+    { account: into === undefined ? undefined : `退回 ${accountName(into, catalog)}`, who: target === null ? undefined : whoPaid(target.expense, personOf(catalog), me) },
   );
   return target === null ? row : { ...row, refundOf: { event: target.event.id, label: `${dayLabel(target.event.date)} ${originalTitle ?? "支出"}` } };
 }

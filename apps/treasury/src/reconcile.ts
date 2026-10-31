@@ -2,9 +2,12 @@
 // 差 0 也要存一則：「N 天沒對帳」才會歸零（accounts.ts 的 lastReconciled 看事件）。
 
 import { byTime, openBook, type Account, type AccountId, type Book, type Catalog, type EntryId, type Event, type EventId, type LocalDate, type LocalTime, type PersonId, type Reconciliation } from "@baobu/core";
-import { balanceText, parseActual, type Parsed } from "./accounts";
+import { accountName, balanceText, parseActual, parseWhole } from "./accounts";
+import { ENTRY_ID, eventBase, soleEntry, whenErrors, type BuildContext, type Parsed } from "./event-form";
 import { dateOf, signedMoney, timeOf } from "./format";
-import { eventBase, type BuildContext } from "./record";
+
+/** 看得到餘額的（主人有我）、不是投資的帳戶才對帳。封存的也可以：收掉的帳戶還有零頭時，要能對到 0 */
+export const canReconcile = (account: Account, me: PersonId): boolean => account.owners.includes(me) && account.kind !== "investment";
 
 export interface ReconcileForm {
   readonly account: AccountId;
@@ -24,7 +27,7 @@ export function defaultReconcile(account: AccountId, now: Date): ReconcileForm {
 /** 輸入的字 → 存的數字（信用卡欠的存成負數）。多繳時信用卡也不用寫負號，避免把「欠 3,000」打成 -3000 又勾到多繳 */
 export function actualOf(form: ReconcileForm, account: Account): Parsed<number> {
   if (!form.overpaid || account.kind !== "credit-card") return parseActual(form.actual, account.kind);
-  const n = parseActual(form.actual, "bank");
+  const n = parseWhole(form.actual);
   return n.ok && n.value < 0 ? { ok: false, error: "信用卡填欠多少，不用寫負號" } : n;
 }
 
@@ -36,8 +39,7 @@ export function checkReconcileForm(form: ReconcileForm, account: Account): reado
     const actual = actualOf(form, account);
     if (!actual.ok) errors.push(actual.error);
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) errors.push("要填日期");
-  if (form.time !== "" && !/^\d{2}:\d{2}$/.test(form.time)) errors.push("時間的格式不對");
+  errors.push(...whenErrors(form));
   return errors;
 }
 
@@ -60,16 +62,7 @@ export function reconcilePreview(
   account: Account,
   ctx: { readonly catalog: Catalog; readonly events: readonly Event[]; readonly recordedAt: number; readonly self?: EventId },
 ): ReconcilePreview {
-  const at: Event = {
-    id: ctx.self ?? ("" as EventId),
-    date: form.date,
-    ...(form.time === "" ? {} : { time: form.time }),
-    recordedBy: "" as PersonId,
-    recordedAt: ctx.recordedAt,
-    source: "manual",
-    status: "confirmed",
-    effects: [],
-  };
+  const at = { id: ctx.self ?? ("" as EventId), date: form.date, ...(form.time === "" ? {} : { time: form.time }), recordedAt: ctx.recordedAt };
   const before = ctx.events.filter((e) => e.id !== ctx.self && e.status === "confirmed" && byTime(e, at) < 0);
   const computed = openBook(ctx.catalog, before).total({ measure: "balance", where: { account: account.id } });
   const opening = !before.some((e) => e.effects.some((m) => m.kind === "reconciliation" && m.account === account.id));
@@ -90,20 +83,18 @@ function previewText(account: Account, opening: boolean, computed: number, diff:
 
 /** 這則事件打得開對帳的表單嗎：一則一筆對帳。信用卡顯示欠多少；正的是多繳 */
 export function reconcileFormOf(event: Event, account: Account): ReconcileForm | null {
-  const [m, ...rest] = event.effects;
-  if (m?.kind !== "reconciliation" || rest.length > 0) return null;
+  const m = soleEntry(event, "reconciliation");
+  if (m === undefined) return null;
   const credit = account.kind === "credit-card";
   const overpaid = credit && m.actual > 0;
   return { account: m.account, actual: String(credit && !overpaid ? Math.abs(m.actual) : m.actual), overpaid, date: event.date, time: event.time ?? "" };
 }
 
-const entryId = "m1" as EntryId;
-
 export function buildReconciliation(form: ReconcileForm, account: Account, ctx: BuildContext): Event {
   const actual = actualOf(form, account);
   if (!actual.ok) throw new Error(actual.error); // 畫面存之前先 checkReconcileForm
-  const was = ctx.existing?.effects[0]?.kind === "reconciliation" ? ctx.existing.effects[0] : undefined;
-  const entry = was ?? { type: "money" as const, id: entryId, kind: "reconciliation" as const };
+  const was = ctx.existing && soleEntry(ctx.existing, "reconciliation");
+  const entry = was ?? { type: "money" as const, id: ENTRY_ID, kind: "reconciliation" as const };
   const reconciliation: Reconciliation = { ...entry, account: form.account, actual: actual.value };
   return { ...eventBase({ ...form, title: ctx.existing?.title ?? "對帳" }, ctx), effects: [reconciliation] };
 }
@@ -126,7 +117,7 @@ export function diffRows(book: Book, catalog: Catalog, me: PersonId): { readonly
       event: line.event,
       entry: line.entry,
       date: line.date,
-      account: catalog.accounts.find((a) => a.id === line.account)?.name ?? "看不到的帳戶",
+      account: accountName(line.account, catalog),
       amount: line.amount,
     })),
   };

@@ -121,7 +121,7 @@ describe("presetChanges：事件", () => {
   const 對帳 = (events: readonly Event[]) => events.filter((e) => e.effects.some((m) => m.kind === "reconciliation"));
   const 轉帳 = (events: readonly Event[]) => events.filter((e) => e.effects.some((m) => m.kind === "transfer"));
 
-  it("每一筆投入一則、每個有餘額的帳戶一則（改或刪一則不會動到別的帳戶）；一次動作一則事件", () => {
+  it("每一筆投入一則、每個有餘額的帳戶一則（改或刪一則不會動到別的帳戶）；每一則只有一筆", () => {
     const { events } = 套用();
     expect(轉帳(events)).toHaveLength(2);
     expect(對帳(events)).toHaveLength(3);

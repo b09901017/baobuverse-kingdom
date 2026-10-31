@@ -239,19 +239,19 @@ describe("自己的排序與帳戶備註（同一份文件）", () => {
     await saveAccountOrder(db, K, 步, [錢包, 郵局]);
     expect(await onServer(我的)).toEqual({ accounts: [錢包, 郵局], accountNotes: { post: "假備註甲" } });
 
-    await saveAccountNote(db, K, 步, 錢包, "日常");
-    expect(await onServer(我的)).toEqual({ accounts: [錢包, 郵局], accountNotes: { post: "假備註甲", cash: "日常" } });
+    await saveAccountNote(db, K, 步, 錢包, "假備註乙");
+    expect(await onServer(我的)).toEqual({ accounts: [錢包, 郵局], accountNotes: { post: "假備註甲", cash: "假備註乙" } });
 
     await saveAccountOrder(db, K, 步, [郵局, 錢包]);
-    expect(await onServer(我的)).toEqual({ accounts: [郵局, 錢包], accountNotes: { post: "假備註甲", cash: "日常" } });
+    expect(await onServer(我的)).toEqual({ accounts: [郵局, 錢包], accountNotes: { post: "假備註甲", cash: "假備註乙" } });
   });
 
   it("備註改成空的就拿掉那一格，別的備註留著", async () => {
     const db = 步的();
     await saveAccountNote(db, K, 步, 郵局, "假備註甲");
-    await saveAccountNote(db, K, 步, 錢包, "日常");
+    await saveAccountNote(db, K, 步, 錢包, "假備註乙");
     await saveAccountNote(db, K, 步, 郵局, "");
-    expect(await onServer(我的)).toEqual({ accountNotes: { cash: "日常" } });
+    expect(await onServer(我的)).toEqual({ accountNotes: { cash: "假備註乙" } });
   });
 
   it("watchPrefs：還沒存過是空的，存了就收到", async () => {

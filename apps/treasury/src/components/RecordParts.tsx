@@ -1,12 +1,20 @@
 // 記一筆、轉帳、對帳、退款的表單共用的幾塊。
 
-import type { Event, EventId } from "@baobu/core";
+import type { EventId } from "@baobu/core";
 import { useState } from "react";
 import { KINGDOM_ID, db } from "../firebase";
 import { problemTexts } from "../problems";
 import { deleteEvent, save, type Changes } from "../store";
 import type { Screen } from "../screens/Treasury";
 import { Choice } from "./Choice";
+
+export function BackButton({ onBack }: { onBack: () => void }) {
+  return (
+    <button type="button" className="plain back" onClick={onBack}>
+      ← 返回
+    </button>
+  );
+}
 
 export function RecordHead({ title, editing, onBack }: { title: string; editing: boolean; onBack: () => void }) {
   return (
@@ -103,10 +111,10 @@ export function DeleteArea({ id, what, screen, onError }: { id: EventId; what: s
   );
 }
 
-/** 存一則事件：core 擋下來就回傳白話，存得進去就不等網路（離線時也馬上看到，恢復網路後才同步） */
-export function storeEvent(screen: Screen, event: Event, message: string, extra: Changes = {}): readonly string[] {
+/** 存一筆：core 擋下來就回傳白話，存得進去就不等網路（離線時也馬上看到，恢復網路後才同步） */
+export function storeChanges(screen: Screen, changes: Changes, message: string): readonly string[] {
   const { catalog, events, notify, fail } = screen;
-  const result = save(db, KINGDOM_ID, { ...extra, events: [event] }, { catalog, events });
+  const result = save(db, KINGDOM_ID, changes, { catalog, events });
   if (!result.ok) return problemTexts(result.problems);
   result.written.catch((err: Error) => fail(`沒有存到：${err.message}`));
   notify(message);

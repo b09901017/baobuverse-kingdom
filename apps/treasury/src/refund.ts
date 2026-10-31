@@ -1,9 +1,9 @@
 // 退款的邏輯（stage-1 issue 06）：商家退回的錢，沖回原本那一項，不算收入（GLOSSARY）。純函式，畫面在 screens/RefundForm.tsx。
 // 存成一則新事件、在原本那筆上看得到註記（plan.md）。約束在 core 的 validateEvent；這裡先把話講清楚，core 是最後一道。
 
-import { blockersOfDelete, byTime, refundsOf, type Account, type AccountId, type EntryId, type Event, type EventId, type Expense, type Item, type ItemRef, type LocalDate, type LocalTime, type Refund } from "@baobu/core";
+import { blockersOfDelete, byTime, refundsOf, type Account, type AccountId, type Event, type EventId, type Expense, type Item, type ItemRef, type LocalDate, type LocalTime, type Refund } from "@baobu/core";
+import { ENTRY_ID, checkedAmount, eventBase, isDate, parseAmount, soleEntry, whenErrors, type BuildContext } from "./event-form";
 import { dateOf, dayLabel, money, timeOf } from "./format";
-import { eventBase, parseAmount, type BuildContext } from "./record";
 
 /** 要退的那一項 */
 export interface RefundTarget {
@@ -32,8 +32,8 @@ function targetIn(event: Event, expense: Expense, item: Item): RefundTarget | nu
 
 /** 這則事件的「退款」要退哪一項：階段 1 沒有拆品項的畫面，一則一筆一項才有；直接給錢的不能退（core 也擋） */
 export function refundTargetOf(event: Event): RefundTarget | null {
-  const [m, ...rest] = event.effects;
-  if (m?.kind !== "expense" || rest.length > 0 || m.items.length !== 1) return null;
+  const m = soleEntry(event, "expense");
+  if (m === undefined || m.items.length !== 1) return null;
   const [item] = m.items;
   return item === undefined ? null : targetIn(event, m, item);
 }
@@ -81,10 +81,8 @@ export function checkRefundForm(form: RefundForm, target: RefundTarget, events: 
     const done = target.item.amount - left;
     errors.push(`最多只能退 ${money(left)} 元${done > 0 ? `（已經退了 ${money(done)} 元）` : ""}`);
   }
-  const dated = /^\d{4}-\d{2}-\d{2}$/.test(form.date);
-  if (!dated) errors.push("要填日期");
-  if (form.time !== "" && !/^\d{2}:\d{2}$/.test(form.time)) errors.push("時間的格式不對");
-  if (dated) {
+  errors.push(...whenErrors(form));
+  if (isDate(form.date)) {
     const order = orderProblem(form, target.event, ctx.recordedAt);
     if (order !== undefined) errors.push(order);
   }
@@ -93,8 +91,7 @@ export function checkRefundForm(form: RefundForm, target: RefundTarget, events: 
 
 /** 退款要排在原本那筆之後（帳本照這個先後算，排在前面就找不到原本那一項）。先後跟帳本同一個 byTime */
 function orderProblem(form: RefundForm, original: Event, recordedAt: number): string | undefined {
-  const { time: _time, ...rest } = original;
-  const refundAt: Event = { ...rest, date: form.date, recordedAt, ...(form.time === "" ? {} : { time: form.time }), effects: [] };
+  const refundAt = { id: original.id, date: form.date, recordedAt, ...(form.time === "" ? {} : { time: form.time }) };
   if (byTime(original, refundAt) < 0) return undefined;
   if (form.time === "" && form.date === original.date && original.time !== undefined) return `同一天的退款要寫時間，而且要比原本那筆（${original.time}）晚`;
   return `退款要排在原本那筆（${dayLabel(original.date)}${original.time === undefined ? "" : ` ${original.time}`}）之後`;
@@ -102,21 +99,18 @@ function orderProblem(form: RefundForm, original: Event, recordedAt: number): st
 
 /** 這則事件打得開退款的表單嗎：一則一筆退款。沒寫帳戶：就是原本那筆的帳戶 */
 export function refundFormOf(event: Event, target?: RefundTarget | null): RefundForm | null {
-  const [m, ...rest] = event.effects;
-  if (m?.kind !== "refund" || rest.length > 0) return null;
+  const m = soleEntry(event, "refund");
+  if (m === undefined) return null;
   return { amount: String(m.amount), account: m.account ?? target?.expense.account ?? "", date: event.date, time: event.time ?? "" };
 }
 
-const entryId = "m1" as EntryId;
-
 export function buildRefund(form: RefundForm, target: RefundTarget, ctx: BuildContext): Event {
-  const amount = parseAmount(form.amount);
-  if (!amount.ok) throw new Error(amount.error); // 畫面存之前先 checkRefundForm
-  const was = ctx.existing?.effects[0]?.kind === "refund" ? ctx.existing.effects[0] : undefined;
-  const { account: _account, ...entry } = was ?? { type: "money" as const, id: entryId, kind: "refund" as const, target: target.ref };
+  const amount = checkedAmount(form.amount);
+  const was = ctx.existing && soleEntry(ctx.existing, "refund");
+  const { account: _account, ...entry } = was ?? { type: "money" as const, id: ENTRY_ID, kind: "refund" as const, target: target.ref };
   // 退回原本那個帳戶就不寫：原本那筆之後改帳戶時，退款跟著走，兩個帳戶的餘額才對
   const elsewhere = form.account !== "" && form.account !== target.expense.account;
-  const refund: Refund = { ...entry, amount: amount.value, ...(elsewhere ? { account: form.account } : {}) };
+  const refund: Refund = { ...entry, amount, ...(elsewhere ? { account: form.account } : {}) };
   const title = ctx.existing === undefined ? target.title : ctx.existing.title;
   return { ...eventBase({ ...form, title: title ?? "" }, ctx), effects: [refund] };
 }

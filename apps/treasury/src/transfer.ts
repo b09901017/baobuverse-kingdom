@@ -1,10 +1,11 @@
 // 轉帳的邏輯（stage-1 issue 06）：選單、預設值、表單 → 事件。純函式，畫面在 screens/TransferForm.tsx。
 // 轉帳不是支出：錢在同一個人（或共有）的帳戶之間搬動，淨資產不變（README）。
 
-import type { Account, AccountId, Catalog, EntryId, Event, LocalDate, LocalTime, Person, PersonId, Transfer } from "@baobu/core";
+import type { Account, AccountId, Event, LocalDate, LocalTime, Person, PersonId, Transfer } from "@baobu/core";
+import { ENTRY_ID, checkedAmount, eventBase, parseAmount, soleEntry, whenErrors, type BuildContext, type FormContext } from "./event-form";
 import { dateOf, timeOf } from "./format";
 import { isPresetEvent } from "./presets";
-import { eventBase, newestFirst, parseAmount, type BuildContext } from "./record";
+import { newestFirst } from "./record";
 
 export interface TransferForm {
   readonly amount: string;
@@ -49,7 +50,7 @@ export function withSource(form: TransferForm, from: AccountId | "", accounts: r
 }
 
 /** 新的一筆：兩邊跟我上一次轉帳一樣（plan.md：帳戶預設上次用的）；第一次來源是自己的現金帳戶、目的自己選。套用預設寫的投入不算「上一次」 */
-export function defaultTransfer(ctx: { readonly me: PersonId; readonly catalog: Catalog; readonly events: readonly Event[]; readonly now: Date }): TransferForm {
+export function defaultTransfer(ctx: FormContext): TransferForm {
   const { me, catalog, events, now } = ctx;
   const accounts = catalog.accounts;
   const last = newestFirst(events)
@@ -72,27 +73,23 @@ export function checkTransferForm(form: TransferForm): readonly string[] {
   if (form.from === "") errors.push("要選從哪個帳戶");
   if (form.to === "") errors.push("要選轉到哪個帳戶");
   if (form.from !== "" && form.from === form.to) errors.push("轉帳兩邊是同一個帳戶");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) errors.push("要填日期");
-  if (form.time !== "" && !/^\d{2}:\d{2}$/.test(form.time)) errors.push("時間的格式不對");
+  errors.push(...whenErrors(form));
   if (form.title.length > 200) errors.push("名稱最多 200 字");
   return errors;
 }
 
 /** 這則事件打得開轉帳的表單嗎：一則一筆轉帳；換匯（兩邊金額不同）表達不了，不要假裝改得了 */
 export function transferFormOf(event: Event): TransferForm | null {
-  const [m, ...rest] = event.effects;
-  if (m?.kind !== "transfer" || rest.length > 0 || m.amountIn !== undefined) return null;
+  const m = soleEntry(event, "transfer");
+  if (m === undefined || m.amountIn !== undefined) return null;
   return { amount: String(m.amount), title: event.title ?? "", from: m.from, to: m.to, date: event.date, time: event.time ?? "" };
 }
 
-const entryId = "m1" as EntryId;
-
 export function buildTransfer(form: TransferForm, ctx: BuildContext): Event {
-  const amount = parseAmount(form.amount);
-  if (!amount.ok) throw new Error(amount.error); // 畫面存之前先 checkTransferForm
-  if (form.from === "" || form.to === "") throw new Error("要選帳戶");
-  const was = ctx.existing?.effects[0]?.kind === "transfer" ? ctx.existing.effects[0] : undefined;
-  const entry = was ?? { type: "money" as const, id: entryId, kind: "transfer" as const };
-  const transfer: Transfer = { ...entry, from: form.from, to: form.to, amount: amount.value };
+  const amount = checkedAmount(form.amount);
+  if (form.from === "" || form.to === "") throw new Error("要選帳戶"); // 畫面存之前先 checkTransferForm
+  const was = ctx.existing && soleEntry(ctx.existing, "transfer");
+  const entry = was ?? { type: "money" as const, id: ENTRY_ID, kind: "transfer" as const };
+  const transfer: Transfer = { ...entry, from: form.from, to: form.to, amount };
   return { ...eventBase(form, ctx), effects: [transfer] };
 }

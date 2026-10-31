@@ -8,6 +8,7 @@ import { DAILY_JAR } from "../src/presets";
 import {
   actualOf,
   buildReconciliation,
+  canReconcile,
   checkReconcileForm,
   defaultReconcile,
   diffRows,
@@ -255,6 +256,16 @@ const reconcile = (a: Account, actual: string, date: string, id: string, f: Part
   buildReconciliation({ account: a.id, actual, overpaid: false, date, time: "12:00", ...f }, a, { id: id as EventId, me: 步, now: 1_000 });
 const preview = (a: Account, actual: string, events: readonly Event[], f: Partial<ReconcileForm> = {}, self?: EventId) =>
   reconcilePreview({ account: a.id, actual, overpaid: false, date: "2026-10-31", time: "12:00", ...f }, a, { catalog, events, recordedAt: 5_000, ...(self === undefined ? {} : { self }) });
+
+describe("對帳 · 誰能對", () => {
+  it("主人有我、不是投資才有對帳；封存的可以（收掉的帳戶要能對到 0）", () => {
+    expect(canReconcile(假銀行, 步)).toBe(true);
+    expect(canReconcile(舊銀行, 步)).toBe(true);
+    expect(canReconcile(假投資, 步)).toBe(false);
+    expect(canReconcile(共有投資, 步)).toBe(false);
+    expect(canReconcile(寶的銀行, 步)).toBe(false);
+  });
+});
 
 describe("對帳 · 帳本", () => {
   const first = reconcile(假銀行, "1000", "2026-10-01", "第一次");

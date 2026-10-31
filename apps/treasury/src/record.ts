@@ -1,15 +1,12 @@
 // 記一筆的邏輯（stage-1 issue 05）：表單的值 → 事件、預設值、帳戶／罐子／標籤的選單。都是純函式，畫面在 screens/RecordScreen.tsx。
 // 階段 1 沒有拆品項的畫面：一筆一項，事件的 title 和品項的 name 一樣。
 
-import { blockersOfDelete } from "@baobu/core";
 import type {
   Account,
   AccountId,
   Beneficiary,
   Catalog,
-  EntryId,
   Event,
-  EventId,
   Expense,
   Income,
   ItemId,
@@ -21,7 +18,7 @@ import type {
   Tag,
   TagId,
 } from "@baobu/core";
-import type { Parsed } from "./accounts";
+import { ENTRY_ID, checkedAmount, eventBase, parseAmount, soleEntry, whenErrors, type BuildContext, type FormContext, type Parsed } from "./event-form";
 import { dateOf, timeOf } from "./format";
 import { DAILY_JAR } from "./presets";
 import type { Changes } from "./store";
@@ -48,26 +45,12 @@ export interface RecordForm {
   readonly time: LocalTime | "";
 }
 
-/** 金額：大於 0 的整數。逗號可以打（1,000），其他都擋下來、講清楚 */
-export function parseAmount(text: string): Parsed<number> {
-  const clean = text.replaceAll(",", "").trim();
-  if (clean === "") return { ok: false, error: "要填金額" };
-  if (/^[-−－]/.test(clean)) return { ok: false, error: "金額不能是負的" };
-  if (/^\d*\.\d*$/.test(clean)) return { ok: false, error: "金額要是整數，不能有小數" };
-  if (!/^\d+$/.test(clean)) return { ok: false, error: "金額只能是數字" };
-  const n = Number(clean);
-  if (n === 0) return { ok: false, error: "金額要大於 0" };
-  if (!Number.isSafeInteger(n)) return { ok: false, error: "金額太大了" };
-  return { ok: true, value: n };
-}
-
 /** 表單有什麼問題；空的就可以存。必填的只有金額（日期有預設，清空了才會擋） */
 export function checkRecordForm(form: RecordForm): readonly string[] {
   const errors: string[] = [];
   const amount = parseAmount(form.amount);
   if (!amount.ok) errors.push(amount.error);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) errors.push("要填日期");
-  if (form.time !== "" && !/^\d{2}:\d{2}$/.test(form.time)) errors.push("時間的格式不對");
+  errors.push(...whenErrors(form));
   if (form.title.length > 200) errors.push("名稱最多 200 字");
   return errors;
 }
@@ -172,7 +155,7 @@ const helpedOf = (b: Beneficiary): Helped => (b.kind === "person" ? b.person : "
  * 新的一筆的預設。誰出、幫誰跟我上一筆支出一樣（刪掉的不算，因為 events 裡已經沒有）；帳戶是那個人上次用的；
  * 時間是現在；沒選罐子算日常。收入：誰收預設自己。
  */
-export function defaultForm(kind: RecordKind, ctx: { readonly me: PersonId; readonly catalog: Catalog; readonly events: readonly Event[]; readonly now: Date }): RecordForm {
+export function defaultForm(kind: RecordKind, ctx: FormContext): RecordForm {
   const { me, catalog, events, now } = ctx;
   let person = me;
   let helped: Helped = me;
@@ -211,7 +194,7 @@ export function withHelped(form: RecordForm, helped: Helped, catalog: Catalog): 
 }
 
 /** 切換支出、收入：帳戶清單不同（收入沒有寶媽卡），誰收預設自己，帳戶重帶。金額、名稱、標籤、時間留著 */
-export function withKind(form: RecordForm, kind: RecordKind, ctx: { readonly me: PersonId; readonly catalog: Catalog; readonly events: readonly Event[]; readonly now: Date }): RecordForm {
+export function withKind(form: RecordForm, kind: RecordKind, ctx: FormContext): RecordForm {
   if (kind === form.kind) return form;
   const fresh = defaultForm(kind, ctx);
   return { ...fresh, amount: form.amount, title: form.title, tags: form.tags, date: form.date, time: form.time };
@@ -221,17 +204,18 @@ export function withKind(form: RecordForm, kind: RecordKind, ctx: { readonly me:
 
 /** 這則事件打得開表單嗎：一則一筆、一筆一項、品項沒有自己的幫誰（階段 1 的表單表達不了的，不要假裝改得了） */
 export function formOf(event: Event): RecordForm | null {
-  const [m, ...rest] = event.effects;
-  if (m === undefined || rest.length > 0) return null;
-  const shared = { title: event.title ?? "", date: event.date, time: event.time ?? ("" as const), amount: String(m.kind === "reconciliation" ? 0 : m.amount) };
-  if (m.kind === "income") {
-    return { ...shared, kind: "income", person: m.person, account: m.account ?? "", helped: m.person, jar: DAILY_JAR, tags: m.tags };
+  const shared = { date: event.date, time: event.time ?? ("" as const) };
+  const income = soleEntry(event, "income");
+  if (income !== undefined) {
+    return { ...shared, title: event.title ?? "", amount: String(income.amount), kind: "income", person: income.person, account: income.account ?? "", helped: income.person, jar: DAILY_JAR, tags: income.tags };
   }
-  if (m.kind !== "expense" || m.items.length !== 1) return null;
+  const m = soleEntry(event, "expense");
+  if (m === undefined || m.items.length !== 1) return null;
   const [item] = m.items;
   if (item === undefined || item.beneficiary !== undefined) return null;
   return {
     ...shared,
+    amount: String(m.amount),
     title: event.title ?? item.name ?? "",
     kind: "expense",
     person: m.payer,
@@ -242,52 +226,16 @@ export function formOf(event: Event): RecordForm | null {
   };
 }
 
-/** 這筆有沒有退款：有的話誰出、幫誰鎖住（issue 02），也不能刪 */
-export function isRefunded(id: EventId, events: readonly Event[]): boolean {
-  return blockersOfDelete(id, events).length > 0;
-}
-
 // ── 表單 → 事件 ───────────────────────────────────────────
 
-export interface BuildContext {
-  /** 新的一筆用；改一筆時用 existing 的 */
-  readonly id: EventId;
-  readonly me: PersonId;
-  readonly now: number;
-  /** 改一筆時：原本那則。id、recordedBy、recordedAt（規則不讓改）、一筆與品項的 ID（退款指著它們）、表單沒有的欄位都留著 */
-  readonly existing?: Event;
-}
-
-function amountOf(form: RecordForm): number {
-  const amount = parseAmount(form.amount);
-  if (!amount.ok) throw new Error(amount.error); // 畫面存之前先 checkRecordForm
-  return amount.value;
-}
-
-/** 事件的共同部分。名稱、時間空了要把欄位拿掉，不能留舊的。轉帳、對帳、退款的表單也用這個 */
-export function eventBase(form: Pick<RecordForm, "title" | "date" | "time">, ctx: BuildContext): Omit<Event, "effects"> {
-  const { effects: _effects, title: _title, time: _time, ...kept } = ctx.existing ?? {
-    id: ctx.id,
-    date: form.date,
-    recordedBy: ctx.me,
-    recordedAt: ctx.now,
-    source: "manual" as const,
-    status: "confirmed" as const,
-    effects: [],
-  };
-  const title = form.title.trim();
-  return { ...kept, date: form.date, ...(form.time === "" ? {} : { time: form.time }), ...(title === "" ? {} : { title }) };
-}
-
-const entryId = "m1" as EntryId;
 const itemId = "i1" as ItemId;
 
 export function buildExpense(form: RecordForm, ctx: BuildContext): Event {
-  const amount = amountOf(form);
+  const amount = checkedAmount(form.amount);
   const title = form.title.trim();
-  const was = ctx.existing?.effects[0]?.kind === "expense" ? ctx.existing.effects[0] : undefined;
+  const was = ctx.existing && soleEntry(ctx.existing, "expense");
   const wasItem = was?.items[0];
-  const { account: _account, ...entry } = was ?? { type: "money" as const, id: entryId, kind: "expense" as const };
+  const { account: _account, ...entry } = was ?? { type: "money" as const, id: ENTRY_ID, kind: "expense" as const };
   const { name: _name, ...item } = wasItem ?? { id: itemId };
   // 幫誰沒換就留原本的（裡面可能有進階的比例）
   const beneficiary: Beneficiary =
@@ -309,13 +257,13 @@ export function buildExpense(form: RecordForm, ctx: BuildContext): Event {
 }
 
 export function buildIncome(form: RecordForm, ctx: BuildContext): Event {
-  const was = ctx.existing?.effects[0]?.kind === "income" ? ctx.existing.effects[0] : undefined;
-  const { account: _account, ...entry } = was ?? { type: "money" as const, id: entryId, kind: "income" as const };
+  const was = ctx.existing && soleEntry(ctx.existing, "income");
+  const { account: _account, ...entry } = was ?? { type: "money" as const, id: ENTRY_ID, kind: "income" as const };
   const income: Income = {
     ...entry,
     person: form.person,
     ...(form.account === "" ? {} : { account: form.account }),
-    amount: amountOf(form),
+    amount: checkedAmount(form.amount),
     tags: form.tags,
   };
   return { ...eventBase(form, ctx), effects: [income] };

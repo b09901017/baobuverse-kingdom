@@ -1,7 +1,7 @@
 import { refundsOf, type Event, type EventId } from "@baobu/core";
 import { useState, type FormEvent } from "react";
-import { KIND_LABEL } from "../accounts";
-import { DeleteArea, ErrorList, RecordHead, WhenFields, storeEvent } from "../components/RecordParts";
+import { accountLabel } from "../accounts";
+import { BackButton, DeleteArea, ErrorList, RecordHead, WhenFields, storeChanges } from "../components/RecordParts";
 import { dayLabel, money } from "../format";
 import { buildRefund, checkRefundForm, defaultRefund, refundAccountOptions, refundTargetOf, refundable, type RefundForm as Form, type RefundTarget } from "../refund";
 import { routeHash } from "../route";
@@ -16,9 +16,7 @@ export function RefundScreen({ id, screen }: { id: EventId; screen: Screen }) {
   if (target === null || left <= 0) {
     return (
       <>
-        <button type="button" className="plain back" onClick={back}>
-          ← 返回
-        </button>
+        <BackButton onBack={back} />
         <p>{target === null ? "這一則不能退款。" : "這筆已經全部退完了。"}</p>
       </>
     );
@@ -41,7 +39,7 @@ export function RefundForm({ screen, target, initial, editing }: { screen: Scree
     setErrors(found);
     if (found.length > 0) return;
     const event = buildRefund(form, target, { id: crypto.randomUUID() as EventId, me, now: Date.now(), ...(existing === undefined ? {} : { existing }) });
-    const problems = storeEvent(screen, event, editing === undefined ? "退好了" : "改好了");
+    const problems = storeChanges(screen, { events: [event] }, editing === undefined ? "退好了" : "改好了");
     setErrors(problems);
     if (problems.length > 0) return;
     back();
@@ -71,7 +69,7 @@ export function RefundForm({ screen, target, initial, editing }: { screen: Scree
           {target.expense.account === undefined && <option value="">不知道（不動任何帳戶）</option>}
           {accounts.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.name}（{KIND_LABEL[a.kind]}）{a.archived ? "（封存了）" : ""}
+              {accountLabel(a)}
             </option>
           ))}
         </select>

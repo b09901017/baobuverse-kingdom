@@ -7,6 +7,7 @@ import {
   canFillBalance,
   canWriteNote,
   checkAccountForm,
+  checkAccountText,
   newAccountChanges,
   ownerChoices,
   reconcileNote,
@@ -15,12 +16,13 @@ import {
   type OwnerChoice,
 } from "../accounts";
 import { Choice } from "../components/Choice";
+import { BackButton, ErrorList } from "../components/RecordParts";
 import { KINGDOM_ID, db } from "../firebase";
 import { dateOf, money } from "../format";
 import { problemTexts } from "../problems";
+import { canReconcile } from "../reconcile";
 import { routeHash } from "../route";
 import { save, saveAccountNote } from "../store";
-import { canReconcile } from "./ReconcileForm";
 import type { Screen } from "./Treasury";
 
 /** 帳戶詳情：改名、備註、封存。別人的帳戶（步幫寶建的）沒有餘額、沒有備註 */
@@ -34,7 +36,7 @@ export function AccountScreen({ id, screen }: { id: AccountId; screen: Screen })
   if (account === undefined) {
     return (
       <>
-        <BackLink onBack={back} />
+        <BackButton onBack={back} />
         <p>找不到這個帳戶</p>
       </>
     );
@@ -58,11 +60,7 @@ export function AccountScreen({ id, screen }: { id: AccountId; screen: Screen })
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
-    const found = [
-      ...(trimmed === "" ? ["要取一個名字"] : []),
-      ...(trimmed.length > 40 ? ["名字最多 40 字"] : []),
-      ...(note.length > 200 ? ["備註最多 200 字"] : []),
-    ];
+    const found = checkAccountText({ name, note });
     setErrors(found);
     if (found.length > 0) return;
     if (trimmed !== account.name && !store({ ...account, name: trimmed })) return;
@@ -84,7 +82,7 @@ export function AccountScreen({ id, screen }: { id: AccountId; screen: Screen })
 
   return (
     <>
-      <BackLink onBack={back} />
+      <BackButton onBack={back} />
       <h2>{account.name}</h2>
       {mine && (
         <section className="detail-balance">
@@ -128,7 +126,7 @@ export function AccountScreen({ id, screen }: { id: AccountId; screen: Screen })
             <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="例如這個拿來存款" />
           </label>
         )}
-        <Errors errors={errors} />
+        <ErrorList errors={errors} />
         <button type="submit" className="primary">
           存
         </button>
@@ -190,7 +188,7 @@ export function NewAccountScreen({ owner, screen }: { owner: PersonId | undefine
 
   return (
     <>
-      <BackLink onBack={back} />
+      <BackButton onBack={back} />
       <h2>新增帳戶</h2>
       <form onSubmit={submit} className="form">
         <label>
@@ -218,30 +216,11 @@ export function NewAccountScreen({ owner, screen }: { owner: PersonId | undefine
           </label>
         )}
         <p className="muted hint">種類和主人建了就不能改。</p>
-        <Errors errors={errors} />
+        <ErrorList errors={errors} />
         <button type="submit" className="primary">
           建立
         </button>
       </form>
     </>
-  );
-}
-
-function BackLink({ onBack }: { onBack: () => void }) {
-  return (
-    <button type="button" className="plain back" onClick={onBack}>
-      ← 返回
-    </button>
-  );
-}
-
-function Errors({ errors }: { errors: readonly string[] }) {
-  if (errors.length === 0) return null;
-  return (
-    <ul className="errors" role="alert">
-      {errors.map((e) => (
-        <li key={e}>{e}</li>
-      ))}
-    </ul>
   );
 }

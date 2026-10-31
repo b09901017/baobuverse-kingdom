@@ -6,7 +6,6 @@ import type {
   AccountKind,
   Book,
   Catalog,
-  EntryId,
   Event,
   EventId,
   LocalDate,
@@ -14,8 +13,9 @@ import type {
   Person,
   PersonId,
 } from "@baobu/core";
+import { ENTRY_ID, type Parsed } from "./event-form";
 import { daysBetween, money } from "./format";
-import { isPresetEvent } from "./presets";
+import { NOTE_MAX, isPresetEvent } from "./presets";
 import { refundTargetAt } from "./refund";
 import type { Changes } from "./store";
 
@@ -29,6 +29,12 @@ export const KIND_LABEL: Readonly<Record<AccountKind, string>> = {
 
 /** 種類的順序：新增時的選單；還沒有使用紀錄時卡片也照它排（錢包在上面） */
 export const KINDS: readonly AccountKind[] = ["cash", "stored-value", "bank", "credit-card", "investment"];
+
+/** 帳戶選單上的字 */
+export const accountLabel = (a: Account): string => `${a.name}（${KIND_LABEL[a.kind]}）${a.archived ? "（封存了）" : ""}`;
+
+/** 帳戶的名字；參考資料裡沒有（還沒同步到）時也有字 */
+export const accountName = (id: AccountId | undefined, catalog: Catalog): string => catalog.accounts.find((a) => a.id === id)?.name ?? "查不到的帳戶";
 
 /** 主人有我的（含共有）：卡片牆只放這些，對方的帳戶不出現 */
 export function myAccounts(catalog: Catalog, me: PersonId): readonly Account[] {
@@ -170,30 +176,34 @@ export const canFillBalance = (form: Pick<AccountForm, "kind" | "owner">, me: Pe
 /** 能不能寫備註：主人有我才有（備註是自己 prefs 裡的一格） */
 export const canWriteNote = (owner: OwnerChoice, me: PersonId): boolean => owner === me || owner === "shared";
 
-export type Parsed<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: string };
-
-/**
- * 看著實際餘額輸入的數字 → 存的數字。信用卡輸入欠多少（不能是負的），存成負數；其他可以是負的（透支）。
- * 空白由呼叫的人決定要不要算錯，這裡當成不是數字。
- */
-export function parseActual(text: string, kind: AccountKind): Parsed<number> {
+/** 有正負號的整數（可以是負的：透支）。逗號可以打。空白由呼叫的人決定要不要算錯，這裡當成不是數字 */
+export function parseWhole(text: string): Parsed<number> {
   const clean = text.replaceAll(",", "").trim().replace(/^[−－]/, "-");
   if (!/^-?\d+$/.test(clean) || !Number.isSafeInteger(Number(clean))) return { ok: false, error: "餘額要是整數" };
-  const n = Number(clean);
-  if (kind !== "credit-card") return { ok: true, value: n };
-  if (n < 0) return { ok: false, error: "信用卡填欠多少，不用寫負號" };
-  return { ok: true, value: n === 0 ? 0 : -n };
+  return { ok: true, value: Number(clean) };
 }
 
-const NOTE_MAX = 200;
+/** 看著實際餘額輸入的數字 → 存的數字。信用卡輸入欠多少（不能是負的），存成負數；其他可以是負的 */
+export function parseActual(text: string, kind: AccountKind): Parsed<number> {
+  const n = parseWhole(text);
+  if (!n.ok || kind !== "credit-card") return n;
+  if (n.value < 0) return { ok: false, error: "信用卡填欠多少，不用寫負號" };
+  return { ok: true, value: n.value === 0 ? 0 : -n.value };
+}
+
+/** 名字、備註的檢查（新增與改帳戶共用） */
+export function checkAccountText(form: Pick<AccountForm, "name" | "note">): readonly string[] {
+  const name = form.name.trim();
+  return [
+    ...(name === "" ? ["要取一個名字"] : []),
+    ...(name.length > 40 ? ["名字最多 40 字"] : []),
+    ...(form.note.length > NOTE_MAX ? [`備註最多 ${NOTE_MAX} 字`] : []),
+  ];
+}
 
 /** 表單有什麼問題；空的就可以存 */
 export function checkAccountForm(form: AccountForm, me: PersonId): readonly string[] {
-  const errors: string[] = [];
-  const name = form.name.trim();
-  if (name === "") errors.push("要取一個名字");
-  if (name.length > 40) errors.push("名字最多 40 字");
-  if (form.note.length > NOTE_MAX) errors.push(`備註最多 ${NOTE_MAX} 字`);
+  const errors = [...checkAccountText(form)];
   if (form.owner === "shared" && form.kind !== "investment") errors.push("共有的帳戶只能是投資（目前沒有共同帳戶）");
   if (canFillBalance(form, me) && form.balance.trim() !== "") {
     const balance = parseActual(form.balance, form.kind);
@@ -242,7 +252,7 @@ export function newAccountChanges(
               recordedAt: now,
               source: "manual" as const,
               status: "confirmed" as const,
-              effects: [{ type: "money" as const, id: "m1" as EntryId, kind: "reconciliation" as const, account: accountId, actual: balance.value }],
+              effects: [{ type: "money" as const, id: ENTRY_ID, kind: "reconciliation" as const, account: accountId, actual: balance.value }],
             },
           ],
         }
