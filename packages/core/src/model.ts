@@ -41,11 +41,13 @@ export interface Person {
 
 export type AccountKind = "bank" | "cash" | "stored-value" | "credit-card" | "investment";
 
-/** 帳戶。卡片牆的排序是每個人自己的偏好，不放這裡 */
+/**
+ * 帳戶。名字、種類成員互相看得到（幫對方記時要選得到）；餘額是算出來的，不存。
+ * 卡片牆的排序、備註是每個人自己的，不放這裡（共有帳戶每個人有自己的備註）
+ */
 export interface Account {
   readonly id: AccountId;
   readonly name: string;
-  readonly note?: string;
   readonly kind: AccountKind;
   /** 一個人，或兩人共有（共有的投資帳戶） */
   readonly owners: readonly PersonId[];
@@ -70,7 +72,7 @@ export interface Jar {
 export interface Tag {
   readonly id: TagId;
   readonly name: string;
-  /** 記帳選了這個標籤時預設帶的罐子（高級吃吃帶玩玩）。只在記的時候帶，改了不影響記過的 */
+  /** 記帳選了這個標籤時預設帶的罐子（預設的標籤都不帶，使用者自己設了才有）。只在記的時候帶，改了不影響記過的 */
   readonly defaultJar?: JarId;
   /** 合併進另一個標籤（7-11 併進 711）：記過的事件不用改，算的時候當成那一個 */
   readonly mergedInto?: TagId;
@@ -99,7 +101,7 @@ export interface Recurring {
   readonly archived?: true;
 }
 
-/** core 算數字時要的參考資料。帳戶只放看得到的：對方的帳戶不在裡面也沒關係 */
+/** core 算數字時要的參考資料。成員互相看得到帳戶，但查不到的帳戶（還沒同步到、之後收緊）不在裡面也沒關係 */
 export interface Catalog {
   readonly people: readonly Person[];
   readonly accounts: readonly Account[];
@@ -273,7 +275,7 @@ export interface Refund extends MoneyBase {
   readonly kind: "refund";
   readonly target: ItemRef;
   readonly amount: Amount;
-  /** 錢退回哪個帳戶；沒寫就是原本那一筆的帳戶 */
+  /** 錢退回哪個帳戶；沒寫就是原本那一筆的帳戶（原本那筆改帳戶時跟著走）。退到別的帳戶才寫 */
   readonly account?: AccountId;
 }
 

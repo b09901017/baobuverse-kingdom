@@ -1,7 +1,9 @@
 // 存之前的檢查，與誰看得到一則事件（參與者）。
 
+import { byTime } from "./dates";
 import type {
   Account,
+  Amount,
   Beneficiary,
   Catalog,
   DebtRef,
@@ -12,8 +14,12 @@ import type {
   Item,
   ItemId,
   ItemRef,
+  LocalDate,
+  LocalTime,
   PersonId,
+  Refund,
   Repayment,
+  Weight,
 } from "./model";
 
 export type ProblemCode =
@@ -34,8 +40,10 @@ export type ProblemCode =
   | "receivable-too-big" // 待收比那一項還多
   | "amortize-invalid" // 按月攤的月數不是 2 以上的整數
   | "cash-invalid" // 直接給錢用在不是「幫對方、不用還」的品項（也不能同時待收、按月攤）
-  | "refund-target" // 退款指到不存在的品項（或直接給錢的那一項）
-  | "refund-too-big" // 退款超過那一項還沒退的
+  | "refund-target" // 退款指到不存在的品項（或直接給錢的那一項），或排在原本那筆之前（帳本找不到它）
+  | "refund-too-big" // 退款超過那一項還沒退的（同一則裡好幾筆退同一項，加起來算）
+  | "refund-account" // 退回的帳戶不是原本那筆誰出的人的（或是投資帳戶、別筆的寶媽卡）
+  | "refunded-item-changed" // 這筆已經有退款，這樣改會讓退款失效：被退的品項不見、金額比已退的少、排到退款之後、誰出或幫誰變了、明寫退回寶媽卡卻改成別的帳戶（要改就先刪退款）
   | "allocation-invalid"; // 手動指定的還款指到不存在的、不是這一種要還的錢，或指定的加起來比還款多
 
 export interface Problem {
@@ -47,15 +55,16 @@ export interface Problem {
 
 /**
  * 存之前檢查一則事件；沒有問題就回傳空陣列。參考資料要找得到（記的人看得到自己要用的帳戶、罐子、標籤）。
- * 給了 events 才檢查要對照別則事件的（退款、手動指定的還款）。
+ * 給了 events 才檢查要對照別則事件的（退款、手動指定的還款、改已經被退款的那筆）。events 裡有這一則的舊版也沒關係。
  */
 export function validateEvent(event: Event, catalog: Catalog, events?: readonly Event[]): readonly Problem[] {
   return check(event, catalog, true, events);
 }
 
 /**
- * openBook 用的檢查：只看事件本身。看不到的參考資料（寶的帳本裡步的帳戶）不算問題；
+ * openBook 用的檢查：只看事件本身。查不到的參考資料（帳本裡沒有的帳戶）不算問題；
  * 要對照別則事件的（退款）在帳本照時間算的時候處理；手動指定的還款指錯了就當成沒指定（錢照樣算）。
+ * validateEvent 後來加嚴的（退回的帳戶、改被退款的那筆）不看，已經存進去的舊資料照算。
  */
 export function checkForBook(event: Event, catalog: Catalog): readonly Problem[] {
   return check(event, catalog, false);
@@ -83,6 +92,7 @@ function check(event: Event, catalog: Catalog, strict: boolean, events?: readonl
 
   for (const id of duplicates(event.effects.map((m) => m.id))) add("duplicate-id", id);
 
+  const refundedHere = new Map<string, number>();
   for (const entry of event.effects) {
     const at = entry.id;
     switch (entry.kind) {
@@ -138,16 +148,55 @@ function check(event: Event, catalog: Catalog, strict: boolean, events?: readonl
       }
       case "refund": {
         if (!positive(entry.amount)) add("amount-invalid", at);
-        account(entry.account, at);
+        const into = account(entry.account, at);
         if (events === undefined) break;
         const target = findItem(events, entry.target);
-        if (target === undefined || target.item.cash !== undefined) add("refund-target", at);
-        else if (refundedBefore(events, entry.target, event.id) + entry.amount > target.item.amount) add("refund-too-big", at);
+        // 要排在原本那筆之後：帳本照 byTime 算，排在前面就找不到原本那一項，存得進去卻不算
+        if (target === undefined || target.item.cash !== undefined || entry.target.event === event.id || byTime(target.event, event) >= 0) {
+          add("refund-target", at);
+          break;
+        }
+        if (into !== undefined && !refundAccountOk(into, target.expense)) add("refund-account", at);
+        // 同一則裡好幾筆退同一項：加起來算
+        const k = itemKey(entry.target);
+        const total = (refundedHere.get(k) ?? refundedElsewhere(events, entry.target, event.id)) + entry.amount;
+        refundedHere.set(k, total);
+        if (total > target.item.amount) add("refund-too-big", at);
         break;
       }
     }
   }
+  if (events !== undefined) keepRefunds(events);
   return problems;
+
+  /**
+   * 這一則已經被退款的話：改完之後帳本要還算得到那些退款（那一項還在、夠退、排在退款之前、還是已確認的），
+   * 誰出與幫誰也不能變：退款文件的參與者是存退款時算的，幫步改成幫共之後，寶看不到那筆退款，寶的我用的會多算。
+   * 要改就先刪退款。
+   */
+  function keepRefunds(all: readonly Event[]): void {
+    const refunds = refundsTo(all, event.id);
+    if (refunds.length === 0) return;
+    if (event.status !== "confirmed" || refunds.some((r) => byTime(event, r.event) >= 0)) add("refunded-item-changed");
+    for (const ref of new Map(refunds.map(({ refund }) => [itemKey(refund.target), refund.target])).values()) {
+      const item = expenseIn(event, ref.entry)?.items.find((i) => i.id === ref.item);
+      if (item === undefined || item.cash !== undefined || item.amount < refundedElsewhere(all, ref, event.id)) {
+        add("refunded-item-changed", ref.entry, ref.item);
+      }
+    }
+    const before = all.find((x) => x.id === event.id);
+    for (const entry of new Set(refunds.map(({ refund }) => refund.target.entry))) {
+      const was = before === undefined ? undefined : expenseIn(before, entry);
+      const now = expenseIn(event, entry);
+      if (was !== undefined && now !== undefined && whoChanged(was, now)) add("refunded-item-changed", entry);
+    }
+    // 退款明寫的帳戶要還對得上原本那筆：寶媽卡只能退回刷它的那筆（改成別的帳戶，寶媽卡的餘額會多出來、還欠的沒變）
+    for (const { refund } of refunds) {
+      const into = refund.account === undefined ? undefined : accounts.get(refund.account);
+      const now = expenseIn(event, refund.target.entry);
+      if (into !== undefined && now !== undefined && !refundAccountOk(into, now)) add("refunded-item-changed", refund.target.entry);
+    }
+  }
 
   function checkItem(entry: Expense, item: Item): void {
     const at = entry.id;
@@ -229,23 +278,93 @@ function check(event: Event, catalog: Catalog, strict: boolean, events?: readonl
 }
 
 /** 在別則事件裡找一項（只找已確認的） */
-function findItem(events: readonly Event[], ref: ItemRef): { expense: Expense; item: Item } | undefined {
-  const e = events.find((x) => x.id === ref.event && x.status === "confirmed");
-  const expense = e?.effects.find((m): m is Expense => m.id === ref.entry && m.kind === "expense");
+function findItem(events: readonly Event[], ref: ItemRef): { event: Event; expense: Expense; item: Item } | undefined {
+  const event = events.find((x) => x.id === ref.event && x.status === "confirmed");
+  const expense = event === undefined ? undefined : expenseIn(event, ref.entry);
   const item = expense?.items.find((i) => i.id === ref.item);
-  return expense === undefined || item === undefined ? undefined : { expense, item };
+  return event === undefined || expense === undefined || item === undefined ? undefined : { event, expense, item };
+}
+
+function expenseIn(event: Event, entry: EntryId): Expense | undefined {
+  return event.effects.find((m): m is Expense => m.id === entry && m.kind === "expense");
+}
+
+function itemKey(ref: ItemRef): string {
+  return [ref.event, ref.entry, ref.item].join("/");
+}
+
+/** 誰出變了，或任何一項實際幫的人變了（品項沒寫就是整筆的；新加的品項跟整筆原本的比） */
+function whoChanged(was: Expense, now: Expense): boolean {
+  if (was.payer !== now.payer) return true;
+  return now.items.some((item) => {
+    const old = was.items.find((i) => i.id === item.id);
+    return !sameBeneficiary(old?.beneficiary ?? was.beneficiary, item.beneficiary ?? now.beneficiary);
+  });
+}
+
+/** 比內容、不比欄位順序（從 Firestore 讀回來的欄位順序可能不同）；比例的順序也不算 */
+function sameBeneficiary(a: Beneficiary, b: Beneficiary): boolean {
+  if (a.kind === "person") return b.kind === "person" && a.person === b.person;
+  if (b.kind === "person") return false;
+  const shares = (weights: readonly Weight[] = []) => weights.map((w) => `${w.person}:${w.weight}`).sort().join();
+  return shares(a.weights) === shares(b.weights);
+}
+
+/** 錢可以退回哪個帳戶：原本那筆誰出的人的；投資帳戶（進出都是轉帳）不行，寶媽卡（還它是還款）只能退回刷它的那筆 */
+function refundAccountOk(into: Account, expense: Expense): boolean {
+  if (!into.owners.includes(expense.payer) || into.kind === "investment") return false;
+  return into.paidByOthers !== true || into.id === expense.account;
+}
+
+/** 一筆退款（原本那筆上的註記看這個） */
+export interface RefundRecord {
+  readonly event: EventId;
+  readonly entry: EntryId;
+  readonly date: LocalDate;
+  readonly time?: LocalTime;
+  readonly amount: Amount;
+}
+
+/** 指到某則事件的退款（只算已確認的、別則事件的），照時間排 */
+function refundsTo(events: readonly Event[], target: EventId): { readonly event: Event; readonly refund: Refund }[] {
+  return events
+    .filter((e) => e.id !== target && e.status === "confirmed")
+    .sort(byTime)
+    .flatMap((event) =>
+      event.effects.flatMap((m) => (m.kind === "refund" && m.target.event === target ? [{ event, refund: m }] : [])),
+    );
+}
+
+function toRecord({ event, refund }: { readonly event: Event; readonly refund: Refund }): RefundRecord {
+  return {
+    event: event.id,
+    entry: refund.id,
+    date: event.date,
+    ...(event.time === undefined ? {} : { time: event.time }),
+    amount: refund.amount,
+  };
+}
+
+/** 這一項被退了哪幾筆，照時間排（只算已確認的）。已退多少就是把金額加起來 */
+export function refundsOf(events: readonly Event[], ref: ItemRef): readonly RefundRecord[] {
+  return refundsTo(events, ref.event)
+    .filter(({ refund }) => refund.target.entry === ref.entry && refund.target.item === ref.item)
+    .map(toRecord);
+}
+
+/**
+ * 這則事件能不能刪：回傳擋著的退款（空的就可以刪）。有退款還刪掉的話，帳本找不到原本那一項，退款整則不算，
+ * 所以要先刪退款。退款自己不擋人（沒有東西指著它）。
+ */
+export function blockersOfDelete(eventId: EventId, events: readonly Event[]): readonly RefundRecord[] {
+  return refundsTo(events, eventId).map(toRecord);
 }
 
 /** 別則事件已經退了這一項多少 */
-function refundedBefore(events: readonly Event[], ref: ItemRef, except: EventId): number {
-  let total = 0;
-  for (const e of events) {
-    if (e.id === except || e.status !== "confirmed") continue;
-    for (const m of e.effects) {
-      if (m.kind === "refund" && m.target.event === ref.event && m.target.entry === ref.entry && m.target.item === ref.item) total += m.amount;
-    }
-  }
-  return total;
+function refundedElsewhere(events: readonly Event[], ref: ItemRef, except: EventId): number {
+  return refundsOf(events, ref)
+    .filter((r) => r.event !== except)
+    .reduce((sum, r) => sum + r.amount, 0);
 }
 
 function positive(n: number): boolean {

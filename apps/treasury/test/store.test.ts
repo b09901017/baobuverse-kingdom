@@ -1,6 +1,6 @@
 // store.ts 對著模擬器：存進去再讀回來，core 算出的數字一樣；斷網時記一筆，恢復網路後同步上去。
 
-import { openBook, type Account, type Catalog, type Event, type PersonId } from "@baobu/core";
+import { openBook, type Account, type AccountId, type Catalog, type Event, type EventId, type Expense, type PersonId } from "@baobu/core";
 import type { RulesTestEnvironment } from "@firebase/rules-unit-testing";
 import {
   disableNetwork,
@@ -12,8 +12,9 @@ import {
   Timestamp,
   type DocumentData,
 } from "firebase/firestore";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { save, watchCatalog, watchEvents } from "../src/store";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { buildExpense, formOf } from "../src/record";
+import { deleteEvent, saveAccountNote, saveAccountOrder, save, watchCatalog, watchEvents, watchPrefs, type Prefs } from "../src/store";
 import { asFirestore, startEmulator } from "./emulator";
 
 const K = "store-test";
@@ -150,7 +151,7 @@ describe("存進去再讀回來", () => {
     await result.written;
 
     const [readCatalog, readEvents] = await Promise.all([
-      waitFor<Catalog>((done) => watchCatalog(db, K, 步, done, (e) => { throw e; })),
+      waitFor<Catalog>((done) => watchCatalog(db, K, done, (e) => { throw e; })),
       waitFor<readonly Event[]>((done) =>
         watchEvents(db, K, 步, (list, fromCache) => { if (!fromCache && list.length === 4) done(list); }, (e) => { throw e; }),
       ),
@@ -186,6 +187,158 @@ describe("存進去再讀回來", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.problems.map((p) => p.code)).toContain("items-sum-mismatch");
     expect(await onServer(`kingdoms/${K}/events/bad`)).toBeUndefined();
+  });
+});
+
+describe("對方的帳戶", () => {
+  const 寶媽卡 = { id: "bao-mom", name: "寶媽卡", kind: "credit-card", owners: [寶], currency: "TWD", paidByOthers: true } as unknown as Account;
+
+  it("watchCatalog 讀得到寶的帳戶：步記「寶刷寶媽卡」存得進去、參與者有寶", async () => {
+    const db = 步的();
+    const ready = save(db, K, { people, jars, accounts: [...accounts, 寶媽卡] }, { catalog, events: [] });
+    if (!ready.ok) throw new Error(JSON.stringify(ready.problems));
+    await ready.written;
+
+    const read = await waitFor<Catalog>((done) => watchCatalog(db, K, done, (e) => { throw e; }));
+    expect(read.accounts.map((a) => a.id)).toContain("bao-mom");
+
+    const 刷寶媽卡 = {
+      ...base,
+      id: "mom",
+      date: "2026-10-05",
+      recordedAt: 5,
+      effects: [
+        {
+          type: "money",
+          id: "m1",
+          kind: "expense",
+          payer: 寶,
+          account: "bao-mom",
+          amount: 3_000,
+          beneficiary: { kind: "person", person: 寶 },
+          tags: [],
+          items: [{ id: "i1", amount: 3_000, jar: "daily", tags: [] }],
+        },
+      ],
+    } as unknown as Event;
+    const result = save(db, K, { events: [刷寶媽卡] }, { catalog: read, events: [] });
+    if (!result.ok) throw new Error(JSON.stringify(result.problems));
+    await result.written;
+    expect((await onServer(`kingdoms/${K}/events/mom`))?.participants).toEqual([寶, 步]);
+  });
+});
+
+describe("自己的排序與帳戶備註（同一份文件）", () => {
+  const 郵局 = "post" as AccountId;
+  const 錢包 = "cash" as AccountId;
+  const 我的 = `kingdoms/${K}/prefs/${步}`;
+
+  it("改排序時備註留著、改備註時排序留著", async () => {
+    const db = 步的();
+    await saveAccountNote(db, K, 步, 郵局, "假備註甲");
+    await saveAccountOrder(db, K, 步, [錢包, 郵局]);
+    expect(await onServer(我的)).toEqual({ accounts: [錢包, 郵局], accountNotes: { post: "假備註甲" } });
+
+    await saveAccountNote(db, K, 步, 錢包, "假備註乙");
+    expect(await onServer(我的)).toEqual({ accounts: [錢包, 郵局], accountNotes: { post: "假備註甲", cash: "假備註乙" } });
+
+    await saveAccountOrder(db, K, 步, [郵局, 錢包]);
+    expect(await onServer(我的)).toEqual({ accounts: [郵局, 錢包], accountNotes: { post: "假備註甲", cash: "假備註乙" } });
+  });
+
+  it("備註改成空的就拿掉那一格，別的備註留著", async () => {
+    const db = 步的();
+    await saveAccountNote(db, K, 步, 郵局, "假備註甲");
+    await saveAccountNote(db, K, 步, 錢包, "假備註乙");
+    await saveAccountNote(db, K, 步, 郵局, "");
+    expect(await onServer(我的)).toEqual({ accountNotes: { cash: "假備註乙" } });
+  });
+
+  it("watchPrefs：還沒存過是空的，存了就收到", async () => {
+    const db = 步的();
+    const seen: Prefs[] = [];
+    const stop = watchPrefs(db, K, 步, (prefs) => seen.push(prefs), (e) => { throw e; });
+    await vi.waitFor(() => expect(seen).toEqual([{}]));
+    await saveAccountNote(db, K, 步, 郵局, "假備註甲");
+    await vi.waitFor(() => expect(seen.at(-1)).toEqual({ accountNotes: { post: "假備註甲" } }));
+    stop();
+  });
+});
+
+describe("刪一筆（標記）", () => {
+  const ready = async (db: ReturnType<typeof 步的>) => {
+    const result = save(db, K, { people, jars, accounts, events }, { catalog, events: [] });
+    if (!result.ok) throw new Error(JSON.stringify(result.problems));
+    await result.written;
+  };
+
+  it("文件與參與者留著、標記刪除、updatedAt 更新；讀回來不見；數字跟沒記過一樣", async () => {
+    const db = 步的();
+    await ready(db);
+    const before = await onServer(`kingdoms/${K}/events/e4`);
+
+    const deleted = deleteEvent(db, K, "e4" as EventId, events);
+    if (!deleted.ok) throw new Error(JSON.stringify(deleted.problems));
+    await deleted.written;
+
+    const after = await onServer(`kingdoms/${K}/events/e4`);
+    expect(after?.deleted).toBe(true);
+    expect(after?.participants).toEqual(before?.participants);
+    expect(after?.effects).toEqual(before?.effects);
+    expect((after?.updatedAt as Timestamp).toMillis()).toBeGreaterThanOrEqual((before?.updatedAt as Timestamp).toMillis());
+
+    const seen = await waitFor<readonly Event[]>((done) =>
+      watchEvents(db, K, 步, (list, fromCache) => { if (!fromCache) done(list); }, (e) => { throw e; }),
+    );
+    expect(seen.map((e) => e.id).sort()).toEqual(["e1", "e2", "e3"]);
+    expect(numbers(openBook(catalog, seen))).toEqual(numbers(openBook(catalog, events.filter((e) => e.id !== "e4"))));
+  });
+
+  it("有退款指著它就不刪，伺服器上不變；退款先刪掉之後可以", async () => {
+    const db = 步的();
+    await ready(db);
+    const refund = {
+      ...base,
+      id: "r1",
+      date: "2026-10-09",
+      recordedAt: 9,
+      effects: [{ type: "money", id: "m1", kind: "refund", target: { event: "e2", entry: "m1", item: "i1" }, amount: 100 }],
+    } as unknown as Event;
+    const saved = save(db, K, { events: [refund] }, { catalog, events });
+    if (!saved.ok) throw new Error(JSON.stringify(saved.problems));
+    await saved.written;
+
+    const all = [...events, refund];
+    const blocked = deleteEvent(db, K, "e2" as EventId, all);
+    expect(blocked).toEqual({ ok: false, problems: [{ event: "e2", code: "refunded-item-changed" }] });
+    expect((await onServer(`kingdoms/${K}/events/e2`))?.deleted).toBe(false);
+
+    const first = deleteEvent(db, K, "r1" as EventId, all);
+    if (!first.ok) throw new Error("退款自己不該被擋");
+    await first.written;
+    const then = deleteEvent(db, K, "e2" as EventId, events);
+    if (!then.ok) throw new Error(JSON.stringify(then.problems));
+    await then.written;
+    expect((await onServer(`kingdoms/${K}/events/e2`))?.deleted).toBe(true);
+  });
+
+  it("改一筆存回去：還是同一則，id、記的時間沒變，規則放行", async () => {
+    const db = 步的();
+    await ready(db);
+    // e2 有兩項，表單打不開：先改成一項的樣子（階段 1 記的都是一項）
+    const [, e2] = events as [Event, Event];
+    const entry = e2.effects[0] as Expense;
+    const existing: Event = { ...e2, effects: [{ ...entry, amount: 650, items: entry.items.slice(0, 1) }] };
+    const form = formOf(existing);
+    if (form === null) throw new Error("打不開表單");
+    const changed = buildExpense({ ...form, title: "改過的名稱" }, { id: "不該用到" as EventId, me: 步, now: 999, existing });
+    const result = save(db, K, { events: [changed] }, { catalog, events });
+    if (!result.ok) throw new Error(JSON.stringify(result.problems));
+    await result.written;
+    const after = await onServer(`kingdoms/${K}/events/e2`);
+    expect(after?.title).toBe("改過的名稱");
+    expect(after?.recordedAt).toBe(2);
+    expect(after?.id).toBe("e2");
   });
 });
 

@@ -2,30 +2,39 @@
 // 每個函式都吃一個 Firestore，app 傳 firebase.ts 的 db，測試傳模擬器的。
 
 import {
+  blockersOfDelete,
   participantsOf,
   validateEvent,
   type Account,
+  type AccountId,
   type Catalog,
   type Event,
+  type EventId,
   type Jar,
+  type JarId,
   type Person,
   type PersonId,
   type Problem,
   type Tag,
+  type TagId,
 } from "@baobu/core";
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   onSnapshot,
   query,
   serverTimestamp,
+  setDoc,
+  updateDoc,
   where,
   writeBatch,
   type DocumentData,
   type Firestore,
   type Query,
 } from "firebase/firestore";
+import { presetChanges, type Presets } from "./presets";
 
 /** 事件文件的形狀版本：Event 的形狀改了就加一 */
 const EVENT_VERSION = 1;
@@ -83,6 +92,8 @@ export interface Changes {
   readonly jars?: readonly Jar[];
   readonly tags?: readonly Tag[];
   readonly events?: readonly Event[];
+  /** 自己的排序與備註：只動有給的欄位、有給的那幾格備註 */
+  readonly prefs?: { readonly of: PersonId; readonly set: Prefs };
 }
 
 export type SaveResult =
@@ -115,7 +126,17 @@ export function save(
   for (const event of changes.events ?? []) {
     batch.set(doc(db, kingdomPath(k), "events", event.id), toEventDoc(event, catalog, current.events));
   }
+  if (changes.prefs !== undefined) batch.set(prefsDoc(db, k, changes.prefs.of), changes.prefs.set, { merge: true });
   return { ok: true, written: batch.commit() };
+}
+
+/**
+ * 刪掉一則事件：只做標記（ADR 0001），文件與參與者留著，updatedAt 更新（對方的裝置才收得到「它被刪了」）。
+ * 有退款指著它就不刪：刪了帳本找不到原本那一項，退款整則不算；要先刪退款。
+ */
+export function deleteEvent(db: Firestore, k: string, id: EventId, events: readonly Event[]): SaveResult {
+  if (blockersOfDelete(id, events).length > 0) return { ok: false, problems: [{ event: id, code: "refunded-item-changed" }] };
+  return { ok: true, written: updateDoc(doc(db, kingdomPath(k), "events", id), { deleted: true, updatedAt: serverTimestamp() }) };
 }
 
 function mergeCatalog(catalog: Catalog, changes: Changes): Catalog {
@@ -131,11 +152,10 @@ function mergeCatalog(catalog: Catalog, changes: Changes): Catalog {
   };
 }
 
-/** 監聽參考資料：王國裡的人、罐子、標籤，和我是主人的帳戶 */
+/** 監聽參考資料：王國裡的人、罐子、標籤、帳戶（成員互相看得到帳戶的名字、種類；卡片牆只顯示自己的，由畫面篩） */
 export function watchCatalog(
   db: Firestore,
   k: string,
-  me: PersonId,
   onChange: (catalog: Catalog) => void,
   onError: (error: Error) => void,
 ): () => void {
@@ -155,10 +175,81 @@ export function watchCatalog(
     listen("people", collection(db, kingdomPath(k), "people")),
     listen("jars", collection(db, kingdomPath(k), "jars")),
     listen("tags", collection(db, kingdomPath(k), "tags")),
-    // 規則只讓主人讀帳戶：查詢要帶 owners array-contains 我
-    listen("accounts", query(collection(db, kingdomPath(k), "accounts"), where("owners", "array-contains", me))),
+    listen("accounts", collection(db, kingdomPath(k), "accounts")),
   ];
   return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
+}
+
+/** 自己的排序與帳戶備註（只有本人讀寫）。key 是帳戶 ID；共有帳戶每個人有自己的備註 */
+export interface Prefs {
+  readonly accounts?: readonly AccountId[];
+  readonly jars?: readonly JarId[];
+  readonly tags?: readonly TagId[];
+  readonly accountNotes?: Readonly<Record<string, string>>;
+}
+
+const prefsDoc = (db: Firestore, k: string, me: PersonId) => doc(db, kingdomPath(k), "prefs", me);
+
+/** 監聽自己的排序與備註；還沒存過就是空的 */
+export function watchPrefs(
+  db: Firestore,
+  k: string,
+  me: PersonId,
+  onChange: (prefs: Prefs) => void,
+  onError: (error: Error) => void,
+): () => void {
+  return onSnapshot(prefsDoc(db, k, me), (snap) => onChange((snap.data() ?? {}) as Prefs), onError);
+}
+
+// 排序、備註在同一份文件：只寫要改的那一格（merge），不然會互相蓋掉。
+// 斷網時回傳的 Promise 會一直等，畫面不要等它（離線快取已經看得到）
+
+/** 改卡片牆的排序 */
+export function saveAccountOrder(db: Firestore, k: string, me: PersonId, order: readonly AccountId[]): Promise<void> {
+  return setDoc(prefsDoc(db, k, me), { accounts: order }, { merge: true });
+}
+
+/** 改一個帳戶的備註；空字串就是拿掉那一格 */
+export function saveAccountNote(db: Firestore, k: string, me: PersonId, account: AccountId, note: string): Promise<void> {
+  return setDoc(prefsDoc(db, k, me), { accountNotes: { [account]: note === "" ? deleteField() : note } }, { merge: true });
+}
+
+const presetsDoc = (db: Firestore, k: string, me: PersonId) => doc(db, kingdomPath(k), "presets", me);
+
+/** 監聽自己匯入的預設資料；還沒匯入是 null */
+export function watchPresets(
+  db: Firestore,
+  k: string,
+  me: PersonId,
+  onChange: (presets: Presets | null) => void,
+  onError: (error: Error) => void,
+): () => void {
+  return onSnapshot(presetsDoc(db, k, me), (snap) => onChange(snap.exists() ? (snap.data() as Presets) : null), onError);
+}
+
+/** 匯入：把 parsePresets 過了的內容存起來（裡面有實際餘額，只有本人讀得到；一鍵重置不刪）。還沒套用，數字不會變 */
+export function savePresets(db: Firestore, k: string, me: PersonId, presets: Presets): Promise<void> {
+  return setDoc(presetsDoc(db, k, me), presets);
+}
+
+/**
+ * 套用預設（同一批，全部成功或全部失敗）。ID 固定，已經套用過的話第二次的 recordedAt 不同，規則整批拒絕，
+ * 所以按兩次、兩台裝置都按都不會變兩倍；written 會丟白話的錯誤，畫面要接住。斷網時 written 會一直等，畫面不要等它。
+ */
+export function applyPresets(
+  db: Firestore,
+  k: string,
+  me: PersonId,
+  presets: Presets,
+  current: { readonly catalog: Catalog; readonly events: readonly Event[] },
+  now: number,
+): SaveResult {
+  const result = save(db, k, presetChanges(presets, me, now), current);
+  if (!result.ok) return result;
+  const written = result.written.catch((e: { readonly code?: string }) => {
+    throw e.code === "permission-denied" ? new Error("套用不了：可能已經套用過了（這台或另一台裝置），雲端的資料沒有變動。") : e;
+  });
+  return { ok: true, written };
 }
 
 /**
